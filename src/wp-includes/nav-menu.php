@@ -1036,7 +1036,7 @@ function _wp_delete_customize_changeset_dependent_auto_drafts( $post_id ) {
 function _wp_menus_changed() {
 	$old_nav_menu_locations = get_option( 'theme_switch_menu_locations', array() );
 	$new_nav_menu_locations = get_nav_menu_locations();
-	$remapped_nav_menu_locations = wp_get_remapped_nav_menu_locations( $new_nav_menu_locations, $old_nav_menu_locations );
+	$remapped_nav_menu_locations = wp_map_nav_menu_locations( $new_nav_menu_locations, $old_nav_menu_locations );
 	set_theme_mod( 'nav_menu_locations', $remapped_nav_menu_locations );
 	delete_option( 'theme_switch_menu_locations' );
 }
@@ -1050,7 +1050,7 @@ function _wp_menus_changed() {
  * @param array $old_nav_menu_locations Old nav menu locations assignments.
  * @return array Nav menus remapped to new nav menu locations.
  */
-function wp_get_remapped_nav_menu_locations( $new_nav_menu_locations, $old_nav_menu_locations ) {
+function wp_map_nav_menu_locations( $new_nav_menu_locations, $old_nav_menu_locations ) {
 	$registered_nav_menus = get_registered_nav_menus();
 
 	// Short-circuit if there are no old nav menu location assignments to map.

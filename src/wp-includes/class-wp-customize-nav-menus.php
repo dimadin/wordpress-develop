@@ -596,7 +596,7 @@ final class WP_Customize_Nav_Menus {
 		// Attempt to re-map the nav menu location assignments when previewing a theme switch.
 		$remapped_nav_menu_locations = array();
 		if ( ! $this->manager->is_theme_active() ) {
-			$remapped_nav_menu_locations = wp_get_remapped_nav_menu_locations( get_nav_menu_locations(), $this->original_nav_menu_locations );
+			$remapped_nav_menu_locations = wp_map_nav_menu_locations( get_nav_menu_locations(), $this->original_nav_menu_locations );
 		}
 
 		foreach ( $locations as $location => $description ) {
