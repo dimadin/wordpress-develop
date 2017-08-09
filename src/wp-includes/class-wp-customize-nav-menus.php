@@ -27,16 +27,6 @@ final class WP_Customize_Nav_Menus {
 	public $manager;
 
 	/**
-	 * Previewed Menus.
-	 *
-	 * @todo This is unused and can be removed.
-	 *
-	 * @since 4.3.0
-	 * @var array
-	 */
-	public $previewed_menus;
-
-	/**
 	 * Original nav menu locations before the theme was switched.
 	 *
 	 * @since 4.9.0
@@ -52,7 +42,6 @@ final class WP_Customize_Nav_Menus {
 	 * @param object $manager An instance of the WP_Customize_Manager class.
 	 */
 	public function __construct( $manager ) {
-		$this->previewed_menus = array(); // @todo This is unused and can be removed.
 		$this->manager = $manager;
 		$this->original_nav_menu_locations = get_nav_menu_locations();
 
@@ -594,9 +583,9 @@ final class WP_Customize_Nav_Menus {
 		}
 
 		// Attempt to re-map the nav menu location assignments when previewing a theme switch.
-		$remapped_nav_menu_locations = array();
+		$mapped_nav_menu_locations = array();
 		if ( ! $this->manager->is_theme_active() ) {
-			$remapped_nav_menu_locations = wp_map_nav_menu_locations( get_nav_menu_locations(), $this->original_nav_menu_locations );
+			$mapped_nav_menu_locations = wp_map_nav_menu_locations( get_nav_menu_locations(), $this->original_nav_menu_locations );
 		}
 
 		foreach ( $locations as $location => $description ) {
@@ -617,9 +606,9 @@ final class WP_Customize_Nav_Menus {
 				) );
 			}
 
-			// Override the assigned nav menu location if remapped during previewed theme switch.
-			if ( isset( $remapped_nav_menu_locations[ $location ] ) ) {
-				$this->manager->set_post_value( $setting_id, $remapped_nav_menu_locations[ $location ] );
+			// Override the assigned nav menu location if mapped during previewed theme switch.
+			if ( isset( $mapped_nav_menu_locations[ $location ] ) ) {
+				$this->manager->set_post_value( $setting_id, $mapped_nav_menu_locations[ $location ] );
 			}
 
 			$this->manager->add_control( new WP_Customize_Nav_Menu_Location_Control( $this->manager, $setting_id, array(
