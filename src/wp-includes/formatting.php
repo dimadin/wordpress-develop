@@ -3962,24 +3962,13 @@ function esc_html( $text ) {
  * Escaping for HTML attributes.
  *
  * @since 2.8.0
- * @since 4.8.2 Added `$double_encode` param.
  *
- * @param string $text    Text to escape.
- * @param array  $options {
- *     Options for escaping.
- *
- *     @var bool $double_encode Whether to allow entities to be double-escaped. Defaults to false.
- * }
- * @return string Escaped text for HTML attribute.
+ * @param string $text
+ * @return string
  */
-function esc_attr( $text, $options = array() ) {
-	$options = wp_parse_args( $options, array(
-		'double_encode' => false,
-	) );
-
-	$charset = false; // Default.
+function esc_attr( $text ) {
 	$safe_text = wp_check_invalid_utf8( $text );
-	$safe_text = _wp_specialchars( $safe_text, ENT_QUOTES, $charset, $options['double_encode'] );
+	$safe_text = _wp_specialchars( $safe_text, ENT_QUOTES );
 	/**
 	 * Filters a string cleaned and escaped for output in an HTML attribute.
 	 *
