@@ -513,16 +513,12 @@ wp.mediaWidgets = ( function( $ ) {
 				});
 			});
 
-			// Update extra attributes.
-			control.$el.on( 'input change', '.extra', function updateExtra() {
-				var newValues = {}, attr;
-				attr = $( this ).attr( 'data-attr' );
-				newValues[ attr ] = $.trim( $( this ).val() );
-
-				if ( attr === 'link_url' ) {
-					newValues.link_type = 'custom';
-				}
-				control.model.set( newValues );
+			// Update link_url attribute.
+			control.$el.on( 'input change', '.link', function updateExtra() {
+				var linkUrl = $.trim( $( this ).val() );
+				control.model.set( {
+					link_url: linkUrl
+				} );
 			});
 
 			/*

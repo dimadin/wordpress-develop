@@ -404,7 +404,7 @@ abstract class WP_Widget_Media extends WP_Widget {
 					<?php echo esc_html( $this->l10n['add_media'] ); ?>
 				</button>
 			</p>
-			<div class="media-widget-extra">
+			<div class="media-widget-fields">
 			</div>
 		</script>
 		<?php

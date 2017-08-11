@@ -30,7 +30,7 @@
 		 * @returns {void}
 		 */
 		renderPreview: function renderPreview() {
-			var control = this, previewContainer, previewTemplate, extraContainer, extraTemplate, linkInput;
+			var control = this, previewContainer, previewTemplate, fieldsContainer, fieldsTemplate, linkInput;
 			if ( ! control.model.get( 'attachment_id' ) && ! control.model.get( 'url' ) ) {
 				return;
 			}
@@ -41,9 +41,9 @@
 
 			linkInput = control.$el.find( '.link' );
 			if ( ! linkInput.is( document.activeElement ) ) {
-				extraContainer = control.$el.find( '.media-widget-extra' );
-				extraTemplate = wp.template( 'wp-media-widget-image-extra' );
-				extraContainer.html( extraTemplate( _.extend( control.previewTemplateProps.toJSON() ) ) );
+				fieldsContainer = control.$el.find( '.media-widget-fields' );
+				fieldsTemplate = wp.template( 'wp-media-widget-image-fields' );
+				fieldsContainer.html( fieldsTemplate( _.extend( control.previewTemplateProps.toJSON() ) ) );
 			}
 		},
 
@@ -137,12 +137,12 @@
 		 * @returns {Object} Preview template props.
 		 */
 		mapModelToPreviewTemplateProps: function mapModelToPreviewTemplateProps() {
-			var control = this, mediaFrameProps, url;
+			var control = this, previewTemplateProps, url;
 			url = control.model.get( 'url' );
-			mediaFrameProps = component.MediaWidgetControl.prototype.mapModelToPreviewTemplateProps.call( control );
-			mediaFrameProps.currentFilename = url ? url.replace( /\?.*$/, '' ).replace( /^.+\//, '' ) : '';
-			mediaFrameProps.link_url = control.model.get( 'link_url' );
-			return mediaFrameProps;
+			previewTemplateProps = component.MediaWidgetControl.prototype.mapModelToPreviewTemplateProps.call( control );
+			previewTemplateProps.currentFilename = url ? url.replace( /\?.*$/, '' ).replace( /^.+\//, '' ) : '';
+			previewTemplateProps.link_url = control.model.get( 'link_url' );
+			return previewTemplateProps;
 		}
 	});
 
