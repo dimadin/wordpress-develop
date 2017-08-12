@@ -37,13 +37,13 @@
 
 			previewContainer = control.$el.find( '.media-widget-preview' );
 			previewTemplate = wp.template( 'wp-media-widget-image-preview' );
-			previewContainer.html( previewTemplate( _.extend( control.previewTemplateProps.toJSON() ) ) );
+			previewContainer.html( previewTemplate( control.previewTemplateProps.toJSON() ) );
 
 			linkInput = control.$el.find( '.link' );
 			if ( ! linkInput.is( document.activeElement ) ) {
 				fieldsContainer = control.$el.find( '.media-widget-fields' );
 				fieldsTemplate = wp.template( 'wp-media-widget-image-fields' );
-				fieldsContainer.html( fieldsTemplate( _.extend( control.previewTemplateProps.toJSON() ) ) );
+				fieldsContainer.html( fieldsTemplate( control.previewTemplateProps.toJSON() ) );
 			}
 		},
 
@@ -71,11 +71,14 @@
 			mediaFrame.$el.addClass( 'media-widget' );
 
 			updateCallback = function() {
-				var mediaProps;
+				var mediaProps, linkType;
 
 				// Update cached attachment object to avoid having to re-fetch. This also triggers re-rendering of preview.
 				mediaProps = mediaFrame.state().attributes.image.toJSON();
+				linkType = mediaProps.link;
+				mediaProps.link = mediaProps.linkUrl;
 				control.selectedAttachment.set( mediaProps );
+				control.displaySettings.set( 'link', linkType );
 
 				control.model.set( _.extend(
 					control.mapMediaToModelProps( mediaProps ),

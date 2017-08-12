@@ -95,7 +95,7 @@ class WP_Widget_Media_Image extends WP_Widget_Media {
 					'default' => 'none',
 					'media_prop' => 'link',
 					'description' => __( 'Link To' ),
-					'should_preview_update' => false,
+					'should_preview_update' => true,
 				),
 				'link_url' => array(
 					'type' => 'string',
@@ -103,7 +103,7 @@ class WP_Widget_Media_Image extends WP_Widget_Media {
 					'format' => 'uri',
 					'media_prop' => 'linkUrl',
 					'description' => __( 'URL' ),
-					'should_preview_update' => false,
+					'should_preview_update' => true,
 				),
 				'image_classes' => array(
 					'type' => 'string',

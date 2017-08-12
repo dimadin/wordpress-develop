@@ -515,10 +515,22 @@ wp.mediaWidgets = ( function( $ ) {
 
 			// Update link_url attribute.
 			control.$el.on( 'input change', '.link', function updateExtra() {
-				var linkUrl = $.trim( $( this ).val() );
+				var linkUrl = $.trim( $( this ).val() ), linkType = 'custom';
+				if ( control.selectedAttachment.get( 'linkUrl' ) === linkUrl || control.selectedAttachment.get( 'link' ) === linkUrl ) {
+					linkType = 'post';
+				} else if ( control.selectedAttachment.get( 'url' ) === linkUrl ) {
+					linkType = 'file';
+				}
 				control.model.set( {
-					link_url: linkUrl
-				} );
+					link_url: linkUrl,
+					link_type: linkType
+				});
+
+				// Update display settings for the next time the user opens to select from the media library.
+				control.displaySettings.set( {
+					link: linkType,
+					linkUrl: linkUrl
+				});
 			});
 
 			/*
@@ -827,7 +839,7 @@ wp.mediaWidgets = ( function( $ ) {
 			}
 
 			if ( 'post' === mediaFrameProps.link ) {
-				modelProps.link_url = mediaFrameProps.postUrl;
+				modelProps.link_url = mediaFrameProps.postUrl || mediaFrameProps.linkUrl;
 			} else if ( 'file' === mediaFrameProps.link ) {
 				modelProps.link_url = mediaFrameProps.url;
 			}
