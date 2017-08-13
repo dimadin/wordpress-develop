@@ -514,7 +514,7 @@ wp.mediaWidgets = ( function( $ ) {
 			});
 
 			// Update link_url attribute.
-			control.$el.on( 'input change', '.link', function updateExtra() {
+			control.$el.on( 'input change', '.link', function updateLinkUrl() {
 				var linkUrl = $.trim( $( this ).val() ), linkType = 'custom';
 				if ( control.selectedAttachment.get( 'linkUrl' ) === linkUrl || control.selectedAttachment.get( 'link' ) === linkUrl ) {
 					linkType = 'post';
