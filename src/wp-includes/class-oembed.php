@@ -105,6 +105,16 @@ class WP_oEmbed {
 			'#https?://www\.facebook\.com/.*/videos/.*#i'              => array( 'https://www.facebook.com/plugins/video/oembed.json/',       true  ),
 			'#https?://www\.facebook\.com/video\.php.*#i'              => array( 'https://www.facebook.com/plugins/video/oembed.json/',       true  ),
 			'#https?://(www\.)?screencast\.com/.*#i'                   => array( 'https://api.screencast.com/external/oembed',                true  ),
+			'#https?://([a-z0-9-]+\.)?amazon\.(com|com\.mx|com\.br|ca)/.*#i'      => array( 'https://read.amazon.com/kp/api/oembed',          true  ),
+			'#https?://([a-z0-9-]+\.)?amazon\.(co\.uk|de|fr|it|es|in|nl|ru)/.*#i' => array( 'https://read.amazon.co.uk/kp/api/oembed',        true  ),
+			'#https?://([a-z0-9-]+\.)?amazon\.(co\.jp|com\.au)/.*#i'              => array( 'https://read.amazon.com.au/kp/api/oembed',       true  ),
+			'#https?://([a-z0-9-]+\.)?amazon\.cn/.*#i'                            => array( 'https://read.amazon.cn/kp/api/oembed',           true  ),
+			'#https?://(www\.)?a.co/.*#i'                                         => array( 'https://read.amazon.com/kp/api/oembed',          true  ),
+			'#https?://(www\.)?amzn.to/.*#i'                                      => array( 'https://read.amazon.com/kp/api/oembed',          true  ),
+			'#https?://(www\.)?amzn.eu/.*#i'                                      => array( 'https://read.amazon.co.uk/kp/api/oembed',        true  ),
+			'#https?://(www\.)?amzn.in/.*#i'                                      => array( 'https://read.amazon.in/kp/api/oembed',           true  ),
+			'#https?://(www\.)?amzn.asia/.*#i'                                    => array( 'https://read.amazon.com.au/kp/api/oembed',       true  ),
+			'#https?://(www\.)?z.cn/.*#i'                                         => array( 'https://read.amazon.cn/kp/api/oembed',           true  ),
 		);
 
 		if ( ! empty( self::$early_providers['add'] ) ) {
@@ -179,6 +189,27 @@ class WP_oEmbed {
 		 * | Twitter      | twitter.com/likes     |      Yes       | 4.7.0     |
 		 * | Twitter      | twitter.com/lists     |      Yes       | 4.7.0     |
 		 * | Screencast   | screencast.com        |      Yes       | 4.8.0     |
+		 * | Amazon Kindle| *.amazon.com          |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.co.uk        |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.de           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.fr           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.it           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.es           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.co.jp        |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.cn           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.com.au       |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.in           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.com.mx       |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.com.br       |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.ca           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.nl           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| *.amazon.ru           |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| a.co                  |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| amzn.to               |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| amzn.eu               |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| amzn.in               |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| amzn.asia             |      Yes       | 4.9.0     |
+		 * | Amazon Kindle| z.cn                  |      Yes       | 4.9.0     |		 
 		 *
 		 * No longer supported providers:
 		 *
