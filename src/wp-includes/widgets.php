@@ -1179,7 +1179,7 @@ function _wp_map_sidebars( $old_sidebars_widgets ) {
 	$new_sidebars_widgets = array();
 
 	// Short-circuit if there are no sidebars to map.
-	if ( empty( $old_sidebars_widgets ) ) {
+	if ( ! is_array( $old_sidebars_widgets ) || empty( $old_sidebars_widgets ) ) {
 		return $new_sidebars_widgets;
 	}
 

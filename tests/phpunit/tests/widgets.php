@@ -991,8 +991,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 
 		$new_next_theme_sidebars = _wp_map_sidebars( $prev_theme_sidebars );
 
-		$expected_sidebars = $prev_theme_sidebars;
-		$this->assertEquals( $expected_sidebars, $new_next_theme_sidebars );
+		$this->assertEquals( $prev_theme_sidebars, $new_next_theme_sidebars );
 	}
 
 	/**
