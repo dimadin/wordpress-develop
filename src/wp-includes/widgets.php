@@ -1146,7 +1146,7 @@ function retrieve_widgets( $theme_changed = false ) {
 	$sidebars_widgets = _wp_map_sidebars( $sidebars_widgets );
 
 	// Find hidden/lost multi-widget instances.
-	$shown_widgets = call_user_func_array( 'array_merge', array_filter( $sidebars_widgets ) );
+	$shown_widgets = call_user_func_array( 'array_merge', $sidebars_widgets );
 	$lost_widgets  = array_diff( $registered_widgets_ids, $shown_widgets );
 
 	foreach ( $lost_widgets as $key => $widget_id ) {
@@ -1185,7 +1185,7 @@ function _wp_map_sidebars( $old_sidebars_widgets ) {
 
 	foreach ( $old_sidebars_widgets as $sidebar => $widgets ) {
 		if ( 'wp_inactive_widgets' === $sidebar || 'orphaned_widgets' === substr( $sidebar, 0, 16 ) ) {
-			$new_sidebars_widgets[ $sidebar ] = $widgets;
+			$new_sidebars_widgets[ $sidebar ] = (array) $widgets;
 			unset( $old_sidebars_widgets[ $sidebar ] );
 		}
 	}
