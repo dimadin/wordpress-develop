@@ -1135,7 +1135,9 @@ function retrieve_widgets( $theme_changed = false ) {
 		sort( $registered_sidebars_keys );
 
 		if ( $sidebars_widgets_keys == $registered_sidebars_keys ) {
-			return _wp_remove_unregistered_widgets( $sidebars_widgets, $registered_widgets_ids );
+			$sidebars_widgets = _wp_remove_unregistered_widgets( $sidebars_widgets, $registered_widgets_ids );
+
+			return $sidebars_widgets;
 		}
 	}
 
@@ -1252,7 +1254,7 @@ function _wp_map_sidebars( $old_sidebars_widgets ) {
 						if ( ! empty( $old_sidebars_widgets[ $sidebar ] ) ) {
 
 							// We have a match that can be mapped!
-							$new_sidebars_widgets[ $new_sidebar ] = $old_sidebars_widgets[ $sidebar ];
+							$new_sidebars_widgets[ $new_sidebar ] = array_merge( $new_sidebars_widgets[ $new_sidebar ], $old_sidebars_widgets[ $sidebar ] );
 
 							// Remove the mapped sidebar so it can't be mapped again.
 							unset( $old_sidebars_widgets[ $sidebar ] );
