@@ -1107,7 +1107,7 @@ function _wp_sidebars_changed() {
  *
  * @param string|bool $theme_changed Whether the theme was changed as a boolean. A value
  *                                   of 'customize' defers updates for the Customizer.
- * @return array
+ * @return array Updated sidebars widgets.
  */
 function retrieve_widgets( $theme_changed = false ) {
 	global $wp_registered_sidebars, $sidebars_widgets, $wp_registered_widgets;
