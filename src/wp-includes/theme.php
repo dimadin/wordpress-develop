@@ -713,7 +713,10 @@ function switch_theme( $stylesheet ) {
 	}
 
 	if ( is_array( $_sidebars_widgets ) ) {
-		set_theme_mod( 'sidebars_widgets', array( 'time' => time(), 'data' => $_sidebars_widgets ) );
+		set_theme_mod( 'sidebars_widgets', array(
+			'time' => time(),
+			'data' => $_sidebars_widgets,
+		) );
 	}
 
 	// Migrate from the old mods_{name} option to theme_mods_{slug}.

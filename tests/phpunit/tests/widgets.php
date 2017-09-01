@@ -929,11 +929,11 @@ class Tests_Widgets extends WP_UnitTestCase {
 	}
 
 	/**
-	 *
+	 * Test _wp_remove_unregistered_widgets.
 	 *
 	 * @covers _wp_remove_unregistered_widgets()
 	 */
-	function test__wp_remove_unregistered_widgets() {
+	public function test__wp_remove_unregistered_widgets() {
 		$widgets = array(
 			'sidebar-1' => array( 'tag_cloud-1' ),
 			'sidebar-2' => array( 'text-1' ),
@@ -963,7 +963,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	 *
 	 * @covers _wp_map_sidebars()
 	 */
-	function test_one_sidebar_each() {
+	public function test_one_sidebar_each() {
 		$this->register_sidebars( array( 'primary' ) );
 		$prev_theme_sidebars = array(
 			'unique-slug' => 1,
@@ -982,7 +982,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	 *
 	 * @covers _wp_map_sidebars()
 	 */
-	function test_sidebars_with_same_slug() {
+	public function test_sidebars_with_same_slug() {
 		$this->register_sidebars( array( 'primary', 'secondary' ) );
 		$prev_theme_sidebars = array(
 			'primary' => 1,
@@ -999,7 +999,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	 *
 	 * @covers _wp_map_sidebars()
 	 */
-	function test_sidebar_guessing() {
+	public function test_sidebar_guessing() {
 		$this->register_sidebars( array( 'primary', 'secondary' ) );
 
 		$prev_theme_sidebars = array(
@@ -1021,7 +1021,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	 *
 	 * @covers _wp_map_sidebars()
 	 */
-	function test_sidebar_guessing_one_menu_per_group() {
+	public function test_sidebar_guessing_one_menu_per_group() {
 		$this->register_sidebars( array( 'primary' ) );
 		$prev_theme_sidebars = array(
 			'top-menu' => array(),
@@ -1041,7 +1041,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	 *
 	 * @covers _wp_map_sidebars()
 	 */
-	function test_sidebar_guessing_one_menu_per_sidebar() {
+	public function test_sidebar_guessing_one_menu_per_sidebar() {
 		$this->register_sidebars( array( 'primary', 'main' ) );
 
 		$prev_theme_sidebars = array(
