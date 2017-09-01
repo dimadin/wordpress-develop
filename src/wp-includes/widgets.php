@@ -919,11 +919,15 @@ function wp_get_sidebars_widgets( $deprecated = true ) {
  * @since 2.2.0
  * @access private
  *
+ * @global array $_wp_sidebars_widgets
  * @param array $sidebars_widgets Sidebar widgets and their settings.
  */
 function wp_set_sidebars_widgets( $sidebars_widgets ) {
-	if ( !isset( $sidebars_widgets['array_version'] ) )
+	global $_wp_sidebars_widgets;
+	$_wp_sidebars_widgets = null; // Clear cached value used in wp_get_sidebars_widgets().
+	if ( ! isset( $sidebars_widgets['array_version'] ) ) {
 		$sidebars_widgets['array_version'] = 3;
+	}
 	update_option( 'sidebars_widgets', $sidebars_widgets );
 }
 
