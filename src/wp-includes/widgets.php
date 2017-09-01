@@ -1223,9 +1223,9 @@ function wp_map_sidebars_widgets( $old_sidebars_widgets ) {
 	 * from within the same group, make an educated guess and map it.
 	 */
 	$common_slug_groups = array(
-		array( 'sidebar', 'primary', 'main', 'right' ),
+		array( 'sidebar-1', 'sidebar', 'primary', 'main', 'right' ),
 		array( 'second', 'left' ),
-		array( 'footer', 'bottom' ),
+		array( 'sidebar-2', 'footer', 'bottom' ),
 		array( 'header', 'top' ),
 	);
 
