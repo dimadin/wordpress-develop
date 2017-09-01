@@ -961,7 +961,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	/**
 	 * Two themes with one sidebar each should just map, switching to a theme not previously-active.
 	 *
-	 * @covers _wp_map_sidebars()
+	 * @covers wp_map_sidebars_widgets()
 	 */
 	public function test_one_sidebar_each() {
 		$this->register_sidebars( array( 'primary' ) );
@@ -969,7 +969,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'unique-slug' => 1,
 		);
 
-		$new_next_theme_sidebars = _wp_map_sidebars( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
 
 		$expected_sidebars = array(
 			'primary' => 1,
@@ -980,7 +980,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	/**
 	 * Sidebars with the same name should map, switching to a theme not previously-active.
 	 *
-	 * @covers _wp_map_sidebars()
+	 * @covers wp_map_sidebars_widgets()
 	 */
 	public function test_sidebars_with_same_slug() {
 		$this->register_sidebars( array( 'primary', 'secondary' ) );
@@ -989,7 +989,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'secondary' => 2,
 		);
 
-		$new_next_theme_sidebars = _wp_map_sidebars( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
 
 		$this->assertEquals( $prev_theme_sidebars, $new_next_theme_sidebars );
 	}
@@ -997,7 +997,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	/**
 	 * Make educated guesses on theme sidebars.
 	 *
-	 * @covers _wp_map_sidebars()
+	 * @covers wp_map_sidebars_widgets()
 	 */
 	public function test_sidebar_guessing() {
 		$this->register_sidebars( array( 'primary', 'secondary' ) );
@@ -1007,7 +1007,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'footer' => array(),
 		);
 
-		$new_next_theme_sidebars = _wp_map_sidebars( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
 
 		$expected_sidebars = array(
 			'primary' => array(),
@@ -1019,7 +1019,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	/**
 	 * Make sure two sidebars that fall in the same group don't get the same menu assigned.
 	 *
-	 * @covers _wp_map_sidebars()
+	 * @covers wp_map_sidebars_widgets()
 	 */
 	public function test_sidebar_guessing_one_menu_per_group() {
 		$this->register_sidebars( array( 'primary' ) );
@@ -1028,7 +1028,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'secondary' => array(),
 		);
 
-		$new_next_theme_sidebars = _wp_map_sidebars( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
 
 		$expected_sidebars = array(
 			'main' => array(),
@@ -1039,7 +1039,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	/**
 	 * Make sure two sidebars that fall in the same group get menus assigned from the same group.
 	 *
-	 * @covers _wp_map_sidebars()
+	 * @covers wp_map_sidebars_widgets()
 	 */
 	public function test_sidebar_guessing_one_menu_per_sidebar() {
 		$this->register_sidebars( array( 'primary', 'main' ) );
@@ -1049,7 +1049,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'top-menu' => array(),
 		);
 
-		$new_next_theme_sidebars = _wp_map_sidebars( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
 
 		$expected_sidebars = array(
 			'main' => array(),

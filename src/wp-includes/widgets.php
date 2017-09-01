@@ -1147,7 +1147,7 @@ function retrieve_widgets( $theme_changed = false ) {
 
 	// Discard invalid, theme-specific widgets from sidebars.
 	$sidebars_widgets = _wp_remove_unregistered_widgets( $sidebars_widgets, $registered_widgets_ids );
-	$sidebars_widgets = _wp_map_sidebars( $sidebars_widgets );
+	$sidebars_widgets = wp_map_sidebars_widgets( $sidebars_widgets );
 
 	// Find hidden/lost multi-widget instances.
 	$shown_widgets = call_user_func_array( 'array_merge', $sidebars_widgets );
@@ -1177,7 +1177,7 @@ function retrieve_widgets( $theme_changed = false ) {
  * @param array $old_sidebars_widgets List of sidebars and their widget instance IDs.
  * @return array Mapped sidebars widgets.
  */
-function _wp_map_sidebars( $old_sidebars_widgets ) {
+function wp_map_sidebars_widgets( $old_sidebars_widgets ) {
 	global $wp_registered_sidebars;
 
 	$new_sidebars_widgets = array();
