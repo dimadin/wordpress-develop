@@ -723,6 +723,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 
 		$this->assertContains( 'tag_cloud-1', $sidebars_widgets['sidebar-1'] );
 		$this->assertContains( 'text-1', $sidebars_widgets['sidebar-2'] );
+		$this->assertArrayHasKey( 'orphaned_widgets_1', $sidebars_widgets );
 		$this->assertContains( 'archives-2', $sidebars_widgets['orphaned_widgets_1'] );
 
 		// Unregistered widget should be filtered out.
@@ -969,7 +970,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'unique-slug' => 1,
 		);
 
-		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( array(), $prev_theme_sidebars );
 
 		$expected_sidebars = array(
 			'primary' => 1,
@@ -989,7 +990,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'secondary' => 2,
 		);
 
-		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( array(), $prev_theme_sidebars );
 
 		$this->assertEquals( $prev_theme_sidebars, $new_next_theme_sidebars );
 	}
@@ -1007,7 +1008,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'footer' => array(),
 		);
 
-		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( array(), $prev_theme_sidebars );
 
 		$expected_sidebars = array(
 			'primary' => array(),
@@ -1028,7 +1029,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'secondary' => array(),
 		);
 
-		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( array(), $prev_theme_sidebars );
 
 		$expected_sidebars = array(
 			'main' => array(),
@@ -1049,7 +1050,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 			'top-menu' => array(),
 		);
 
-		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
+		$new_next_theme_sidebars = wp_map_sidebars_widgets( array(), $prev_theme_sidebars );
 
 		$expected_sidebars = array(
 			'main' => array(),

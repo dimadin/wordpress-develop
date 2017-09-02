@@ -1116,55 +1116,58 @@ function _wp_sidebars_changed() {
 function retrieve_widgets( $theme_changed = false ) {
 	global $wp_registered_sidebars, $sidebars_widgets, $wp_registered_widgets;
 
-	$registered_sidebars_keys = array_keys( $wp_registered_sidebars );
-	$registered_widgets_ids   = array_keys( $wp_registered_widgets );
-	$old_sidebars_widgets     = get_theme_mod( 'sidebars_widgets' );
+	$old_sidebars_widgets = $sidebars_widgets;
+	unset( $old_sidebars_widgets['array_version'] );
 
-	if ( is_array( $old_sidebars_widgets ) ) {
+//	echo '<pre>';
+//	debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+//	echo '</pre>';
+
+//	$registered_sidebar_ids = array_keys( $wp_registered_sidebars );
+	$registered_widgets_ids = array_keys( $wp_registered_widgets );
+	$sidebars_widgets_theme_mod = get_theme_mod( 'sidebars_widgets' );
+
+	// Handle case where theme was previously active.
+	if ( is_array( $sidebars_widgets_theme_mod ) ) {
 		// time() that sidebars were stored is in $old_sidebars_widgets['time']
-		$sidebars_widgets = $old_sidebars_widgets['data'];
+		$new_sidebars_widgets = $sidebars_widgets_theme_mod['data'];
 
 		if ( 'customize' !== $theme_changed ) {
 			remove_theme_mod( 'sidebars_widgets' );
 		}
 	} else {
-		if ( empty( $sidebars_widgets ) ) {
-			return array();
-		}
+		$new_sidebars_widgets = array();
 
-		unset( $sidebars_widgets['array_version'] );
-
-		$sidebars_widgets_keys = array_keys( $sidebars_widgets );
-		sort( $sidebars_widgets_keys );
-		sort( $registered_sidebars_keys );
-
-		if ( $sidebars_widgets_keys === $registered_sidebars_keys ) {
-			$sidebars_widgets = _wp_remove_unregistered_widgets( $sidebars_widgets, $registered_widgets_ids );
-
-			return $sidebars_widgets;
-		}
+		// Handle case where sidebars in new theme are the same as sidebars in the old theme.
+//		if ( 0 === count( array_diff( $registered_sidebar_ids, array_keys( $old_sidebars_widgets ) ) ) ) {
+//			$sidebars_widgets = _wp_remove_unregistered_widgets( $sidebars_widgets, $registered_widgets_ids ); // @todo Why?
+//
+//			return $sidebars_widgets;
+//		}
 	}
 
 	// Discard invalid, theme-specific widgets from sidebars.
-	$sidebars_widgets = _wp_remove_unregistered_widgets( $sidebars_widgets, $registered_widgets_ids );
-	$sidebars_widgets = wp_map_sidebars_widgets( $sidebars_widgets );
+//	$sidebars_widgets = _wp_remove_unregistered_widgets( $sidebars_widgets, $registered_widgets_ids );
+	$sidebars_widgets = wp_map_sidebars_widgets( $new_sidebars_widgets, $old_sidebars_widgets );
 
 	// Find hidden/lost multi-widget instances.
 	$shown_widgets = call_user_func_array( 'array_merge', $sidebars_widgets );
 	$lost_widgets  = array_diff( $registered_widgets_ids, $shown_widgets );
 
-	foreach ( $lost_widgets as $key => $widget_id ) {
-		$number = preg_replace( '/.+?-([0-9]+)$/', '$1', $widget_id );
-
-		if ( (int) $number < 2 ) {
-			unset( $lost_widgets[ $key ] );
-		}
-	}
+	// @todo Why? Will lose single widgets.
+//	foreach ( $lost_widgets as $key => $widget_id ) {
+//		$number = preg_replace( '/.+?-([0-9]+)$/', '$1', $widget_id );
+//
+//		if ( (int) $number < 2 ) {
+//			unset( $lost_widgets[ $key ] );
+//		}
+//	}
 	$sidebars_widgets['wp_inactive_widgets'] = array_merge( $lost_widgets, (array) $sidebars_widgets['wp_inactive_widgets'] );
 
 	if ( 'customize' !== $theme_changed ) {
 		wp_set_sidebars_widgets( $sidebars_widgets );
 	}
+	$sidebars_widgets = $new_sidebars_widgets;
 
 	return $sidebars_widgets;
 }
@@ -1174,13 +1177,12 @@ function retrieve_widgets( $theme_changed = false ) {
  *
  * @since 4.9.0
  *
- * @param array $old_sidebars_widgets List of sidebars and their widget instance IDs.
+ * @param array $new_sidebars_widgets New sidebars widgets, for the theme being switched into.
+ * @param array $old_sidebars_widgets Old sidebars widgets, for the theme being switched from.
  * @return array Mapped sidebars widgets.
  */
-function wp_map_sidebars_widgets( $old_sidebars_widgets ) {
+function wp_map_sidebars_widgets( $new_sidebars_widgets, $old_sidebars_widgets ) {
 	global $wp_registered_sidebars;
-
-	$new_sidebars_widgets = array();
 
 	// Short-circuit if there are no sidebars to map.
 	if ( ! is_array( $old_sidebars_widgets ) || empty( $old_sidebars_widgets ) ) {
@@ -1217,6 +1219,9 @@ function wp_map_sidebars_widgets( $old_sidebars_widgets ) {
 	if ( empty( $old_sidebars_widgets ) ) {
 		return $new_sidebars_widgets;
 	}
+
+	// @todo Assuming widget areas are registered in the order that they appear in the templates, try just mapping zipping them together?
+	// @todo Make sure that when switching from theme with 3 sidebars to 2 sidebars, and back to 3 sidebars that the 3rd sidebar gets re-populated if the widgets weren't moved to another sidebar.
 
 	/*
 	 * If old and new theme both have sidebars that contain phrases

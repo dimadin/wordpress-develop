@@ -1047,8 +1047,8 @@ function _wp_menus_changed() {
  *
  * @since 4.9.0
  *
- * @param array $new_nav_menu_locations New nav menu locations assignments.
- * @param array $old_nav_menu_locations Old nav menu locations assignments.
+ * @param array $new_nav_menu_locations New nav menu locations assignments, for the theme being switched into.
+ * @param array $old_nav_menu_locations Old nav menu locations assignments, for the theme being switched from.
  * @return array Nav menus mapped to new nav menu locations.
  */
 function wp_map_nav_menu_locations( $new_nav_menu_locations, $old_nav_menu_locations ) {
