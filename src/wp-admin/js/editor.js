@@ -545,6 +545,7 @@ window.wp = window.wp || {};
 	wp.editor.initialize = function( id, settings ) {
 		var init;
 		var defaults;
+		var addMediaButton;
 
 		if ( ! $ || ! id || ! wp.editor.getDefaultSettings ) {
 			return;
@@ -557,6 +558,13 @@ window.wp = window.wp || {};
 			settings = {
 				tinymce: true
 			};
+		}
+
+		if ( settings.mediaButtons ) {
+			addMediaButton = $( '<button type="button" class="button insert-media add_media">' );
+			addMediaButton.append( '<span class="wp-media-buttons-icon"></span>' );
+			addMediaButton.append( document.createTextNode( ' ' + 'Add Media' ) ); // @todo i18n, window.tinymce.translate is not available if ! user_can_richedit().
+			addMediaButton.data( 'editor', id );
 		}
 
 		// Add wrap and the Visual|Text tabs.
@@ -585,6 +593,13 @@ window.wp = window.wp || {};
 						}).text( window.tinymce.translate( 'Text' ) ) )
 					).append( $editorContainer )
 			);
+
+			if ( settings.mediaButtons ) {
+				$wrap.find( '.wp-editor-tools' ).prepend(
+					$( '<div class="wp-media-buttons">' )
+						.append( addMediaButton )
+				);
+			}
 
 			$textarea.after( $wrap );
 			$editorContainer.append( $textarea );

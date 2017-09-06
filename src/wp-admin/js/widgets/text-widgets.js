@@ -230,7 +230,8 @@ wp.textWidgets = ( function( $ ) {
 				// The user has disabled TinyMCE.
 				if ( typeof window.tinymce === 'undefined' ) {
 					wp.editor.initialize( id, {
-						quicktags: true
+						quicktags: true,
+						mediaButtons: true
 					});
 
 					return;
@@ -246,7 +247,8 @@ wp.textWidgets = ( function( $ ) {
 					tinymce: {
 						wpautop: true
 					},
-					quicktags: true
+					quicktags: true,
+					mediaButtons: true
 				});
 
 				/**
