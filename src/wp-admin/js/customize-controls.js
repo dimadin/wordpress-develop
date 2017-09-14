@@ -375,9 +375,10 @@
 	 *
 	 * @param {object} [changes] Mapping of setting IDs to setting params each normally including a value property, or mapping to null.
 	 *                           If not provided, then the changes will still be obtained from unsaved dirty settings.
+	 * @param {boolean} [autosave=false] Whether changes will be stored in autosave revision.
 	 * @returns {jQuery.Promise} Promise resolving with the response data.
 	 */
-	api.requestChangesetUpdate = function requestChangesetUpdate( changes ) {
+	api.requestChangesetUpdate = function requestChangesetUpdate( changes, autosave ) {
 		var deferred, request, submittedChanges = {}, data;
 		deferred = new $.Deferred();
 
@@ -419,6 +420,9 @@
 			customize_theme: api.settings.theme.stylesheet,
 			customize_changeset_data: JSON.stringify( submittedChanges )
 		} );
+		if ( autosave ) {
+			data.autosave_revision = 'true';
+		}
 
 		request = wp.ajax.post( 'customize_save', data );
 
@@ -440,7 +444,10 @@
 				} );
 			}
 
-			api.previewer.send( 'changeset-saved', _.extend( {}, data, { saved_changeset_values: savedChangesetValues } ) );
+			if ( autosave ) {
+				api.state( 'autosaved' ).set( true );
+			}
+			api.previewer.send( 'changeset-saved', _.extend( {}, data, { saved_changeset_values: savedChangesetValues, autosaved: Boolean( autosave ) } ) );
 		} );
 		request.fail( function requestChangesetUpdateFail( data ) {
 			deferred.reject( data );
@@ -1688,9 +1695,15 @@
 
 				api.state( 'processing' ).unbind( onceProcessingComplete );
 
-				request = api.requestChangesetUpdate();
+				request = api.requestChangesetUpdate( {}, true /* Autosave. */ );
 				request.done( function() {
 					$( window ).off( 'beforeunload.customize-confirm' );
+
+					// Include autosaved param to load autosave revision without prompting user to restore it.
+					if ( api.state( 'autosaved' ).get() ) {
+						urlParser.search += '&customize_autosaved=on';
+					}
+
 					top.location.href = urlParser.href;
 					deferred.resolve();
 				} );
@@ -3728,6 +3741,9 @@
 					customize_messenger_channel: previewFrame.query.customize_messenger_channel
 				}
 			);
+			if ( api.state( 'autosaved' ).get() ) {
+				params.customize_autosaved = 'on';
+			}
 
 			urlParser.search = $.param( params );
 			previewFrame.iframe = $( '<iframe />', {
@@ -3964,6 +3980,7 @@
 					delete queryParams.customize_changeset_uuid;
 					delete queryParams.customize_theme;
 					delete queryParams.customize_messenger_channel;
+					delete queryParams.customize_autosaved;
 					if ( _.isEmpty( queryParams ) ) {
 						urlParser.search = '';
 					} else {
@@ -4587,6 +4604,9 @@
 					nonce: this.nonce.preview,
 					customize_changeset_uuid: api.settings.changeset.uuid
 				};
+				if ( api.state( 'autosaved' ).get() ) {
+					queryVars.customize_autosaved = 'on';
+				}
 
 				/*
 				 * Exclude customized data if requested especially for calls to requestChangesetUpdate.
@@ -4805,6 +4825,8 @@
 						// Restore the global dirty state if any settings were modified during save.
 						if ( ! _.isEmpty( modifiedWhileSaving ) ) {
 							api.state( 'saved' ).set( false );
+						} else {
+							api.state( 'autosaved' ).set( false ); // Autosave revision just got deleted after a successful 'full' save of a changeset.
 						}
 					} );
 				};
@@ -4951,6 +4973,7 @@
 		(function() {
 			var state = new api.Values(),
 				saved = state.create( 'saved' ),
+				autosaved = state.create( 'autosaved' ),
 				saving = state.create( 'saving' ),
 				activated = state.create( 'activated' ),
 				processing = state.create( 'processing' ),
@@ -4990,6 +5013,7 @@
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
 			saved( true );
+			autosaved( api.settings.changeset.autosaved );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
 				api.each( function( setting ) {
 					if ( setting._dirty ) {
@@ -5072,6 +5096,58 @@
 			// Expose states to the API.
 			api.state = state;
 		}());
+
+		// Set up autosave prompt.
+		(function() {
+			var urlParser, queryParams, code = 'autosave_revision_available';
+
+			if ( api.settings.changeset.autosaved ) {
+
+				// Remove parameter from the URL.
+				urlParser = document.createElement( 'a' );
+				urlParser.href = location.href;
+				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
+				delete queryParams.customize_autosaved;
+				urlParser.search = $.param( queryParams );
+				history.replaceState( {}, document.title, urlParser.href );
+			} else if ( api.settings.changeset.hasAutosaveRevision ) {
+
+				// Since there is an autosave revision and the user hasn't loaded with autosaved, add notification to prompt to load autosaved version.
+				api.notifications.add( code, new api.Notification( code, {
+					message: api.l10n.autosaveNotice,
+					type: 'warning',
+					dismissible: true,
+					render: function() {
+						var li = api.Notification.prototype.render.call( this );
+
+						// Populate the "View the autosave" link's URL.
+						urlParser = document.createElement( 'a' );
+						urlParser.href = location.href;
+						queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
+						queryParams.customize_autosaved = 'on';
+						if ( api.settings.changeset.autodraftUuid ) {
+							queryParams.customize_changeset_uuid = api.settings.changeset.autodraftUuid; // @todo Needs PHP implementation.
+						}
+						urlParser.search = $.param( queryParams );
+						li.find( 'a' ).prop( 'href', urlParser.href );
+
+						// Handle dismissal of notice.
+						li.find( '.notice-dismiss' ).on( 'click', function() {
+							console.info( 'TODO: Open Ajax request to delete the existing auto-draft changeset or this changeset\'s autosave revision for the current user.' ); // @todo Implement.
+						} );
+
+						return li;
+					}
+				} ) );
+
+				// Remove the notification once the user starts making changes.
+				api.state( 'saved' ).bind( function( saved ) {
+					if ( ! saved ) {
+						api.notifications.remove( code );
+					}
+				} );
+			}
+		})();
 
 		// Check if preview url is valid and load the preview frame.
 		if ( api.previewer.previewUrl() ) {
@@ -5926,7 +6002,7 @@
 			updateChangesetWithReschedule = function() {
 				if ( ! updatePending ) {
 					updatePending = true;
-					api.requestChangesetUpdate().always( function() {
+					api.requestChangesetUpdate( {}, true /* Autosave. */ ).always( function() {
 						updatePending = false;
 					} );
 				}

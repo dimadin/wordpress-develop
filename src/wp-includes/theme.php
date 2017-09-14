@@ -2784,7 +2784,7 @@ function _wp_customize_include() {
 	 * called before wp_magic_quotes() gets called. Besides this fact, none of
 	 * the values should contain any characters needing slashes anyway.
 	 */
-	$keys = array( 'changeset_uuid', 'customize_changeset_uuid', 'customize_theme', 'theme', 'customize_messenger_channel' );
+	$keys = array( 'changeset_uuid', 'customize_changeset_uuid', 'customize_theme', 'theme', 'customize_messenger_channel', 'customize_autosaved' );
 	$input_vars = array_merge(
 		wp_array_slice_assoc( $_GET, $keys ),
 		wp_array_slice_assoc( $_POST, $keys )
@@ -2793,6 +2793,7 @@ function _wp_customize_include() {
 	$theme = null;
 	$changeset_uuid = null;
 	$messenger_channel = null;
+	$autosaved = null;
 
 	if ( $is_customize_admin_page && isset( $input_vars['changeset_uuid'] ) ) {
 		$changeset_uuid = sanitize_key( $input_vars['changeset_uuid'] );
@@ -2806,6 +2807,11 @@ function _wp_customize_include() {
 	} elseif ( isset( $input_vars['customize_theme'] ) ) {
 		$theme = $input_vars['customize_theme'];
 	}
+
+	if ( ! empty( $input_vars['customize_autosaved'] ) ) {
+		$autosaved = true;
+	}
+
 	if ( isset( $input_vars['customize_messenger_channel'] ) ) {
 		$messenger_channel = sanitize_key( $input_vars['customize_messenger_channel'] );
 	}
@@ -2827,7 +2833,7 @@ function _wp_customize_include() {
 	$settings_previewed = ! $is_customize_save_action;
 
 	require_once ABSPATH . WPINC . '/class-wp-customize-manager.php';
-	$GLOBALS['wp_customize'] = new WP_Customize_Manager( compact( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed' ) );
+	$GLOBALS['wp_customize'] = new WP_Customize_Manager( compact( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved' ) );
 }
 
 /**

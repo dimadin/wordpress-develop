@@ -174,6 +174,14 @@ final class WP_Customize_Manager {
 	protected $messenger_channel;
 
 	/**
+	 * Whether the autosave revision of the changeset should should be loaded.
+	 *
+	 * @since 4.9.0
+	 * @var bool
+	 */
+	protected $autosaved;
+
+	/**
 	 * Whether settings should be previewed.
 	 *
 	 * @since 4.9.0
@@ -245,7 +253,7 @@ final class WP_Customize_Manager {
 	public function __construct( $args = array() ) {
 
 		$args = array_merge(
-			array_fill_keys( array( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed' ), null ),
+			array_fill_keys( array( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved' ), null ),
 			$args
 		);
 
@@ -274,6 +282,7 @@ final class WP_Customize_Manager {
 		$this->theme = wp_get_theme( $args['theme'] );
 		$this->messenger_channel = $args['messenger_channel'];
 		$this->settings_previewed = ! empty( $args['settings_previewed'] );
+		$this->autosaved = ! empty( $args['autosaved'] );
 		$this->_changeset_uuid = $args['changeset_uuid'];
 
 		require_once( ABSPATH . WPINC . '/class-wp-customize-setting.php' );
@@ -1808,9 +1817,19 @@ final class WP_Customize_Manager {
 			restore_previous_locale();
 		}
 
+		$autosave_revision_post_id = null;
+		if ( $this->changeset_post_id() ) {
+			$autosave_revision_post_id = wp_get_post_autosave( $this->changeset_post_id() );
+		} else {
+			// @todo If there is no changeset present, then we should look for the most recent auto-draft changeset post for this author and use it instead.
+		}
+
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->_changeset_uuid,
+				'autosaved' => $this->autosaved,
+				'hasAutosaveRevision' => ! empty( $autosave_revision_post_id ),
+				// @todo Include autodraftUuid and use in notification.
 			),
 			'timeouts' => array(
 				'selectiveRefresh' => 250,
@@ -3587,6 +3606,7 @@ final class WP_Customize_Manager {
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
+				'autosaved' => $this->autosaved, // @todo This will need to be kept synced with the autosaved state in the Customizer app via postMessage, like status is.
 				'status' => $this->changeset_post_id() ? get_post_status( $this->changeset_post_id() ) : '',
 			),
 			'timeouts' => array(

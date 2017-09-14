@@ -563,6 +563,7 @@ function wp_default_scripts( &$scripts ) {
 		'expandSidebar'      => _x( 'Show Controls', 'label for hide controls button without length constraints' ),
 		'untitledBlogName'   => __( '(Untitled)' ),
 		'serverSaveError'    => __( 'Failed connecting to the server. Please try saving again.' ),
+		'autosaveNotice'     => __( 'There is an autosave of this post that is more recent than the version below. <a href="%s">View the autosave</a>' ),
 		// Used for overriding the file types allowed in plupload.
 		'allowedFiles'       => __( 'Allowed Files' ),
 		'customCssError'     => wp_array_slice_assoc(

@@ -36,6 +36,7 @@
 			newQueryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
 
 			newQueryParams.customize_changeset_uuid = oldQueryParams.customize_changeset_uuid;
+			newQueryParams.customize_preview_autosaved = 'on';
 			if ( oldQueryParams.customize_theme ) {
 				newQueryParams.customize_theme = oldQueryParams.customize_theme;
 			}
@@ -364,6 +365,9 @@
 
 		queryParams = api.utils.parseQueryString( element.search.substring( 1 ) );
 		queryParams.customize_changeset_uuid = api.settings.changeset.uuid;
+		if ( api.settings.changeset.autosaved ) {
+			queryParams.customize_preview_autosaved = 'on';
+		}
 		if ( ! api.settings.theme.active ) {
 			queryParams.customize_theme = api.settings.theme.stylesheet;
 		}
@@ -439,6 +443,9 @@
 
 			// Include customized state query params in URL.
 			queryParams.customize_changeset_uuid = api.settings.changeset.uuid;
+			if ( api.settings.changeset.autosaved ) {
+				queryParams.customize_preview_autosaved = 'on';
+			}
 			if ( ! api.settings.theme.active ) {
 				queryParams.customize_theme = api.settings.theme.stylesheet;
 			}
@@ -516,6 +523,9 @@
 		$( form ).removeClass( 'customize-unpreviewable' );
 
 		stateParams.customize_changeset_uuid = api.settings.changeset.uuid;
+		if ( api.settings.changeset.autosaved ) {
+			stateParams.customize_preview_autosaved = 'on';
+		}
 		if ( ! api.settings.theme.active ) {
 			stateParams.customize_theme = api.settings.theme.stylesheet;
 		}
@@ -555,7 +565,7 @@
 		var previousPathName = location.pathname,
 			previousQueryString = location.search.substr( 1 ),
 			previousQueryParams = null,
-			stateQueryParams = [ 'customize_theme', 'customize_changeset_uuid', 'customize_messenger_channel' ];
+			stateQueryParams = [ 'customize_theme', 'customize_changeset_uuid', 'customize_messenger_channel', 'customize_preview_autosaved' ];
 
 		return function keepAliveCurrentUrl() {
 			var urlParser, currentQueryParams;
@@ -754,6 +764,7 @@
 		});
 
 		api.preview.bind( 'saved', function( response ) {
+			api.settings.changeset.autosaved = false;
 
 			if ( response.next_changeset_uuid ) {
 				api.settings.changeset.uuid = response.next_changeset_uuid;
@@ -784,6 +795,7 @@
 		 * won't be needlessly included in selective refresh or ajax requests.
 		 */
 		api.preview.bind( 'changeset-saved', function( data ) {
+			api.settings.changeset.autosaved = Boolean( data.autosaved );
 			_.each( data.saved_changeset_values, function( value, settingId ) {
 				var setting = api( settingId );
 				if ( setting && _.isEqual( setting.get(), value ) ) {
