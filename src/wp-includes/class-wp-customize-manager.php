@@ -1836,19 +1836,10 @@ final class WP_Customize_Manager {
 			restore_previous_locale();
 		}
 
-		$autosave_revision_post_id = null;
-		if ( $this->changeset_post_id() ) {
-			$autosave_revision_post_id = wp_get_post_autosave( $this->changeset_post_id() );
-		} else {
-			// @todo If there is no changeset present, then we should look for the most recent auto-draft changeset post for this author and use it instead.
-		}
-
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->_changeset_uuid,
 				'autosaved' => $this->autosaved,
-				'hasAutosaveRevision' => ! empty( $autosave_revision_post_id ),
-				// @todo Include autodraftUuid and use in notification.
 			),
 			'timeouts' => array(
 				'selectiveRefresh' => 250,
@@ -3678,11 +3669,35 @@ final class WP_Customize_Manager {
 			}
 		}
 
+		$autosave_revision_post = null;
+		$autosave_autodraft_post = null;
+		if ( $this->changeset_post_id() ) {
+			$autosave_revision_post = wp_get_post_autosave( $this->changeset_post_id() );
+		} else {
+			$autosave_autodraft_posts = get_posts( array(
+				'post_type' => 'customize_changeset',
+				'post_status' => 'auto-draft',
+				'posts_per_page' => 1,
+				'order' => 'DESC',
+				'orderby' => 'date',
+				'no_found_rows' => true,
+				'cache_results' => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+				'lazy_load_term_meta' => false,
+			) );
+			if ( ! empty( $autosave_autodraft_posts ) ) {
+				$autosave_autodraft_post = array_shift( $autosave_autodraft_posts );
+			}
+		}
+
 		// Prepare Customizer settings to pass to JavaScript.
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
 				'autosaved' => $this->autosaved, // @todo This will need to be kept synced with the autosaved state in the Customizer app via postMessage, like status is.
+				'hasAutosaveRevision' => ! empty( $autosave_revision_post ),
+				'latestAutoDraftUuid' => $autosave_autodraft_post ? $autosave_autodraft_post->post_name : null,
 				'status' => $this->changeset_post_id() ? get_post_status( $this->changeset_post_id() ) : '',
 			),
 			'timeouts' => array(

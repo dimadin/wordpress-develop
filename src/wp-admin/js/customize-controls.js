@@ -5099,7 +5099,7 @@
 
 		// Set up autosave prompt.
 		(function() {
-			var urlParser, queryParams, code = 'autosave_revision_available';
+			var urlParser, queryParams, code = 'autosave_available';
 
 			if ( api.settings.changeset.autosaved ) {
 
@@ -5110,7 +5110,7 @@
 				delete queryParams.customize_autosaved;
 				urlParser.search = $.param( queryParams );
 				history.replaceState( {}, document.title, urlParser.href );
-			} else if ( api.settings.changeset.hasAutosaveRevision ) {
+			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
 
 				// Since there is an autosave revision and the user hasn't loaded with autosaved, add notification to prompt to load autosaved version.
 				api.notifications.add( code, new api.Notification( code, {
@@ -5124,16 +5124,18 @@
 						urlParser = document.createElement( 'a' );
 						urlParser.href = location.href;
 						queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
-						queryParams.customize_autosaved = 'on';
-						if ( api.settings.changeset.autodraftUuid ) {
-							queryParams.customize_changeset_uuid = api.settings.changeset.autodraftUuid; // @todo Needs PHP implementation.
+						if ( api.settings.changeset.latestAutoDraftUuid ) {
+							queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
+						} else {
+							queryParams.customize_autosaved = 'on';
 						}
 						urlParser.search = $.param( queryParams );
 						li.find( 'a' ).prop( 'href', urlParser.href );
 
 						// Handle dismissal of notice.
 						li.find( '.notice-dismiss' ).on( 'click', function() {
-							console.info( 'TODO: Open Ajax request to delete the existing auto-draft changeset or this changeset\'s autosave revision for the current user.' ); // @todo Implement.
+							// @todo: Open Ajax request to delete the existing auto-draft changeset or this changeset\'s autosave revision for the current user.
+							// @todo: Also delete auto-draft when explicitly clicking on the Close button and disregarding the AYS dialog?
 						} );
 
 						return li;
