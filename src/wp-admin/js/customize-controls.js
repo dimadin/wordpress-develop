@@ -5033,7 +5033,6 @@
 			api.bind( 'change', function() {
 				if ( state( 'saved' ).get() ) {
 					state( 'saved' ).set( false );
-					populateChangesetUuidParam( true );
 				}
 			});
 
@@ -5046,6 +5045,7 @@
 				if ( 'publish' === response.changeset_status ) {
 					state( 'activated' ).set( true );
 				}
+				populateChangesetUuidParam( 'auto-draft' !== response.changeset_status );
 			});
 
 			activated.bind( function( to ) {
@@ -5090,7 +5090,7 @@
 			};
 
 			changesetStatus.bind( function( newStatus ) {
-				populateChangesetUuidParam( '' !== newStatus && 'publish' !== newStatus ); // @todo Prevent populating param if autosaved auto-draft.
+				populateChangesetUuidParam( '' !== newStatus && 'auto-draft' !== newStatus && 'publish' !== newStatus );
 			} );
 
 			// Expose states to the API.
