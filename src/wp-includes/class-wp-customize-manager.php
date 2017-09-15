@@ -2196,12 +2196,17 @@ final class WP_Customize_Manager {
 			}
 		}
 
+		$autosave = ! empty( $_POST['autosave'] );
+		if ( ! defined( 'DOING_AUTOSAVE' ) ) { // Back-compat.
+			define( 'DOING_AUTOSAVE', true );
+		}
+
 		$r = $this->save_changeset_post( array(
 			'status' => $changeset_status,
 			'title' => $changeset_title,
 			'date_gmt' => $changeset_date_gmt,
 			'data' => $input_changeset_data,
-			'autosave' => ! empty( $_POST['autosave'] ),
+			'autosave' => $autosave,
 		) );
 		if ( is_wp_error( $r ) ) {
 			$response = array(
