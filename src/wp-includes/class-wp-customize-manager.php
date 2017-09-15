@@ -2591,10 +2591,15 @@ final class WP_Customize_Manager {
 		// Note that updating a post with publish status will trigger WP_Customize_Manager::publish_changeset_values().
 		if ( $changeset_post_id ) {
 			if ( $args['autosave'] ) {
+				// See _wp_translate_postdata() for why this is required as it will use the edit_post meta capability.
+				add_filter( 'map_meta_cap', array( $this, 'grant_edit_post_capability_for_changeset' ), 10, 4 );
+				$post_array['post_ID'] = $post_array['ID'];
 				$r = wp_create_post_autosave( wp_slash( $post_array ) );
+				remove_filter( 'map_meta_cap', array( $this, 'grant_edit_post_capability_for_changeset' ), 10 );
 			} else {
 				$post_array['edit_date'] = true; // Prevent date clearing.
 				$r = wp_update_post( wp_slash( $post_array ), true );
+				// @todo Delete autosave revision if it exists.
 			}
 		} else {
 			$r = wp_insert_post( wp_slash( $post_array ), true );
@@ -2619,6 +2624,35 @@ final class WP_Customize_Manager {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * Re-map 'edit_post' meta cap for a customize_changeset post to be the same as 'customize' maps.
+	 *
+	 * There is essentially a "meta meta" cap in play here, where 'edit_post' meta cap maps to
+	 * the 'customize' meta cap which then maps to 'edit_theme_options'. This is currently
+	 * required in core for `wp_create_post_autosave()` because it will call
+	 * `_wp_translate_postdata()` which in turn will check if a user can 'edit_post', but the
+	 * the caps for the customize_changeset post type are all mapping to the meta capability.
+	 * This should be able to be removed once #40922 is addressed in core.
+	 *
+	 * @since 4.9.0
+	 * @link https://core.trac.wordpress.org/ticket/40922
+	 * @see WP_Customize_Manager::save_changeset_post()
+	 * @see _wp_translate_postdata()
+	 *
+	 * @param array  $caps    Returns the user's actual capabilities.
+	 * @param string $cap     Capability name.
+	 * @param int    $user_id The user ID.
+	 * @param array  $args    Adds the context to the cap. Typically the object ID.
+	 * @return array Capabilities.
+	 */
+	public function grant_edit_post_capability_for_changeset( $caps, $cap, $user_id, $args ) {
+		if ( 'edit_post' === $cap && ! empty( $args[0] ) && 'customize_changeset' === get_post_type( $args[0] ) ) {
+			$post_type_obj = get_post_type_object( 'customize_changeset' );
+			$caps = map_meta_cap( $post_type_obj->cap->$cap, $user_id );
+		}
+		return $caps;
 	}
 
 	/**
