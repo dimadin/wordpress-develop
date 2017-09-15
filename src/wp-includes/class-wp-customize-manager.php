@@ -885,7 +885,11 @@ final class WP_Customize_Manager {
 		if ( ! $changeset_post ) {
 			return new WP_Error( 'missing_post' );
 		}
-		if ( 'customize_changeset' !== $changeset_post->post_type ) {
+		if ( 'revision' === $changeset_post->post_type ) {
+			if ( 'customize_changeset' !== get_post_type( $changeset_post->post_parent ) ) {
+				return new WP_Error( 'wrong_post_type' );
+			}
+		} elseif ( 'customize_changeset' !== $changeset_post->post_type ) {
 			return new WP_Error( 'wrong_post_type' );
 		}
 		$changeset_data = json_decode( $changeset_post->post_content, true );
