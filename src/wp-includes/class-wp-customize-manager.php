@@ -2596,6 +2596,8 @@ final class WP_Customize_Manager {
 			$r = wp_insert_post( wp_slash( $post_array ), true );
 			if ( ! is_wp_error( $r ) ) {
 				$this->_changeset_post_id = $r; // Update cached post ID for the loaded changeset.
+
+				// @todo Delete all other customize_changeset posts which auto-draft status. There can only be one. This is for the default linear changeset mode. Plugins like Customize Snapshots would need to allow multiple auto-draft posts to exist in parallel.
 			}
 		}
 		if ( $has_kses ) {

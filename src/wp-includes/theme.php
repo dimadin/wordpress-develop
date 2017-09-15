@@ -2801,6 +2801,26 @@ function _wp_customize_include() {
 		$changeset_uuid = sanitize_key( $input_vars['customize_changeset_uuid'] );
 	}
 
+	// @todo The following logic needs to be filterable so Customize Snapshots can disable to preserve the non-linear Changeset mode.
+	// Automatically fetch the most recent drafted changeset.
+	if ( empty( $changeset_uuid ) ) {
+		$unpublished_changeset_posts = get_posts( array(
+			'post_type' => 'customize_changeset',
+			'post_status' => array( 'draft', 'pending', 'future' ),
+			'posts_per_page' => 1,
+			'order' => 'DESC',
+			'orderby' => 'date',
+			'no_found_rows' => true,
+			'cache_results' => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'lazy_load_term_meta' => false,
+		) );
+		if ( ! empty( $unpublished_changeset_posts ) ) {
+			$changeset_uuid = $unpublished_changeset_posts[0]->post_name;
+		}
+	}
+
 	// Note that theme will be sanitized via WP_Theme.
 	if ( $is_customize_admin_page && isset( $input_vars['theme'] ) ) {
 		$theme = $input_vars['theme'];
