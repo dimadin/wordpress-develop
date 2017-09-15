@@ -5134,7 +5134,7 @@
 
 						// Handle dismissal of notice.
 						li.find( '.notice-dismiss' ).on( 'click', function() {
-							// @todo: Open Ajax request to delete the existing auto-draft changeset or this changeset\'s autosave revision for the current user.
+							// @todo: Open Ajax request to delete the existing auto-draft changeset or this changeset\'s autosave revision for the current user. Or ignore this since the other auto-drafts will automatically be deleted after creating a new one.
 							// @todo: Also delete auto-draft when explicitly clicking on the Close button and disregarding the AYS dialog?
 						} );
 

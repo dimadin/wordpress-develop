@@ -2591,6 +2591,7 @@ final class WP_Customize_Manager {
 				$post_array['edit_date'] = true; // Prevent date clearing.
 				$r = wp_update_post( wp_slash( $post_array ), true );
 
+				// Delete autosave revision when the changeset is updated.
 				$autosave_draft = wp_get_post_autosave( $changeset_post_id );
 				if ( $autosave_draft ) {
 					wp_delete_post( $autosave_draft->ID, true );
@@ -2601,7 +2602,25 @@ final class WP_Customize_Manager {
 			if ( ! is_wp_error( $r ) ) {
 				$this->_changeset_post_id = $r; // Update cached post ID for the loaded changeset.
 
-				// @todo Delete all other customize_changeset posts which auto-draft status. There can only be one. This is for the default linear changeset mode. Plugins like Customize Snapshots would need to allow multiple auto-draft posts to exist in parallel.
+				// @todo Limit this to linear mode?
+				// Delete all other auto-draft changeset posts for this user (they serve like autosave revisions), as there should only be one.
+				$autosave_autodraft_posts = get_posts( array(
+					'post_type' => 'customize_changeset',
+					'post_status' => 'auto-draft',
+					'author' => get_current_user_id(),
+					'fields' => 'ids',
+					'posts_per_page' => -1,
+					'no_found_rows' => true,
+					'cache_results' => true,
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
+					'lazy_load_term_meta' => false,
+				) );
+				foreach ( $autosave_autodraft_posts as $autosave_autodraft_post ) {
+					if ( $autosave_autodraft_post !== $this->_changeset_post_id ) {
+						wp_delete_post( $autosave_autodraft_post, true );
+					}
+				}
 			}
 		}
 		if ( $has_kses ) {
@@ -3683,6 +3702,7 @@ final class WP_Customize_Manager {
 			$autosave_autodraft_posts = get_posts( array(
 				'post_type' => 'customize_changeset',
 				'post_status' => 'auto-draft',
+				'author' => get_current_user_id(),
 				'posts_per_page' => 1,
 				'order' => 'DESC',
 				'orderby' => 'date',
