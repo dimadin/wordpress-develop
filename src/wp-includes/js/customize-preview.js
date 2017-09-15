@@ -36,7 +36,7 @@
 			newQueryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
 
 			newQueryParams.customize_changeset_uuid = oldQueryParams.customize_changeset_uuid;
-			newQueryParams.customize_preview_autosaved = 'on';
+			newQueryParams.customize_autosaved = 'on';
 			if ( oldQueryParams.customize_theme ) {
 				newQueryParams.customize_theme = oldQueryParams.customize_theme;
 			}
@@ -366,7 +366,7 @@
 		queryParams = api.utils.parseQueryString( element.search.substring( 1 ) );
 		queryParams.customize_changeset_uuid = api.settings.changeset.uuid;
 		if ( api.settings.changeset.autosaved ) {
-			queryParams.customize_preview_autosaved = 'on';
+			queryParams.customize_autosaved = 'on';
 		}
 		if ( ! api.settings.theme.active ) {
 			queryParams.customize_theme = api.settings.theme.stylesheet;
@@ -444,7 +444,7 @@
 			// Include customized state query params in URL.
 			queryParams.customize_changeset_uuid = api.settings.changeset.uuid;
 			if ( api.settings.changeset.autosaved ) {
-				queryParams.customize_preview_autosaved = 'on';
+				queryParams.customize_autosaved = 'on';
 			}
 			if ( ! api.settings.theme.active ) {
 				queryParams.customize_theme = api.settings.theme.stylesheet;
@@ -524,7 +524,7 @@
 
 		stateParams.customize_changeset_uuid = api.settings.changeset.uuid;
 		if ( api.settings.changeset.autosaved ) {
-			stateParams.customize_preview_autosaved = 'on';
+			stateParams.customize_autosaved = 'on';
 		}
 		if ( ! api.settings.theme.active ) {
 			stateParams.customize_theme = api.settings.theme.stylesheet;
@@ -565,7 +565,7 @@
 		var previousPathName = location.pathname,
 			previousQueryString = location.search.substr( 1 ),
 			previousQueryParams = null,
-			stateQueryParams = [ 'customize_theme', 'customize_changeset_uuid', 'customize_messenger_channel', 'customize_preview_autosaved' ];
+			stateQueryParams = [ 'customize_theme', 'customize_changeset_uuid', 'customize_messenger_channel', 'customize_autosaved' ];
 
 		return function keepAliveCurrentUrl() {
 			var urlParser, currentQueryParams;
