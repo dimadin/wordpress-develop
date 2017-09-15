@@ -176,6 +176,7 @@ final class WP_Customize_Manager {
 	/**
 	 * Whether the autosave revision of the changeset should should be loaded.
 	 *
+	 * @todo Change this to $revision and let it be set to 'autosave' or another specific revision?
 	 * @since 4.9.0
 	 * @var bool
 	 */
@@ -901,6 +902,7 @@ final class WP_Customize_Manager {
 	 * Get changeset data.
 	 *
 	 * @since 4.7.0
+	 * @since 4.9.0 This will return the changeset's data with a user's autosave revision merged on top, if one exists and $autosaved is true.
 	 *
 	 * @return array Changeset data.
 	 */
@@ -912,11 +914,24 @@ final class WP_Customize_Manager {
 		if ( ! $changeset_post_id ) {
 			$this->_changeset_data = array();
 		} else {
-			$data = $this->get_changeset_post_data( $changeset_post_id );
-			if ( ! is_wp_error( $data ) ) {
-				$this->_changeset_data = $data;
-			} else {
-				$this->_changeset_data = array();
+			if ( $this->autosaved ) {
+				$autosave_post = wp_get_post_autosave( $changeset_post_id );
+				if ( $autosave_post ) {
+					$data = $this->get_changeset_post_data( $autosave_post->ID );
+					if ( ! is_wp_error( $data ) ) {
+						$this->_changeset_data = $data;
+					}
+				}
+			}
+
+			// Load data from the changeset if it was not loaded from an autosave.
+			if ( ! isset( $this->_changeset_data ) ) {
+				$data = $this->get_changeset_post_data( $changeset_post_id );
+				if ( ! is_wp_error( $data ) ) {
+					$this->_changeset_data = $data;
+				} else {
+					$this->_changeset_data = array();
+				}
 			}
 		}
 		return $this->_changeset_data;
@@ -2182,6 +2197,7 @@ final class WP_Customize_Manager {
 			'title' => $changeset_title,
 			'date_gmt' => $changeset_date_gmt,
 			'data' => $input_changeset_data,
+			'autosave' => ! empty( $_POST['autosave'] ),
 		) );
 		if ( is_wp_error( $r ) ) {
 			$response = array(
@@ -2245,6 +2261,7 @@ final class WP_Customize_Manager {
 	 *     @type string $date_gmt        Date in GMT. Optional.
 	 *     @type int    $user_id         ID for user who is saving the changeset. Optional, defaults to the current user ID.
 	 *     @type bool   $starter_content Whether the data is starter content. If false (default), then $starter_content will be cleared for any $data being saved.
+	 *     @type bool   $autosave        Whether this is a request to create an autosave revision.
 	 * }
 	 *
 	 * @return array|WP_Error Returns array on success and WP_Error with array data on error.
@@ -2259,6 +2276,7 @@ final class WP_Customize_Manager {
 				'date_gmt' => null,
 				'user_id' => get_current_user_id(),
 				'starter_content' => false,
+				'autosave' => false,
 			),
 			$args
 		);
@@ -2308,6 +2326,17 @@ final class WP_Customize_Manager {
 
 		if ( ! empty( $is_future_dated ) && 'publish' === $args['status'] ) {
 			$args['status'] = 'future';
+		}
+
+		// Validate autosave param. See _wp_post_revision_fields() for why these fields are disallowed.
+		if ( $args['autosave'] ) {
+			if ( $args['date_gmt'] ) {
+				return new WP_Error( 'illegal_autosave_with_date_gmt' );
+			} elseif ( $args['date_status'] ) {
+				return new WP_Error( 'illegal_autosave_with_status' );
+			} elseif ( $args['user_id'] && get_current_user_id() !== $args['user_id'] ) {
+				return new WP_Error( 'illegal_autosave_with_non_current_user' );
+			}
 		}
 
 		// The request was made via wp.customize.previewer.save().
@@ -2552,8 +2581,12 @@ final class WP_Customize_Manager {
 
 		// Note that updating a post with publish status will trigger WP_Customize_Manager::publish_changeset_values().
 		if ( $changeset_post_id ) {
-			$post_array['edit_date'] = true; // Prevent date clearing.
-			$r = wp_update_post( wp_slash( $post_array ), true );
+			if ( $args['autosave'] ) {
+				$r = wp_create_post_autosave( wp_slash( $post_array ) );
+			} else {
+				$post_array['edit_date'] = true; // Prevent date clearing.
+				$r = wp_update_post( wp_slash( $post_array ), true );
+			}
 		} else {
 			$r = wp_insert_post( wp_slash( $post_array ), true );
 			if ( ! is_wp_error( $r ) ) {

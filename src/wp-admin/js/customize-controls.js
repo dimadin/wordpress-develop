@@ -421,7 +421,7 @@
 			customize_changeset_data: JSON.stringify( submittedChanges )
 		} );
 		if ( autosave ) {
-			data.autosave_revision = 'true';
+			data.autosave = 'true';
 		}
 
 		request = wp.ajax.post( 'customize_save', data );
@@ -5090,7 +5090,7 @@
 			};
 
 			changesetStatus.bind( function( newStatus ) {
-				populateChangesetUuidParam( '' !== newStatus && 'publish' !== newStatus );
+				populateChangesetUuidParam( '' !== newStatus && 'publish' !== newStatus ); // @todo Prevent populating param if autosaved auto-draft.
 			} );
 
 			// Expose states to the API.
