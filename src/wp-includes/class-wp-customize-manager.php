@@ -2590,7 +2590,11 @@ final class WP_Customize_Manager {
 			} else {
 				$post_array['edit_date'] = true; // Prevent date clearing.
 				$r = wp_update_post( wp_slash( $post_array ), true );
-				// @todo Delete autosave revision if it exists.
+
+				$autosave_draft = wp_get_post_autosave( $changeset_post_id );
+				if ( $autosave_draft ) {
+					wp_delete_post( $autosave_draft->ID, true );
+				}
 			}
 		} else {
 			$r = wp_insert_post( wp_slash( $post_array ), true );
