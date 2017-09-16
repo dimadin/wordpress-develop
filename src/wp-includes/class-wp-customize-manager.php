@@ -367,6 +367,7 @@ final class WP_Customize_Manager {
 
 		add_action( 'wp_ajax_customize_save',           array( $this, 'save' ) );
 		add_action( 'wp_ajax_customize_refresh_nonces', array( $this, 'refresh_nonces' ) );
+		add_action( 'wp_ajax_delete_customize_changeset_autosave', array( $this, 'handle_delete_changeset_autosave_request' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
@@ -2911,6 +2912,50 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Delete a given auto-draft changeset or the autosave revision for a given changeset.
+	 *
+	 * @since 4.9.0
+	 */
+	public function handle_delete_changeset_autosave_request() {
+		if ( ! $this->is_preview() ) {
+			wp_send_json_error( 'not_preview', 400 );
+		}
+
+		if ( ! check_ajax_referer( 'delete_customize_changeset_autosave', 'nonce', false ) ) {
+			wp_send_json_error( 'invalid_nonce', 403 );
+		}
+
+		$changeset_post_id = $this->changeset_post_id();
+		if ( empty( $changeset_post_id ) ) {
+			wp_send_json_error( 'missing_changeset', 404 );
+		}
+
+		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
+			wp_send_json_error( 'cannot_delete_changeset_post', 403 );
+		}
+
+		if ( 'auto-draft' === get_post_status( $changeset_post_id ) ) {
+			if ( ! wp_delete_post( $changeset_post_id, true ) ) {
+				wp_send_json_error( 'auto_draft_deletion_failure', 500 );
+			} else {
+				wp_send_json_success( 'auto_draft_deleted' );
+			}
+		} else {
+			$revision = wp_get_post_autosave( $changeset_post_id );
+			if ( $revision ) {
+				if ( ! wp_delete_post( $revision->ID, true ) ) {
+					wp_send_json_error( 'autosave_revision_deletion_failure', 500 );
+				} else {
+					wp_send_json_success( 'autosave_revision_deleted' );
+				}
+			} else {
+				wp_send_json_error( 'no_autosave_to_delete', 404 );
+			}
+		}
+		wp_send_json_error( 'unknown_error', 500 );
+	}
+
+	/**
 	 * Add a customize setting.
 	 *
 	 * @since 3.4.0
@@ -3658,6 +3703,7 @@ final class WP_Customize_Manager {
 		$nonces = array(
 			'save' => wp_create_nonce( 'save-customize_' . $this->get_stylesheet() ),
 			'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() ),
+			'delete_autosave' => wp_create_nonce( 'delete_customize_changeset_autosave' ),
 		);
 
 		/**

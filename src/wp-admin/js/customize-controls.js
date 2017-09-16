@@ -1,4 +1,4 @@
-/* global _wpCustomizeHeader, _wpCustomizeBackground, _wpMediaViewsL10n, MediaElementPlayer, console */
+/* global _wpCustomizeHeader, _wpCustomizeBackground, _wpMediaViewsL10n, MediaElementPlayer, console, confirm */
 (function( exports, $ ){
 	var Container, focus, normalizedTransitionendEventName, api = wp.customize;
 
@@ -5134,8 +5134,12 @@
 
 						// Handle dismissal of notice.
 						li.find( '.notice-dismiss' ).on( 'click', function() {
-							// @todo: Open Ajax request to delete the existing auto-draft changeset or this changeset\'s autosave revision for the current user. Or ignore this since the other auto-drafts will automatically be deleted after creating a new one.
-							// @todo: Also delete auto-draft when explicitly clicking on the Close button and disregarding the AYS dialog?
+							wp.ajax.post( 'delete_customize_changeset_autosave', {
+								wp_customize: 'on',
+								customize_theme: api.settings.theme.stylesheet,
+								customize_changeset_uuid: api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.uuid,
+								nonce: api.settings.nonce.delete_autosave
+							} );
 						} );
 
 						return li;
@@ -5514,26 +5518,70 @@
 			channel: 'loader'
 		});
 
-		/*
-		 * If we receive a 'back' event, we're inside an iframe.
-		 * Send any clicks to the 'Return' link to the parent page.
-		 */
-		parent.bind( 'back', function() {
-			closeBtn.on( 'click.customize-controls-close', function( event ) {
-				event.preventDefault();
-				parent.send( 'close' );
-			});
-		});
+		// Handle exiting of Customizer.
+		(function() {
+			var isInsideIframe = false;
 
-		// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
-		$( window ).on( 'beforeunload.customize-confirm', function () {
-			if ( ! api.state( 'saved' )() ) {
-				setTimeout( function() {
-					overlay.removeClass( 'customize-loading' );
-				}, 1 );
-				return api.l10n.saveAlert;
+			function isCleanState() {
+				return api.state( 'saved' ).get() && ! api.state( 'autosaved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
 			}
-		} );
+
+			/*
+			 * If we receive a 'back' event, we're inside an iframe.
+			 * Send any clicks to the 'Return' link to the parent page.
+			 */
+			parent.bind( 'back', function() {
+				isInsideIframe = true;
+			});
+
+			// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
+			$( window ).on( 'beforeunload.customize-confirm', function() {
+				if ( ! isCleanState() ) {
+					setTimeout( function() {
+						overlay.removeClass( 'customize-loading' );
+					}, 1 );
+					return api.l10n.saveAlert;
+				}
+			});
+
+			closeBtn.on( 'click.customize-controls-close', function( event ) {
+				var clearedToClose = $.Deferred();
+				event.preventDefault();
+
+				if ( isCleanState() ) {
+					clearedToClose.resolve();
+				} else if ( confirm( api.l10n.saveAlert ) ) {
+
+					// Mark all settings as clean to prevent another call to requestChangesetUpdate.
+					api.each( function( setting ) {
+						setting._dirty = false;
+					});
+					$( window ).off( 'blur.wp-customize-changeset-update' );
+					$( window ).off( 'beforeunload.wp-customize-changeset-update' );
+
+					// @todo Replace X with spinner? Don't wait too long for request to finish?
+					wp.ajax.post( 'delete_customize_changeset_autosave', {
+						wp_customize: 'on',
+						customize_theme: api.settings.theme.stylesheet,
+						customize_changeset_uuid: api.settings.changeset.uuid,
+						nonce: api.settings.nonce.delete_autosave
+					} ).always( function() {
+						clearedToClose.resolve();
+					} );
+				} else {
+					clearedToClose.reject();
+				}
+
+				clearedToClose.done( function() {
+					$( window ).off( 'beforeunload.customize-confirm' );
+					if ( isInsideIframe ) {
+						parent.send( 'close' );
+					} else {
+						window.location.href = closeBtn.prop( 'href' );
+					}
+				} );
+			});
+		})();
 
 		// Pass events through to the parent.
 		$.each( [ 'saved', 'change' ], function ( i, event ) {
