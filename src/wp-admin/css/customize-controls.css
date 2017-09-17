@@ -35,7 +35,7 @@ body {
 	border-radius: 3px 0 0 3px;
 	-webkit-box-shadow: none;
 	-moz-box-shadow: none;
-	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button */
+	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button. */
 }
 
 #publish-settings {
@@ -45,14 +45,10 @@ body {
 	padding-right: 0;
 	-webkit-box-shadow: none;
 	-moz-box-shadow: none;
-	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button */
+	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button. */
 	font-size: 14px;
 	width: 30px;
 	float: left;
-}
-
-#accordion-section-publish_settings {
-	display: none!important;
 }
 
 #customize-header-actions .spinner {
@@ -77,6 +73,51 @@ body {
 	border: none;
 	border-bottom: 1px solid #ddd;
 	margin-bottom: 15px;
+}
+
+#customize-control-changeset_status label,
+#customize-control-changeset_preview_link input {
+	background-color: #ffffff;
+	border-bottom: 1px solid #ddd;
+	box-sizing: content-box;
+	width: 100%;
+	margin-left: -12px;
+	padding-left: 12px;
+	padding-right: 12px;
+}
+
+#customize-control-changeset_status label:first-of-type {
+	border-top: 1px solid #ddd;
+}
+
+#customize-control-changeset_status label {
+	padding-top: 10px;
+	padding-bottom: 10px;
+	font-weight: 500;
+}
+
+#customize-control-changeset_status .customize-control-title {
+	margin-bottom: 6px;
+}
+
+#customize-control-changeset_status input {
+	margin-left: 0;
+}
+
+#customize-control-changeset_preview_link {
+	position: relative;
+	display: block;
+}
+
+#customize-control-changeset_preview_link input {
+	line-height: 2.5;
+	border-top: 1px solid #ddd;
+	border-left: none;
+	border-right: none;
+}
+
+#accordion-section-publish_settings {
+	display: none!important;
 }
 
 #customize-controls .customize-info.section-meta {
@@ -1899,8 +1940,8 @@ body.adding-widget .add-new-widget:before,
 		margin-bottom: 4px;
 	}
 
-	#customize-header-actions .button-primary {
-		margin-top: 6px;
+	#publish-settings {
+		height: 31px;
 	}
 
 	body.adding-widget div#available-widgets,

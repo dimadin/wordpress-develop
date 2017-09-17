@@ -3763,7 +3763,7 @@ final class WP_Customize_Manager {
 
 		/* Publish Settings Controls */
 
-		$this->add_control( 'publish_status', array(
+		$this->add_control( 'changeset_status', array(
 			'section' => 'publish_settings',
 			'settings' => array(),
 			'type' => 'radio',
@@ -3776,7 +3776,7 @@ final class WP_Customize_Manager {
 			'capability' => 'customize',
 		) );
 
-		$this->add_control( 'preview_link', array(
+		$this->add_control( 'changeset_preview_link', array(
 			'section' => 'publish_settings',
 			'settings' => array(),
 			'type' => 'input',
