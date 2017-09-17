@@ -109,6 +109,12 @@ body {
 	display: block;
 }
 
+.customize-copy-preview-link {
+	position: absolute;
+	bottom: 9px;
+	right: 0;
+}
+
 #customize-control-changeset_preview_link input {
 	line-height: 2.5;
 	border-top: 1px solid #ddd;

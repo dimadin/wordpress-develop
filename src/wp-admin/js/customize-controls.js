@@ -5857,6 +5857,36 @@
 			}
 		})();
 
+		/**
+		 * Publish settings section and controls.
+		 */
+		api.control( 'changeset_preview_link', function( control ) {
+			var copyButton, previewLink;
+
+			copyButton = $( wp.template( 'customize-copy-preview-link' )() );
+
+			copyButton.on( 'click', function( event ) {
+				event.preventDefault();
+				previewLink = control.container.find( 'input' );
+
+				if ( previewLink.val() ) {
+					previewLink.select();
+					document.execCommand( 'copy' );
+					copyButton.text( copyButton.data( 'copied-text' ) );
+				}
+			} );
+
+			copyButton.on( 'mouseenter', function() {
+				previewLink = control.container.find( 'input' );
+				if ( previewLink.val() ) {
+					copyButton.focus();
+					copyButton.text( copyButton.data( 'copy-text' ) );
+				}
+			} );
+
+			control.container.append( copyButton );
+		} );
+
 		// Toggle visibility of Header Video notice when active state change.
 		api.control( 'header_video', function( headerVideoControl ) {
 			headerVideoControl.deferred.embedded.done( function() {
