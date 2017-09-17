@@ -5023,6 +5023,7 @@
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
 			nextChangesetStatus( api.settings.changeset.status );
+			nextChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
 				api.each( function( setting ) {
