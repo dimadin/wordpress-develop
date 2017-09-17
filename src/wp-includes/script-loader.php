@@ -552,16 +552,16 @@ function wp_default_scripts( &$scripts ) {
 		'activate' => __( 'Activate &amp; Publish' ),
 		'save' => __( 'Save &amp; Publish' ), // @todo Remove as not required.
 		'publish' => array(
-			'default' => __( 'Publish' ),
-			'saved' => __( 'Published' ),
+			'active' => __( 'Publish' ),
+			'inactive' => __( 'Published' ),
 		),
 		'draft' => array(
-			'default' => __( 'Save Draft' ),
-			'saved' => __( 'Draft Saved' ),
+			'active' => __( 'Save Draft' ),
+			'inactive' => __( 'Draft Saved' ),
 		),
 		'schedule' => array(
-			'default' => __( 'Schedule' ),
-			'saved' => __( 'Scheduled' ),
+			'active' => __( 'Schedule' ),
+			'inactive' => __( 'Scheduled' ),
 		),
 		'saveAlert'          => __( 'The changes you made will be lost if you navigate away from this page.' ),
 		'saved'              => __( 'Saved' ),
