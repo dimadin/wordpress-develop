@@ -549,8 +549,19 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'customize-views',    "/wp-includes/js/customize-views.js",  array( 'jquery', 'underscore', 'imgareaselect', 'customize-models', 'media-editor', 'media-views' ), false, 1 );
 	$scripts->add( 'customize-controls', "/wp-admin/js/customize-controls$suffix.js", array( 'customize-base', 'wp-a11y', 'wp-util' ), false, 1 );
 	did_action( 'init' ) && $scripts->localize( 'customize-controls', '_wpCustomizeControlsL10n', array(
-		'activate'           => __( 'Save &amp; Activate' ),
-		'save'               => __( 'Save &amp; Publish' ),
+		'activate' => __( 'Activate &amp; Publish' ),
+		'publish' => array(
+			'default' => __( 'Publish' ),
+			'saved' => __( 'Published' ),
+		),
+		'draft' => array(
+			'default' => __( 'Save Draft' ),
+			'saved' => __( 'Draft Saved' ),
+		),
+		'schedule' => array(
+			'default' => __( 'Schedule' ),
+			'saved' => __( 'Scheduled' ),
+		),
 		'saveAlert'          => __( 'The changes you made will be lost if you navigate away from this page.' ),
 		'saved'              => __( 'Saved' ),
 		'cancel'             => __( 'Cancel' ),

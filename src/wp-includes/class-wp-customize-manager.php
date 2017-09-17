@@ -368,6 +368,9 @@ final class WP_Customize_Manager {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_section_templates' ), 1 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_control_templates' ), 1 );
 
+		// Render schedule date template for publish settings.
+		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_schedule_date_template' ) );
+
 		// Export header video settings with the partial response.
 		add_filter( 'customize_render_partials_response', array( $this, 'export_header_video_settings' ), 10, 3 );
 
@@ -3224,6 +3227,19 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Render schedule date template for publish settings.
+	 *
+	 * @since 4.9.0
+	 */
+	public function render_schedule_date_template() {
+		?>
+		<script type="text/html" id="tmpl-customize-schedule-date">
+			<div id="customize-schedule-date" class="customize-schedule-date"></div>
+		</script>
+		<?php
+	}
+
+	/**
 	 * Helper function to compare two objects by priority, ensuring sort stability via instance_number.
 	 *
 	 * @since 3.4.0
@@ -3736,6 +3752,41 @@ final class WP_Customize_Manager {
 		$this->register_control_type( 'WP_Customize_Cropped_Image_Control' );
 		$this->register_control_type( 'WP_Customize_Site_Icon_Control' );
 		$this->register_control_type( 'WP_Customize_Theme_Control' );
+
+		/* Publish Settings */
+
+		$this->add_section( 'publish_settings', array(
+			'title' => __( 'Publish Settings' ),
+			'priority' => 0,
+			'capability' => 'customize',
+		) );
+
+		/* Publish Settings Controls */
+
+		$this->add_control( 'publish_status', array(
+			'section' => 'publish_settings',
+			'settings' => array(),
+			'type' => 'radio',
+			'label' => __( 'Action' ),
+			'choices' => array(
+				'publish' => __( 'Publish' ),
+				'draft' => __( 'Save Draft' ),
+				'schedule' => __( 'Schedule' ),
+			),
+			'capability' => 'customize',
+		) );
+
+		$this->add_control( 'preview_link', array(
+			'section' => 'publish_settings',
+			'settings' => array(),
+			'type' => 'input',
+			'label' => __( 'Share Preview Link' ),
+			'description' => __( 'See how changes would look live on your website, and share the preview with people who can\'t access the Customizer.' ),
+			'input_attrs' => array(
+				'readOnly' => '',
+			),
+			'capability' => 'customize',
+		) );
 
 		/* Themes */
 
