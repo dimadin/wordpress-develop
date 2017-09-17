@@ -550,6 +550,7 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'customize-controls', "/wp-admin/js/customize-controls$suffix.js", array( 'customize-base', 'wp-a11y', 'wp-util' ), false, 1 );
 	did_action( 'init' ) && $scripts->localize( 'customize-controls', '_wpCustomizeControlsL10n', array(
 		'activate' => __( 'Activate &amp; Publish' ),
+		'save' => __( 'Save &amp; Publish' ), // @todo Remove as not required.
 		'publish' => array(
 			'default' => __( 'Publish' ),
 			'saved' => __( 'Published' ),

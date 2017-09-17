@@ -134,12 +134,12 @@ do_action( 'customize_controls_print_scripts' );
 		<div id="customize-header-actions" class="wp-full-overlay-header">
 			<?php
 			$save_text = $wp_customize->is_theme_active() ? __( 'Save &amp; Publish' ) : __( 'Save &amp; Activate' );
-			$save_attrs = array();
-			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts ) ) {
-				$save_attrs['style'] = 'display: none';
-			}
-			submit_button( $save_text, 'primary save', 'save', false, $save_attrs );
+			$capability = current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts );
 			?>
+			<div id="customize-save-button-wrapper" class="customize-save-button-wrapper <?php echo $capability ? '' : 'hidden'; ?>" >
+				<?php submit_button( $save_text, 'primary save', 'save', false ); ?>
+				<button id="publish-settings" class="publish-settings button-primary button dashicons dashicons-admin-generic" aria-label="<?php _e( 'Publish Settings' ); ?>" aria-expanded="false" disabled></button>
+			</div>
 			<span class="spinner"></span>
 			<button type="button" class="customize-controls-preview-toggle">
 				<span class="controls"><?php _e( 'Customize' ); ?></span>

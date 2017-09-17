@@ -4527,7 +4527,26 @@
 			title = $( '#customize-info .panel-title.site-title' ),
 			closeBtn = $( '.customize-controls-close' ),
 			saveBtn = $( '#save' ),
+			publishSettingsBtn = $( '#publish-settings' ),
 			footerActions = $( '#customize-footer-actions' );
+
+		api.section( 'publish_settings', function( section ) {
+			publishSettingsBtn.prop( 'disabled', false );
+			publishSettingsBtn.on( 'click', function( event ) {
+				event.preventDefault();
+
+				// @todo Change expand animation to SlidUp/SlideDown.
+				if ( section.expanded.get() ) {
+					section.collapse();
+				} else {
+					section.expand();
+				}
+			} );
+
+			section.expanded.bind( function( isExpanded ) {
+				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
+			} );
+		} );
 
 		// Prevent the form from saving when enter is pressed on an input or select element.
 		$('#customize-controls').on( 'keydown', function( e ) {

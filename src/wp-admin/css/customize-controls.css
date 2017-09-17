@@ -24,9 +24,35 @@ body {
 	color: #555d66;
 }
 
-#customize-header-actions .button-primary {
+#customize-save-button-wrapper {
 	float: right;
 	margin-top: 9px;
+	overflow: hidden;
+}
+
+#customize-save-button-wrapper .save {
+	float: left;
+	border-radius: 3px 0 0 3px;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button */
+}
+
+#publish-settings {
+	text-indent: 0;
+	border-radius: 0 3px 3px 0;
+	padding-left: 0;
+	padding-right: 0;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button */
+	font-size: 14px;
+	width: 30px;
+	float: left;
+}
+
+#accordion-section-publish_settings {
+	display: none!important;
 }
 
 #customize-header-actions .spinner {
