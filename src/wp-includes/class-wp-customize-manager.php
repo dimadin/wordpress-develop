@@ -3776,7 +3776,7 @@ final class WP_Customize_Manager {
 			'choices' => array(
 				'publish' => __( 'Publish' ),
 				'draft' => __( 'Save Draft' ),
-				'schedule' => __( 'Schedule' ),
+				'future' => __( 'Schedule' ),
 			),
 			'capability' => 'customize',
 		) );

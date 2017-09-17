@@ -4977,6 +4977,7 @@
 				expandedPanel = state.create( 'expandedPanel' ),
 				expandedSection = state.create( 'expandedSection' ),
 				changesetStatus = state.create( 'changesetStatus' ),
+				nextChangesetStatus = state.create( 'nextChangesetStatus' ),
 				previewerAlive = state.create( 'previewerAlive' ),
 				editShortcutVisibility  = state.create( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
@@ -4993,7 +4994,13 @@
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
 				} else {
-					saveBtn.val( api.l10n.save );
+					if ( 'draft' === nextChangesetStatus.get() ) {
+						saveBtn.val( 'Save Draft' ); // @todo l10n.
+					} else if ( 'future' === nextChangesetStatus.get() ) {
+						saveBtn.val( 'Schedule' ); // @todo l10n.
+					} else {
+						saveBtn.val( api.l10n.save );
+					}
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
 				}
 
@@ -5001,13 +5008,21 @@
 				 * Save (publish) button should be enabled if saving is not currently happening,
 				 * and if the theme is not active or the changeset exists but is not published.
 				 */
-				canSave = ! saving() && ( ! activated() || ! saved() || ( '' !== changesetStatus() && 'publish' !== changesetStatus() ) );
+				canSave = ! saving() && ( ! activated() || ! saved() || ( changesetStatus() !== nextChangesetStatus() && '' !== changesetStatus() ) );
 
 				saveBtn.prop( 'disabled', ! canSave );
 			});
 
+			nextChangesetStatus.validate = function( status ) {
+				if ( '' === status || 'auto-draft' === status ) {
+					return 'publish';
+				}
+				return status;
+			};
+
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
+			nextChangesetStatus( api.settings.changeset.status );
 			saved( true );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
 				api.each( function( setting ) {
@@ -5101,21 +5116,29 @@
 
 		// Button bindings.
 		saveBtn.click( function( event ) {
-			api.previewer.save();
+			api.previewer.save({
+				status: api.state( 'nextChangesetStatus' ).get()
+			});
 			event.preventDefault();
 		}).keydown( function( event ) {
-			if ( 9 === event.which ) // tab
+			if ( 9 === event.which ) { // Tab.
 				return;
-			if ( 13 === event.which ) // enter
-				api.previewer.save();
+			}
+			if ( 13 === event.which ) { // Enter.
+				api.previewer.save({
+					status: api.state( 'nextChangesetStatus' ).get()
+				});
+			}
 			event.preventDefault();
 		});
 
 		closeBtn.keydown( function( event ) {
-			if ( 9 === event.which ) // tab
+			if ( 9 === event.which ) { // Tab.
 				return;
-			if ( 13 === event.which ) // enter
+			}
+			if ( 13 === event.which ) { // Enter.
 				this.click();
+			}
 			event.preventDefault();
 		});
 
@@ -5860,6 +5883,16 @@
 		/**
 		 * Publish settings section and controls.
 		 */
+		api.control( 'changeset_status', function( control ) {
+			control.deferred.embedded.done( function() {
+				var radioNodes, element;
+				radioNodes = control.container.find( 'input[type=radio][name]' );
+				element = new api.Element( radioNodes );
+				control.elements.push( element );
+				element.sync( api.state( 'nextChangesetStatus' ) );
+				element.set( api.state( 'nextChangesetStatus' ).get() );
+			} );
+		} );
 		api.control( 'changeset_preview_link', function( control ) {
 			var copyButton, previewLink;
 
