@@ -2784,7 +2784,7 @@ function _wp_customize_include() {
 	 * called before wp_magic_quotes() gets called. Besides this fact, none of
 	 * the values should contain any characters needing slashes anyway.
 	 */
-	$keys = array( 'changeset_uuid', 'customize_changeset_uuid', 'customize_theme', 'theme', 'customize_messenger_channel' );
+	$keys = array( 'changeset_uuid', 'customize_changeset_uuid', 'customize_theme', 'theme', 'customize_messenger_channel', 'customize_autosaved' );
 	$input_vars = array_merge(
 		wp_array_slice_assoc( $_GET, $keys ),
 		wp_array_slice_assoc( $_POST, $keys )
@@ -2793,11 +2793,32 @@ function _wp_customize_include() {
 	$theme = null;
 	$changeset_uuid = null;
 	$messenger_channel = null;
+	$autosaved = null;
 
 	if ( $is_customize_admin_page && isset( $input_vars['changeset_uuid'] ) ) {
 		$changeset_uuid = sanitize_key( $input_vars['changeset_uuid'] );
 	} elseif ( ! empty( $input_vars['customize_changeset_uuid'] ) ) {
 		$changeset_uuid = sanitize_key( $input_vars['customize_changeset_uuid'] );
+	}
+
+	// @todo The following logic needs to be filterable so Customize Snapshots can disable to preserve the non-linear Changeset mode.
+	// Automatically fetch the most recent drafted changeset.
+	if ( empty( $changeset_uuid ) ) {
+		$unpublished_changeset_posts = get_posts( array(
+			'post_type' => 'customize_changeset',
+			'post_status' => array( 'draft', 'pending', 'future' ),
+			'posts_per_page' => 1,
+			'order' => 'DESC',
+			'orderby' => 'date',
+			'no_found_rows' => true,
+			'cache_results' => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'lazy_load_term_meta' => false,
+		) );
+		if ( ! empty( $unpublished_changeset_posts ) ) {
+			$changeset_uuid = $unpublished_changeset_posts[0]->post_name;
+		}
 	}
 
 	// Note that theme will be sanitized via WP_Theme.
@@ -2806,6 +2827,11 @@ function _wp_customize_include() {
 	} elseif ( isset( $input_vars['customize_theme'] ) ) {
 		$theme = $input_vars['customize_theme'];
 	}
+
+	if ( ! empty( $input_vars['customize_autosaved'] ) ) {
+		$autosaved = true;
+	}
+
 	if ( isset( $input_vars['customize_messenger_channel'] ) ) {
 		$messenger_channel = sanitize_key( $input_vars['customize_messenger_channel'] );
 	}
@@ -2827,7 +2853,7 @@ function _wp_customize_include() {
 	$settings_previewed = ! $is_customize_save_action;
 
 	require_once ABSPATH . WPINC . '/class-wp-customize-manager.php';
-	$GLOBALS['wp_customize'] = new WP_Customize_Manager( compact( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed' ) );
+	$GLOBALS['wp_customize'] = new WP_Customize_Manager( compact( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved' ) );
 }
 
 /**
