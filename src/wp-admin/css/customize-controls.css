@@ -115,6 +115,27 @@ body {
 	right: 0;
 }
 
+.customize-copy-preview-link:before,
+.customize-copy-preview-link:after {
+	content: '';
+	height: 28px;
+	position: absolute;
+	background: #ffffff;
+	top: -1px;
+}
+
+.customize-copy-preview-link:before {
+	left: -10px;
+	width: 9px;
+	opacity: 0.75;
+}
+
+.customize-copy-preview-link:after {
+	left: -5px;
+	width: 4px;
+	opacity: 0.8;
+}
+
 #customize-control-changeset_preview_link input {
 	line-height: 2.5;
 	border-top: 1px solid #ddd;

@@ -4995,9 +4995,9 @@
 
 				} else {
 					if ( 'draft' === nextChangesetStatus.get() ) {
-						saveBtn.val( 'Save Draft' ); // @todo l10n.
+						saveBtn.val( api.l10n.draft.default );
 					} else if ( 'future' === nextChangesetStatus.get() ) {
-						saveBtn.val( 'Schedule' ); // @todo l10n.
+						saveBtn.val( api.l10n.schedule.default );
 					} else {
 						saveBtn.val( api.l10n.save );
 					}
@@ -5894,31 +5894,53 @@
 				element.set( api.state( 'nextChangesetStatus' ).get() );
 			} );
 		} );
+
 		api.control( 'changeset_preview_link', function( control ) {
-			var copyButton, previewLink;
+			control.deferred.embedded.done( function() {
+				var copyButton, inputNode, element, getLink;
 
-			copyButton = $( wp.template( 'customize-copy-preview-link' )() );
+				copyButton = $( wp.template( 'customize-copy-preview-link' )() );
+				inputNode = control.container.find( 'input' );
+				element = new api.Element( inputNode );
+				control.elements.push( element );
 
-			copyButton.on( 'click', function( event ) {
-				event.preventDefault();
-				previewLink = control.container.find( 'input' );
+				// @todo Need to improve and test it.
+				getLink = function() {
+					var a = document.createElement( 'a' ), params = {};
 
-				if ( previewLink.val() ) {
-					previewLink.select();
-					document.execCommand( 'copy' );
-					copyButton.text( copyButton.data( 'copied-text' ) );
-				}
+					params.customize_changeset_uuid = api.settings.changeset.uuid;
+					a.href = api.previewer.previewUrl.get();
+
+					if ( ! api.settings.theme.active ) {
+						params.theme = api.settings.theme.stylesheet;
+					}
+
+					a.search = $.param( params );
+
+					return a.href;
+				};
+
+				element.set( getLink() );
+
+				copyButton.on( 'click', function( event ) {
+					event.preventDefault();
+
+					if ( element.get() ) {
+						inputNode.select();
+						document.execCommand( 'copy' );
+						copyButton.text( copyButton.data( 'copied-text' ) );
+					}
+				} );
+
+				copyButton.on( 'mouseenter', function() {
+					if ( element.get() ) {
+						copyButton.focus();
+						copyButton.text( copyButton.data( 'copy-text' ) );
+					}
+				} );
+
+				control.container.append( copyButton );
 			} );
-
-			copyButton.on( 'mouseenter', function() {
-				previewLink = control.container.find( 'input' );
-				if ( previewLink.val() ) {
-					copyButton.focus();
-					copyButton.text( copyButton.data( 'copy-text' ) );
-				}
-			} );
-
-			control.container.append( copyButton );
 		} );
 
 		// Toggle visibility of Header Video notice when active state change.
