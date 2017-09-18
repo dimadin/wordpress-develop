@@ -3233,8 +3233,70 @@ final class WP_Customize_Manager {
 	 */
 	public function render_publish_settings_templates() {
 		?>
-		<script type="text/html" id="tmpl-customize-schedule-date">
-			<div id="customize-schedule-date" class="customize-schedule-date"></div>
+		<script type="text/html" id="tmpl-changeset-schedule-date">
+			<div id="changeset-schedule-date" class="changeset-schedule-date">
+				<p class="schedule-description">
+					<?php esc_html_e( 'Schedule your customization changes to publish ( "go live" ) at a future date.' ); ?>
+				</p>
+				<div class="future-date-notification notice notice-error">
+					<?php esc_html_e( 'Please select a future date.' ); ?>
+				</div>
+				<div class="changeset-date-fields">
+					<div class="schedule-day-row">
+						<span class="title-day"><?php esc_html_e( 'Day' ); ?></span>
+						<div class="schedule-day-fields">
+							<label class="month-field">
+								<span class="screen-reader-text"><?php esc_html_e( 'Month' ); ?></span>
+								<# _.defaults( data, <?php echo wp_json_encode( $this->get_month_choices() ); ?> ); #>
+									<select id="changeset-date-month" class="date-input month" data-date-input="month">
+										<# _.each( data.month_choices, function( choice ) {
+												if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
+												text = choice.text;
+												value = choice.value;
+												}
+
+												selected = choice.value == data.month ? 'selected="selected"' : '';
+												#>
+											<option value="{{ value }}" {{selected}} >
+												{{ text }}
+											</option>
+											<# } ); #>
+									</select>
+							</label>
+							<label class="day-field">
+								<span class="screen-reader-text"><?php esc_html_e( 'Day' ); ?></span>
+								<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input day" data-date-input="day" min="1" max="31" value="{{ data.day }}" />
+							</label>
+							<span class="time-special-char">,</span>
+							<label class="year-field">
+								<span class="screen-reader-text"><?php esc_html_e( 'Year' ); ?></span>
+								<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-date-input="year" min="<?php esc_attr_e( date( 'Y' ) ); ?>" value="{{ data.year }}" max="9999" />
+							</label>
+						</div>
+					</div>
+					<div class="schedule-time-row">
+						<span class="title-time"><?php esc_html_e( 'Time' ); ?></span>
+						<div class="schedule-time-fields">
+							<label class="hour-field">
+								<span class="screen-reader-text"><?php esc_html_e( 'Hour' ); ?></span>
+								<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-date-input="hour" min="0" max="11" value="{{ data.hour }}" />
+							</label>
+							<span class="time-special-char">:</span>
+							<label class="minute-field">
+								<span class="screen-reader-text"><?php esc_html_e( 'Minute' ); ?></span>
+								<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-date-input="minute" min="0" max="59" value="{{ data.minute }}" />
+							</label>
+							<label class="am-pm-field">
+								<span class="screen-reader-text"><?php esc_html_e( 'AM / PM' ); ?></span>
+								<select id="">
+									<option value="am"><?php esc_attr_e( 'AM' ) ?></option>
+									<option value="pm"><?php esc_attr_e( 'PM' ) ?></option>
+								</select>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
 		</script>
 
 		<script type="text/html" id="tmpl-customize-copy-preview-link">
@@ -3242,6 +3304,31 @@ final class WP_Customize_Manager {
 		</script>
 
 		<?php
+	}
+
+	/**
+	 * Generate options for the month Select.
+	 *
+	 * Based on touch_time().
+	 *
+	 * @see touch_time()
+	 *
+	 * @return array
+	 */
+	public function get_month_choices() {
+		global $wp_locale;
+		$months = array();
+		for ( $i = 1; $i < 13; $i = $i + 1 ) {
+			$month_number = zeroise( $i, 2 );
+			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
+
+			/* translators: 1: month number (01, 02, etc.), 2: month abbreviation */
+			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s' ), $month_number, $month_text );
+			$months[ $i ]['value'] = $month_number;
+		}
+		return array(
+			'month_choices' => $months,
+		);
 	}
 
 	/**
