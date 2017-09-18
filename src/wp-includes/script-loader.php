@@ -466,7 +466,7 @@ function wp_default_scripts( &$scripts ) {
 		apply_filters( 'mejs_settings', $mejs_settings )
 	);
 
-	$scripts->add( 'codemirror', '/wp-includes/js/codemirror/codemirror.min.js', array(), '5.29.1-alpha-ee20357' );
+	$scripts->add( 'codemirror', "/wp-includes/js/codemirror/codemirror$suffix.js", array(), '5.29.1-alpha-8f35a1a' );
 	$scripts->add( 'csslint', '/wp-includes/js/codemirror/csslint.js', array(), '1.0.5' );
 	$scripts->add( 'jshint', '/wp-includes/js/codemirror/jshint.js', array(), '2.9.5' );
 	$scripts->add( 'jsonlint', '/wp-includes/js/codemirror/jsonlint.js', array(), '1.6.2' );
@@ -983,7 +983,7 @@ function wp_default_styles( &$styles ) {
 	$styles->add( 'mediaelement',        "/wp-includes/js/mediaelement/mediaelementplayer-legacy.min.css", array(), '4.2.5-74e01a40' );
 	$styles->add( 'wp-mediaelement',     "/wp-includes/js/mediaelement/wp-mediaelement$suffix.css", array( 'mediaelement' ) );
 	$styles->add( 'thickbox',            '/wp-includes/js/thickbox/thickbox.css', array( 'dashicons' ) );
-	$styles->add( 'codemirror',          '/wp-includes/js/codemirror/codemirror.min.css', array(), '5.29.1-alpha-ee20357' );
+	$styles->add( 'codemirror',          "/wp-includes/js/codemirror/codemirror$suffix.css", array(), '5.29.1-alpha-8f35a1a' );
 
 	// Deprecated CSS
 	$styles->add( 'deprecated-media', "/wp-admin/css/deprecated-media$suffix.css" );
