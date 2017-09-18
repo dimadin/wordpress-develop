@@ -4726,7 +4726,7 @@
 			save: function( args ) {
 				var previewer = this,
 					deferred = $.Deferred(),
-					changesetStatus = 'publish',
+					changesetStatus = api.state( 'selectedChangesetStatus' ).get(),
 					processing = api.state( 'processing' ),
 					submitWhenDoneProcessing,
 					submit,
@@ -5206,18 +5206,14 @@
 
 		// Button bindings.
 		saveBtn.click( function( event ) {
-			api.previewer.save({
-				status: api.state( 'selectedChangesetStatus' ).get()
-			});
+			api.previewer.save();
 			event.preventDefault();
 		}).keydown( function( event ) {
 			if ( 9 === event.which ) { // Tab.
 				return;
 			}
 			if ( 13 === event.which ) { // Enter.
-				api.previewer.save({
-					status: api.state( 'selectedChangesetStatus' ).get()
-				});
+				api.previewer.save();
 			}
 			event.preventDefault();
 		});
