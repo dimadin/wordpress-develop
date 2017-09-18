@@ -4746,7 +4746,7 @@
 			save: function( args ) {
 				var previewer = this,
 					deferred = $.Deferred(),
-					changesetStatus = 'publish',
+					changesetStatus = api.state( 'selectedChangesetStatus' ).get(),
 					processing = api.state( 'processing' ),
 					submitWhenDoneProcessing,
 					submit,
@@ -5125,14 +5125,14 @@
 
 			selectedChangesetStatus.validate = function( status ) {
 				if ( '' === status || 'auto-draft' === status ) {
-					return 'publish';
+					return null;
 				}
 				return status;
 			};
 
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
-			selectedChangesetStatus( api.settings.changeset.status );
+			selectedChangesetStatus( '' === api.settings.changeset.status || 'auto-draft' === api.settings.changeset.status ? 'publish' : api.settings.changeset.status );
 			selectedChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
 			autosaved( api.settings.changeset.autosaved );
@@ -5288,18 +5288,14 @@
 
 		// Button bindings.
 		saveBtn.click( function( event ) {
-			api.previewer.save({
-				status: api.state( 'selectedChangesetStatus' ).get()
-			});
+			api.previewer.save();
 			event.preventDefault();
 		}).keydown( function( event ) {
 			if ( 9 === event.which ) { // Tab.
 				return;
 			}
 			if ( 13 === event.which ) { // Enter.
-				api.previewer.save({
-					status: api.state( 'selectedChangesetStatus' ).get()
-				});
+				api.previewer.save();
 			}
 			event.preventDefault();
 		});
