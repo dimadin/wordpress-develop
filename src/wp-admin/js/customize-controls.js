@@ -5059,7 +5059,9 @@
 				}
 			});
 
+			publishSettingsBtn.toggle( activated.get() );
 			activated.bind( function( to ) {
+				publishSettingsBtn.toggle( to );
 				if ( to ) {
 					api.trigger( 'activated' );
 				}
