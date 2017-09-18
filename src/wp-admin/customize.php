@@ -133,7 +133,7 @@ do_action( 'customize_controls_print_scripts' );
 	<form id="customize-controls" class="wrap wp-full-overlay-sidebar">
 		<div id="customize-header-actions" class="wp-full-overlay-header">
 			<?php
-			$save_text = $wp_customize->is_theme_active() ? __( 'Save &amp; Publish' ) : __( 'Save &amp; Activate' );
+			$save_text = $wp_customize->is_theme_active() ? __( 'Publish' ) : __( 'Activate &amp; Publish' );
 			$capability = current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts );
 			?>
 			<div id="customize-save-button-wrapper" class="customize-save-button-wrapper <?php echo $capability ? '' : 'hidden'; ?>" >

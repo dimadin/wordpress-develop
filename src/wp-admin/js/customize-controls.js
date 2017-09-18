@@ -4995,11 +4995,11 @@
 
 				} else {
 					if ( 'draft' === nextChangesetStatus.get() ) {
-						saveBtn.val( api.l10n.draft.active );
+						saveBtn.val( api.l10n.saveDraft );
 					} else if ( 'future' === nextChangesetStatus.get() ) {
-						saveBtn.val( api.l10n.schedule.active );
+						saveBtn.val( api.l10n.schedule );
 					} else {
-						saveBtn.val( api.l10n.publish.active );
+						saveBtn.val( api.l10n.publish );
 					}
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
 				}
