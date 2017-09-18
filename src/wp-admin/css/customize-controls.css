@@ -90,6 +90,24 @@ body {
 	border-top: 1px solid #ddd;
 }
 
+.date-time-fields .month-field {
+	width: 79px;
+}
+
+.date-time-fields .day-field,
+.date-time-fields .hour-field,
+.date-time-fields .minute-field {
+	width: 46px;
+}
+
+.date-time-fields .year-field {
+	width: 60px;
+}
+
+.date-time-fields .am-pm-field {
+	width: 53px;
+}
+
 #customize-control-changeset_status label {
 	padding-top: 10px;
 	padding-bottom: 10px;
@@ -190,7 +208,8 @@ body {
 	margin-left: -12px;
 	padding: 12px;
 	background: #ffffff;
-	margin-bottom:0;
+	border-bottom: 1px solid #ddd;
+	margin-bottom: 0;
 }
 
 #customize-control-changeset_schedule_date .customize-control-description {
@@ -1932,6 +1951,24 @@ body.adding-widget .add-new-widget:before,
 
 	.customize-control .date-time-fields select {
 		height: 39px;
+	}
+
+	.date-time-fields .month-field {
+		width: 79px;
+	}
+
+	.date-time-fields .day-field,
+	.date-time-fields .hour-field,
+	.date-time-fields .minute-field {
+		width: 55px;
+	}
+
+	.date-time-fields .year-field {
+		width: 80px;
+	}
+
+	.date-time-fields .date-timezone {
+		line-height: 3.2;
 	}
 }
 
