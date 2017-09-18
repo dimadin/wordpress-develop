@@ -3657,6 +3657,63 @@
 		}
 	});
 
+	/**
+	 * wp.customize.PreviewLinkControl
+	 *
+	 * @constructor
+	 * @augments wp.customize.Control
+	 * @augments wp.customize.Class
+	 */
+	api.PreviewLinkControl = api.Control.extend({
+
+		/**
+		 * @since 4.9.0
+		 */
+		ready: function() {
+			var control = this, copyButton, inputNode, element, getLink;
+
+			copyButton = control.container.find( '.customize-copy-preview-link' );
+			inputNode = control.container.find( 'input' );
+			element = new api.Element( inputNode );
+			control.elements.push( element );
+
+			// @todo Work pending, getting link temporarily.
+			getLink = function() {
+				var a = document.createElement( 'a' ), params = {};
+
+				params.customize_changeset_uuid = api.settings.changeset.uuid;
+				a.href = api.previewer.previewUrl.get();
+
+				if ( ! api.settings.theme.active ) {
+					params.theme = api.settings.theme.stylesheet;
+				}
+
+				a.search = $.param( params );
+
+				return a.href;
+			};
+
+			element.set( getLink() );
+
+			copyButton.on( 'click', function( event ) {
+				event.preventDefault();
+
+				if ( element.get() ) {
+					inputNode.select();
+					document.execCommand( 'copy' );
+					copyButton.text( copyButton.data( 'copied-text' ) );
+				}
+			} );
+
+			copyButton.on( 'mouseenter', function() {
+				if ( element.get() ) {
+					copyButton.focus();
+					copyButton.text( copyButton.data( 'copy-text' ) );
+				}
+			} );
+		}
+	});
+
 	// Change objects contained within the main customize object to Settings.
 	api.defaultConstructor = api.Setting;
 
@@ -4353,7 +4410,8 @@
 		background:          api.BackgroundControl,
 		background_position: api.BackgroundPositionControl,
 		theme:               api.ThemeControl,
-		date_time:           api.DateTimeControl
+		date_time:           api.DateTimeControl,
+		preview_link:        api.PreviewLinkControl
 	};
 	api.panelConstructor = {};
 	api.sectionConstructor = {
@@ -5940,54 +5998,6 @@
 					toggleDateControl( element.get() );
 					element.bind( toggleDateControl );
 				} );
-			} );
-		} );
-
-		api.control( 'changeset_preview_link', function( control ) {
-			control.deferred.embedded.done( function() {
-				var copyButton, inputNode, element, getLink;
-
-				copyButton = $( wp.template( 'customize-copy-preview-link' )() );
-				inputNode = control.container.find( 'input' );
-				element = new api.Element( inputNode );
-				control.elements.push( element );
-
-				// @todo Need to improve and test it.
-				getLink = function() {
-					var a = document.createElement( 'a' ), params = {};
-
-					params.customize_changeset_uuid = api.settings.changeset.uuid;
-					a.href = api.previewer.previewUrl.get();
-
-					if ( ! api.settings.theme.active ) {
-						params.theme = api.settings.theme.stylesheet;
-					}
-
-					a.search = $.param( params );
-
-					return a.href;
-				};
-
-				element.set( getLink() );
-
-				copyButton.on( 'click', function( event ) {
-					event.preventDefault();
-
-					if ( element.get() ) {
-						inputNode.select();
-						document.execCommand( 'copy' );
-						copyButton.text( copyButton.data( 'copied-text' ) );
-					}
-				} );
-
-				copyButton.on( 'mouseenter', function() {
-					if ( element.get() ) {
-						copyButton.focus();
-						copyButton.text( copyButton.data( 'copy-text' ) );
-					}
-				} );
-
-				control.container.append( copyButton );
 			} );
 		} );
 

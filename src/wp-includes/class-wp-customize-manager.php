@@ -368,9 +368,6 @@ final class WP_Customize_Manager {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_section_templates' ), 1 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_control_templates' ), 1 );
 
-		// Render template for publish settings.
-		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_publish_settings_templates' ) );
-
 		// Export header video settings with the partial response.
 		add_filter( 'customize_render_partials_response', array( $this, 'export_header_video_settings' ), 10, 3 );
 
@@ -3227,24 +3224,6 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Render templates for publish settings.
-	 *
-	 * @since 4.9.0
-	 */
-	public function render_publish_settings_templates() {
-		?>
-		<script type="text/html" id="tmpl-changeset-schedule-date">
-
-		</script>
-
-		<script type="text/html" id="tmpl-customize-copy-preview-link">
-			<button id="customize-copy-preview-link" class="customize-copy-preview-link button button-secondary" data-copy-text="<?php _e( 'Copy' ); ?>" data-copied-text="<?php _e( 'Copied' ); ?>" ><?php _e( 'Copy' ); ?></button>
-		</script>
-
-		<?php
-	}
-
-	/**
 	 * Helper function to compare two objects by priority, ensuring sort stability via instance_number.
 	 *
 	 * @since 3.4.0
@@ -3758,6 +3737,7 @@ final class WP_Customize_Manager {
 		$this->register_control_type( 'WP_Customize_Site_Icon_Control' );
 		$this->register_control_type( 'WP_Customize_Theme_Control' );
 		$this->register_control_type( 'WP_Customize_Date_Time_Control' );
+		$this->register_control_type( 'WP_Customize_Preview_Link_Control' );
 
 		/* Publish Settings */
 
@@ -3793,12 +3773,9 @@ final class WP_Customize_Manager {
 		$this->add_control( 'changeset_preview_link', array(
 			'section' => 'publish_settings',
 			'settings' => array(),
-			'type' => 'input',
+			'type' => 'preview_link',
 			'label' => __( 'Share Preview Link' ),
 			'description' => __( 'See how changes would look live on your website, and share the preview with people who can\'t access the Customizer.' ),
-			'input_attrs' => array(
-				'readOnly' => '',
-			),
 			'capability' => 'customize',
 		) );
 
