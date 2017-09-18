@@ -4977,7 +4977,7 @@
 				expandedPanel = state.create( 'expandedPanel' ),
 				expandedSection = state.create( 'expandedSection' ),
 				changesetStatus = state.create( 'changesetStatus' ),
-				nextChangesetStatus = state.create( 'nextChangesetStatus' ),
+				selectedChangesetStatus = state.create( 'selectedChangesetStatus' ),
 				previewerAlive = state.create( 'previewerAlive' ),
 				editShortcutVisibility  = state.create( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
@@ -4994,9 +4994,9 @@
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
 				} else {
-					if ( 'draft' === nextChangesetStatus.get() ) {
+					if ( 'draft' === selectedChangesetStatus.get() ) {
 						saveBtn.val( api.l10n.saveDraft );
-					} else if ( 'future' === nextChangesetStatus.get() ) {
+					} else if ( 'future' === selectedChangesetStatus.get() ) {
 						saveBtn.val( api.l10n.schedule );
 					} else {
 						saveBtn.val( api.l10n.publish );
@@ -5008,12 +5008,12 @@
 				 * Save (publish) button should be enabled if saving is not currently happening,
 				 * and if the theme is not active or the changeset exists but is not published.
 				 */
-				canSave = ! saving() && ( ! activated() || ! saved() || ( changesetStatus() !== nextChangesetStatus() && '' !== changesetStatus() ) );
+				canSave = ! saving() && ( ! activated() || ! saved() || ( changesetStatus() !== selectedChangesetStatus() && '' !== changesetStatus() ) );
 
 				saveBtn.prop( 'disabled', ! canSave );
 			});
 
-			nextChangesetStatus.validate = function( status ) {
+			selectedChangesetStatus.validate = function( status ) {
 				if ( '' === status || 'auto-draft' === status ) {
 					return 'publish';
 				}
@@ -5022,8 +5022,8 @@
 
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
-			nextChangesetStatus( api.settings.changeset.status );
-			nextChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
+			selectedChangesetStatus( api.settings.changeset.status );
+			selectedChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
 				api.each( function( setting ) {
@@ -5120,7 +5120,7 @@
 		// Button bindings.
 		saveBtn.click( function( event ) {
 			api.previewer.save({
-				status: api.state( 'nextChangesetStatus' ).get()
+				status: api.state( 'selectedChangesetStatus' ).get()
 			});
 			event.preventDefault();
 		}).keydown( function( event ) {
@@ -5129,7 +5129,7 @@
 			}
 			if ( 13 === event.which ) { // Enter.
 				api.previewer.save({
-					status: api.state( 'nextChangesetStatus' ).get()
+					status: api.state( 'selectedChangesetStatus' ).get()
 				});
 			}
 			event.preventDefault();
@@ -5892,8 +5892,8 @@
 				radioNodes = control.container.find( 'input[type=radio][name]' );
 				element = new api.Element( radioNodes );
 				control.elements.push( element );
-				element.sync( api.state( 'nextChangesetStatus' ) );
-				element.set( api.state( 'nextChangesetStatus' ).get() );
+				element.sync( api.state( 'selectedChangesetStatus' ) );
+				element.set( api.state( 'selectedChangesetStatus' ).get() );
 			} );
 		} );
 
