@@ -2268,7 +2268,7 @@ final class WP_Customize_Manager {
 		if ( $args['date_gmt'] ) {
 			$is_future_dated = ( mysql2date( 'U', $args['date_gmt'], false ) > mysql2date( 'U', $now, false ) );
 			if ( ! $is_future_dated ) {
-				return new WP_Error( 'not_future_date' ); // Only future dates are allowed.
+				return new WP_Error( 'not_future_date', __( 'You must supply a future date to schedule.' ) ); // Only future dates are allowed.
 			}
 
 			if ( ! $this->is_theme_active() && ( 'future' === $args['status'] || $is_future_dated ) ) {
@@ -2283,7 +2283,7 @@ final class WP_Customize_Manager {
 			// Fail if the new status is future but the existing post's date is not in the future.
 			$changeset_post = get_post( $changeset_post_id );
 			if ( mysql2date( 'U', $changeset_post->post_date_gmt, false ) <= mysql2date( 'U', $now, false ) ) {
-				return new WP_Error( 'not_future_date' );
+				return new WP_Error( 'not_future_date', __( 'You must supply a future date to schedule.' ) );
 			}
 		}
 
