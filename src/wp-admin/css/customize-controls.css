@@ -165,6 +165,25 @@ body {
 	display: none !important;
 }
 
+#customize-theme-controls .accordion-section-content#sub-accordion-section-publish_settings {
+	transform: translate( 0, -100% );
+	left: 0;
+	top: 0;
+}
+
+#sub-accordion-section-publish_settings .customize-section-back {
+	display: none;
+}
+
+#customize-theme-controls .accordion-section-content#sub-accordion-section-publish_settings.active {
+	z-index: 99999;
+	background: #f1f1f1;
+	visibility: visible;
+	display: block !important;
+	height: 100%;
+	transform: translate( 0, 0 );
+}
+
 #customize-controls .customize-info.section-meta {
 	margin-bottom: 15px;
 }

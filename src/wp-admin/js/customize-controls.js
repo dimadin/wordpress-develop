@@ -1251,9 +1251,11 @@
 						completeCallback: expand
 					});
 				} else {
-					api.panel.each( function( panel ) {
-						panel.collapse();
-					});
+					if ( ! args.allowMultiple ) {
+						api.panel.each(function (panel) {
+							panel.collapse();
+						});
+					}
 					expand();
 				}
 
@@ -4622,12 +4624,15 @@
 			publishSettingsBtn.on( 'click', function( event ) {
 				event.preventDefault();
 
-				// @todo Change expand animation to SlidUp/SlideDown.
-				if ( section.expanded.get() ) {
-					section.collapse();
-				} else {
-					section.expand();
-				}
+				section.expandedArgumentsQueue = [ {
+					unchanged: true,
+					allowMultiple: true,
+					completeCallback: function() {
+						section.container.toggleClass( 'active', section.expanded.get() );
+					}
+				} ];
+
+				section.expanded.set( ! section.expanded.get() );
 			} );
 
 			section.expanded.bind( function( isExpanded ) {
