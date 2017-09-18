@@ -90,6 +90,24 @@ body {
 	border-top: 1px solid #ddd;
 }
 
+.date-time-fields .month-field {
+	width: 79px;
+}
+
+.date-time-fields .day-field,
+.date-time-fields .hour-field,
+.date-time-fields .minute-field {
+	width: 46px;
+}
+
+.date-time-fields .year-field {
+	width: 60px;
+}
+
+.date-time-fields .am-pm-field {
+	width: 53px;
+}
+
 #customize-control-changeset_status label {
 	padding-top: 10px;
 	padding-bottom: 10px;
@@ -115,6 +133,27 @@ body {
 	right: 0;
 }
 
+.customize-copy-preview-link:before,
+.customize-copy-preview-link:after {
+	content: '';
+	height: 28px;
+	position: absolute;
+	background: #ffffff;
+	top: -1px;
+}
+
+.customize-copy-preview-link:before {
+	left: -10px;
+	width: 9px;
+	opacity: 0.75;
+}
+
+.customize-copy-preview-link:after {
+	left: -5px;
+	width: 4px;
+	opacity: 0.8;
+}
+
 #customize-control-changeset_preview_link input {
 	line-height: 2.5;
 	border-top: 1px solid #ddd;
@@ -123,11 +162,58 @@ body {
 }
 
 #accordion-section-publish_settings {
-	display: none!important;
+	display: none !important;
 }
 
 #customize-controls .customize-info.section-meta {
 	margin-bottom: 15px;
+}
+
+.date-time-fields {
+	padding-top: 10px;
+	padding-bottom:10px;
+}
+
+.date-time-fields label,
+.date-time-fields .date-time-separator {
+	float: left;
+	margin-right:5px;
+}
+
+.date-time-fields .date-time-separator {
+	line-height: 2;
+}
+
+.date-time-fields .time-row {
+	padding-top: 12px;
+}
+
+.date-time-fields .date-timezone {
+	float: left;
+	line-height: 2.2;
+}
+
+#customize-control-changeset_preview_link {
+	margin-top: 12px;
+}
+
+#customize-control-changeset_status {
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+#customize-control-changeset_schedule_date {
+	box-sizing: content-box;
+	width: 100%;
+	margin-left: -12px;
+	padding: 12px;
+	background: #ffffff;
+	border-bottom: 1px solid #ddd;
+	margin-bottom: 0;
+}
+
+#customize-control-changeset_schedule_date .customize-control-description {
+	font-style: normal;
 }
 
 #customize-controls .customize-info.is-in-view,
@@ -1861,6 +1947,28 @@ body.adding-widget .add-new-widget:before,
 	.customize-control input[type="radio"] + label,
 	.customize-control input[type="checkbox"] + label {
 		line-height: 32px;
+	}
+
+	.customize-control .date-time-fields select {
+		height: 39px;
+	}
+
+	.date-time-fields .month-field {
+		width: 79px;
+	}
+
+	.date-time-fields .day-field,
+	.date-time-fields .hour-field,
+	.date-time-fields .minute-field {
+		width: 55px;
+	}
+
+	.date-time-fields .year-field {
+		width: 80px;
+	}
+
+	.date-time-fields .date-timezone {
+		line-height: 3.2;
 	}
 }
 

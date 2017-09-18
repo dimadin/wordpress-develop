@@ -3642,6 +3642,91 @@
 		}
 	});
 
+	/**
+	 * wp.customize.DateTimeControl
+	 *
+	 * @constructor
+	 * @augments wp.customize.Control
+	 * @augments wp.customize.Class
+	 */
+	api.DateTimeControl = api.Control.extend({
+
+		dateInputs: {},
+		dateComponents: {},
+
+		/**
+		 * @since 4.9.0
+		 */
+		ready: function() {
+			var control = this;
+			control.dateInputs = control.container.find( '.date-input' );
+			control.dateComponents = {};
+
+			control.dateInputs.each( function() {
+			    var input = $( this ), component;
+			    component = input.data( 'component' );
+				control.dateComponents[ component ] = input;
+			} );
+		}
+	});
+
+	/**
+	 * wp.customize.PreviewLinkControl
+	 *
+	 * @constructor
+	 * @augments wp.customize.Control
+	 * @augments wp.customize.Class
+	 */
+	api.PreviewLinkControl = api.Control.extend({
+
+		/**
+		 * @since 4.9.0
+		 */
+		ready: function() {
+			var control = this, copyButton, inputNode, element, getLink;
+
+			copyButton = control.container.find( '.customize-copy-preview-link' );
+			inputNode = control.container.find( 'input' );
+			element = new api.Element( inputNode );
+			control.elements.push( element );
+
+			// @todo Work pending, getting link temporarily.
+			getLink = function() {
+				var a = document.createElement( 'a' ), params = {};
+
+				params.customize_changeset_uuid = api.settings.changeset.uuid;
+				a.href = api.previewer.previewUrl.get();
+
+				if ( ! api.settings.theme.active ) {
+					params.theme = api.settings.theme.stylesheet;
+				}
+
+				a.search = $.param( params );
+
+				return a.href;
+			};
+
+			element.set( getLink() );
+
+			copyButton.on( 'click', function( event ) {
+				event.preventDefault();
+
+				if ( element.get() ) {
+					inputNode.select();
+					document.execCommand( 'copy' );
+					copyButton.text( copyButton.data( 'copied-text' ) );
+				}
+			} );
+
+			copyButton.on( 'mouseenter', function() {
+				if ( element.get() ) {
+					copyButton.focus();
+					copyButton.text( copyButton.data( 'copy-text' ) );
+				}
+			} );
+		}
+	});
+
 	// Change objects contained within the main customize object to Settings.
 	api.defaultConstructor = api.Setting;
 
@@ -4341,7 +4426,9 @@
 		header:              api.HeaderControl,
 		background:          api.BackgroundControl,
 		background_position: api.BackgroundPositionControl,
-		theme:               api.ThemeControl
+		theme:               api.ThemeControl,
+		date_time:           api.DateTimeControl,
+		preview_link:        api.PreviewLinkControl
 	};
 	api.panelConstructor = {};
 	api.sectionConstructor = {
@@ -5000,7 +5087,7 @@
 				expandedPanel = state.create( 'expandedPanel' ),
 				expandedSection = state.create( 'expandedSection' ),
 				changesetStatus = state.create( 'changesetStatus' ),
-				nextChangesetStatus = state.create( 'nextChangesetStatus' ),
+				selectedChangesetStatus = state.create( 'selectedChangesetStatus' ),
 				previewerAlive = state.create( 'previewerAlive' ),
 				editShortcutVisibility  = state.create( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
@@ -5017,12 +5104,12 @@
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
 				} else {
-					if ( 'draft' === nextChangesetStatus.get() ) {
-						saveBtn.val( 'Save Draft' ); // @todo l10n.
-					} else if ( 'future' === nextChangesetStatus.get() ) {
-						saveBtn.val( 'Schedule' ); // @todo l10n.
+					if ( 'draft' === selectedChangesetStatus.get() ) {
+						saveBtn.val( api.l10n.saveDraft );
+					} else if ( 'future' === selectedChangesetStatus.get() ) {
+						saveBtn.val( api.l10n.schedule );
 					} else {
-						saveBtn.val( api.l10n.save );
+						saveBtn.val( api.l10n.publish );
 					}
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
 				}
@@ -5031,12 +5118,12 @@
 				 * Save (publish) button should be enabled if saving is not currently happening,
 				 * and if the theme is not active or the changeset exists but is not published.
 				 */
-				canSave = ! saving() && ( ! activated() || ! saved() || ( changesetStatus() !== nextChangesetStatus() && '' !== changesetStatus() ) );
+				canSave = ! saving() && ( ! activated() || ! saved() || ( changesetStatus() !== selectedChangesetStatus() && '' !== changesetStatus() ) );
 
 				saveBtn.prop( 'disabled', ! canSave );
 			});
 
-			nextChangesetStatus.validate = function( status ) {
+			selectedChangesetStatus.validate = function( status ) {
 				if ( '' === status || 'auto-draft' === status ) {
 					return 'publish';
 				}
@@ -5045,7 +5132,8 @@
 
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
-			nextChangesetStatus( api.settings.changeset.status );
+			selectedChangesetStatus( api.settings.changeset.status );
+			selectedChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
 			autosaved( api.settings.changeset.autosaved );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
@@ -5082,7 +5170,9 @@
 				populateChangesetUuidParam( 'auto-draft' !== response.changeset_status );
 			});
 
+			publishSettingsBtn.toggle( activated.get() );
 			activated.bind( function( to ) {
+				publishSettingsBtn.toggle( to );
 				if ( to ) {
 					api.trigger( 'activated' );
 				}
@@ -5199,7 +5289,7 @@
 		// Button bindings.
 		saveBtn.click( function( event ) {
 			api.previewer.save({
-				status: api.state( 'nextChangesetStatus' ).get()
+				status: api.state( 'selectedChangesetStatus' ).get()
 			});
 			event.preventDefault();
 		}).keydown( function( event ) {
@@ -5208,7 +5298,7 @@
 			}
 			if ( 13 === event.which ) { // Enter.
 				api.previewer.save({
-					status: api.state( 'nextChangesetStatus' ).get()
+					status: api.state( 'selectedChangesetStatus' ).get()
 				});
 			}
 			event.preventDefault();
@@ -6012,38 +6102,29 @@
 		api.control( 'changeset_status', function( control ) {
 			control.deferred.embedded.done( function() {
 				var radioNodes, element;
+
 				radioNodes = control.container.find( 'input[type=radio][name]' );
 				element = new api.Element( radioNodes );
 				control.elements.push( element );
-				element.sync( api.state( 'nextChangesetStatus' ) );
-				element.set( api.state( 'nextChangesetStatus' ).get() );
+
+				element.sync( api.state( 'selectedChangesetStatus' ) );
+				element.set( api.state( 'selectedChangesetStatus' ).get() );
+
+				api.control( 'changeset_schedule_date', function( dateControl ) {
+					var toggleDateControl;
+
+					dateControl.active.validate = function() {
+						return 'future' ===  element.get();
+					};
+
+					toggleDateControl = function( value ) {
+						dateControl.active.set( 'future' ===  value );
+					};
+
+					toggleDateControl( element.get() );
+					element.bind( toggleDateControl );
+				} );
 			} );
-		} );
-		api.control( 'changeset_preview_link', function( control ) {
-			var copyButton, previewLink;
-
-			copyButton = $( wp.template( 'customize-copy-preview-link' )() );
-
-			copyButton.on( 'click', function( event ) {
-				event.preventDefault();
-				previewLink = control.container.find( 'input' );
-
-				if ( previewLink.val() ) {
-					previewLink.select();
-					document.execCommand( 'copy' );
-					copyButton.text( copyButton.data( 'copied-text' ) );
-				}
-			} );
-
-			copyButton.on( 'mouseenter', function() {
-				previewLink = control.container.find( 'input' );
-				if ( previewLink.val() ) {
-					copyButton.focus();
-					copyButton.text( copyButton.data( 'copy-text' ) );
-				}
-			} );
-
-			control.container.append( copyButton );
 		} );
 
 		// Toggle visibility of Header Video notice when active state change.
