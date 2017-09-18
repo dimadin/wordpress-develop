@@ -52,7 +52,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public function content_template() {
 		$data = array_merge( $this->json(), $this->get_month_choices() );
 		?>
-		<# _.defaults( data, <?php echo wp_json_encode( $data ) ?> ); #>
+		<# _.defaults( data, <?php echo wp_json_encode( $data ); ?> ); #>
 
 		<span class="customize-control-title">
 			<label>{{ data.label }}</label>
@@ -87,7 +87,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 					<span class="time-special-char date-time-separator">,</span>
 					<label class="year-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Year' ); ?></span>
-						<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="<?php esc_attr_e( date( 'Y' ) ); ?>" value="{{ data.year }}" max="9999" />
+						<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="<?php echo esc_attr( date( 'Y' ) ); ?>" value="{{ data.year }}" max="9999" />
 					</label>
 				</div>
 			</div>
@@ -106,11 +106,36 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 					<label class="am-pm-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'AM / PM' ); ?></span>
 						<select class="date-input" data-component="am_pm">
-							<option value="am"><?php esc_attr_e( 'AM' ) ?></option>
-							<option value="pm"><?php esc_attr_e( 'PM' ) ?></option>
+							<option value="am"><?php esc_html_e( 'AM' ); ?></option>
+							<option value="pm"><?php esc_html_e( 'PM' ); ?></option>
 						</select>
 					</label>
-					<span class="date-timezone">UTC-5</span> <!-- @todo Get timezone. -->
+					<?php
+					$current_offset = intval( get_option( 'gmt_offset', 0 ) );
+					$tz_string = get_option( 'timezone_string' );
+					if ( false !== strpos( $tz_string,'Etc/GMT' ) ) {
+						$tz_string = '';
+					}
+					if ( ! empty( $tz_string ) ) {
+						try {
+							$tz = new DateTimezone( $tz_string );
+							$now = new DateTime( 'now', $tz );
+							$tz_string = $now->format( 'T' );
+						} catch ( Exception $e ) {
+							$tz_string = '';
+						}
+					}
+					if ( empty( $tz_string ) ) { // Create a UTC+- zone if no timezone string exists.
+						if ( 0 === $current_offset ) {
+							$tz_string = 'UTC+0';
+						} elseif ( $current_offset < 0 ) {
+							$tz_string = 'UTC' . $current_offset;
+						} else {
+							$tz_string = 'UTC+' . $current_offset;
+						}
+					}
+					?>
+					<span class="date-timezone"><?php echo esc_html( $tz_string ); ?></span>
 				</div>
 			</div>
 		</div>
