@@ -5983,6 +5983,14 @@
 				api.control( 'changeset_schedule_date', function( dateControl ) {
 					var toggleDateControl;
 
+					dateControl.notifications.alt = true;
+
+					// @todo Remove once implemented.
+					dateControl.notifications.add( 'not_implemented', new api.Notification( 'not_implemented', {
+						type: 'warning',
+						message: 'This is not implemented yet.'
+					} ) );
+
 					dateControl.active.validate = function() {
 						return 'future' ===  element.get();
 					};
