@@ -110,6 +110,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 							<option value="pm"><?php esc_attr_e( 'PM' ) ?></option>
 						</select>
 					</label>
+					<span class="date-timezone">UTC-5</span> <!-- @todo Get timezone. -->
 				</div>
 			</div>
 		</div>

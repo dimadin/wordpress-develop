@@ -3786,7 +3786,6 @@ final class WP_Customize_Manager {
 			'section' => 'publish_settings',
 			'settings' => array(),
 			'type' => 'date_time',
-			'label' => __( 'Schedule Date' ),
 			'description' => __( 'Schedule your customization changes to publish ( "go live" ) at a future date.' ),
 			'capability' => 'customize',
 		) );

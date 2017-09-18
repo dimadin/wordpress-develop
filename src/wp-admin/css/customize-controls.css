@@ -159,15 +159,42 @@ body {
 .date-time-fields label,
 .date-time-fields .date-time-separator {
 	float: left;
-	margin-right:3px;
+	margin-right:5px;
 }
 
 .date-time-fields .date-time-separator {
 	line-height: 2;
 }
 
-.date-time-fields .time-row{
+.date-time-fields .time-row {
 	padding-top: 12px;
+}
+
+.date-time-fields .date-timezone {
+	float: left;
+	line-height: 2.2;
+}
+
+#customize-control-changeset_preview_link {
+	margin-top: 12px;
+}
+
+#customize-control-changeset_status {
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+#customize-control-changeset_schedule_date {
+	box-sizing: content-box;
+	width: 100%;
+	margin-left: -12px;
+	padding: 12px;
+	background: #ffffff;
+	margin-bottom:0;
+}
+
+#customize-control-changeset_schedule_date .customize-control-description {
+	font-style: normal;
 }
 
 #customize-controls .customize-info.is-in-view,
