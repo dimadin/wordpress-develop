@@ -5102,14 +5102,14 @@
 
 			selectedChangesetStatus.validate = function( status ) {
 				if ( '' === status || 'auto-draft' === status ) {
-					return 'publish';
+					return null;
 				}
 				return status;
 			};
 
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
-			selectedChangesetStatus( api.settings.changeset.status );
+			selectedChangesetStatus( '' === api.settings.changeset.status || 'auto-draft' === api.settings.changeset.status ? 'publish' : api.settings.changeset.status );
 			selectedChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
