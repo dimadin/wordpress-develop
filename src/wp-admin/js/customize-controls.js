@@ -5888,10 +5888,7 @@
 		 */
 		api.control( 'changeset_status', function( control ) {
 			control.deferred.embedded.done( function() {
-				var radioNodes, element, dateTemplate;
-
-				dateTemplate = $( wp.template( 'changeset-schedule-date' )( {} ) );
-				control.container.append( dateTemplate );
+				var radioNodes, element;
 
 				radioNodes = control.container.find( 'input[type=radio][name]' );
 				element = new api.Element( radioNodes );

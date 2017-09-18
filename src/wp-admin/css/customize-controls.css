@@ -136,56 +136,6 @@ body {
 	opacity: 0.8;
 }
 
-.changeset-schedule-date {
-	background-color: #ffffff;
-	box-sizing: content-box;
-	width: 100%;
-	margin-left: -12px;
-	padding: 12px;
-}
-
-.changeset-schedule-date .schedule-description {
-	margin-top:0;
-}
-
-.changeset-schedule-date .notice {
-	padding-top: 7px;
-	padding-bottom: 7px;
-	border-top: 1px solid #eeeded;
-}
-
-.schedule-day-fields .month-field {
-
-}
-
-.schedule-day-fields .day-field {
-
-}
-
-.schedule-day-fields .time-special-char {
-
-}
-
-.schedule-day-fields .year-field {
-
-}
-
-.schedule-time-fields .hour-field {
-
-}
-
-.schedule-time-fields .time-special-char {
-
-}
-
-.schedule-time-fields .minute-field {
-
-}
-
-.schedule-time-fields .am-pm-field {
-
-}
-
 #customize-control-changeset_preview_link input {
 	line-height: 2.5;
 	border-top: 1px solid #ddd;
@@ -199,6 +149,25 @@ body {
 
 #customize-controls .customize-info.section-meta {
 	margin-bottom: 15px;
+}
+
+.date-time-fields {
+	padding-top: 10px;
+	padding-bottom:10px;
+}
+
+.date-time-fields label,
+.date-time-fields .date-time-separator {
+	float: left;
+	margin-right:3px;
+}
+
+.date-time-fields .date-time-separator {
+	line-height: 2;
+}
+
+.date-time-fields .time-row{
+	padding-top: 12px;
 }
 
 #customize-controls .customize-info.is-in-view,
@@ -1932,6 +1901,10 @@ body.adding-widget .add-new-widget:before,
 	.customize-control input[type="radio"] + label,
 	.customize-control input[type="checkbox"] + label {
 		line-height: 32px;
+	}
+
+	.customize-control .date-time-fields select {
+		height: 39px;
 	}
 }
 
