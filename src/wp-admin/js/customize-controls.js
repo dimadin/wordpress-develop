@@ -3629,6 +3629,34 @@
 		}
 	});
 
+	/**
+	 * wp.customize.DateTimeControl
+	 *
+	 * @constructor
+	 * @augments wp.customize.Control
+	 * @augments wp.customize.Class
+	 */
+	api.DateTimeControl = api.Control.extend({
+
+		dateInputs: {},
+		dateComponents: {},
+
+		/**
+		 * @since 4.9.0
+		 */
+		ready: function() {
+			var control = this;
+			control.dateInputs = control.container.find( '.date-input' );
+			control.dateComponents = {};
+
+			control.dateInputs.each( function() {
+			    var input = $( this ), component;
+			    component = input.data( 'component' );
+				control.dateComponents[ component ] = input;
+			} );
+		}
+	});
+
 	// Change objects contained within the main customize object to Settings.
 	api.defaultConstructor = api.Setting;
 
@@ -4324,7 +4352,8 @@
 		header:              api.HeaderControl,
 		background:          api.BackgroundControl,
 		background_position: api.BackgroundPositionControl,
-		theme:               api.ThemeControl
+		theme:               api.ThemeControl,
+		date_time:           api.DateTimeControl
 	};
 	api.panelConstructor = {};
 	api.sectionConstructor = {
@@ -5896,6 +5925,21 @@
 
 				element.sync( api.state( 'selectedChangesetStatus' ) );
 				element.set( api.state( 'selectedChangesetStatus' ).get() );
+
+				api.control( 'changeset_schedule_date', function( dateControl ) {
+					var toggleDateControl;
+
+					dateControl.active.validate = function() {
+						return 'future' ===  element.get();
+					};
+
+					toggleDateControl = function( value ) {
+						dateControl.active.set( 'future' ===  value );
+					};
+
+					toggleDateControl( element.get() );
+					element.bind( toggleDateControl );
+				} );
 			} );
 		} );
 

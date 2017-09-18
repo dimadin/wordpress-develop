@@ -65,7 +65,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 				<div class="day-fields clear">
 					<label class="month-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Month' ); ?></span>
-							<select id="date-month" class="date-input month" data-date-input="month">
+							<select class="date-input month" data-component="month">
 								<# _.each( data.month_choices, function( choice ) {
 										if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
 										text = choice.text;
@@ -82,12 +82,12 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 					</label>
 					<label class="day-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Day' ); ?></span>
-						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input day" data-date-input="day" min="1" max="31" value="{{ data.day }}" />
+						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input day" data-component="day" min="1" max="31" value="{{ data.day }}" />
 					</label>
 					<span class="time-special-char date-time-separator">,</span>
 					<label class="year-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Year' ); ?></span>
-						<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-date-input="year" min="<?php esc_attr_e( date( 'Y' ) ); ?>" value="{{ data.year }}" max="9999" />
+						<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="<?php esc_attr_e( date( 'Y' ) ); ?>" value="{{ data.year }}" max="9999" />
 					</label>
 				</div>
 			</div>
@@ -96,16 +96,16 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 				<div class="time-fields clear">
 					<label class="hour-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Hour' ); ?></span>
-						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-date-input="hour" min="0" max="11" value="{{ data.hour }}" />
+						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="0" max="11" value="{{ data.hour }}" />
 					</label>
 					<span class="time-special-char date-time-separator">:</span>
 					<label class="minute-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Minute' ); ?></span>
-						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-date-input="minute" min="0" max="59" value="{{ data.minute }}" />
+						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" value="{{ data.minute }}" />
 					</label>
 					<label class="am-pm-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'AM / PM' ); ?></span>
-						<select id="">
+						<select class="date-input" data-component="am_pm">
 							<option value="am"><?php esc_attr_e( 'AM' ) ?></option>
 							<option value="pm"><?php esc_attr_e( 'PM' ) ?></option>
 						</select>
