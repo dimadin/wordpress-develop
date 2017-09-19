@@ -2333,7 +2333,7 @@ final class WP_Customize_Manager {
 		if ( $args['autosave'] ) {
 			if ( $args['date_gmt'] ) {
 				return new WP_Error( 'illegal_autosave_with_date_gmt' );
-			} elseif ( $args['date_status'] ) {
+			} elseif ( $args['status'] ) {
 				return new WP_Error( 'illegal_autosave_with_status' );
 			} elseif ( $args['user_id'] && get_current_user_id() !== $args['user_id'] ) {
 				return new WP_Error( 'illegal_autosave_with_non_current_user' );
