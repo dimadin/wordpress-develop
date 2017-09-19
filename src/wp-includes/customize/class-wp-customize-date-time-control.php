@@ -51,7 +51,9 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	 */
 	public function content_template() {
 		$data = array_merge( $this->json(), $this->get_month_choices() );
+		$timezone_info = $this->get_timezone_info();
 		?>
+
 		<# _.defaults( data, <?php echo wp_json_encode( $data ); ?> ); #>
 
 		<span class="customize-control-title">
@@ -110,32 +112,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 							<option value="pm"><?php esc_html_e( 'PM' ); ?></option>
 						</select>
 					</label>
-					<?php
-					$current_offset = intval( get_option( 'gmt_offset', 0 ) );
-					$tz_string = get_option( 'timezone_string' );
-					if ( false !== strpos( $tz_string,'Etc/GMT' ) ) {
-						$tz_string = '';
-					}
-					if ( ! empty( $tz_string ) ) {
-						try {
-							$tz = new DateTimezone( $tz_string );
-							$now = new DateTime( 'now', $tz );
-							$tz_string = $now->format( 'T' );
-						} catch ( Exception $e ) {
-							$tz_string = '';
-						}
-					}
-					if ( empty( $tz_string ) ) { // Create a UTC+- zone if no timezone string exists.
-						if ( 0 === $current_offset ) {
-							$tz_string = 'UTC+0';
-						} elseif ( $current_offset < 0 ) {
-							$tz_string = 'UTC' . $current_offset;
-						} else {
-							$tz_string = 'UTC+' . $current_offset;
-						}
-					}
-					?>
-					<span class="date-timezone"><?php echo esc_html( $tz_string ); ?></span>
+					<span class="date-timezone" aria-label="<?php esc_attr_e( 'Timezone' ); ?>" title="<?php esc_attr_e( $timezone_info['description'] ) ?>"><?php esc_html_e( $timezone_info['abbr'] ); ?></span>
 				</div>
 			</div>
 		</div>
@@ -165,5 +142,55 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 		return array(
 			'month_choices' => $months,
 		);
+	}
+
+	/**
+	 * Get timezone info.
+	 *
+	 * @return array abbr and description.
+	 */
+	public function get_timezone_info() {
+		$tz_string = get_option( 'timezone_string' );
+		$timezone_info = array();
+
+		if ( $tz_string ) {
+			$tz = new DateTimezone( $tz_string );
+			$now = new DateTime( 'now', $tz );
+			$formatted_gmt_offset = sprintf( 'UTC%s', $this->format_gmt_offset( $tz->getOffset( $now ) / 3600 ) );
+			$tz_name = str_replace( '_', ' ', $tz->getName() );
+			$timezone_info['abbr'] = $now->format( 'T' );
+
+			/* translators: 1: timezone name, 2: timezone abbreviation, 3: gmt offset  */
+			$timezone_info['description'] = sprintf( __( 'Timezone is %1$s (%2$s), currently %3$s.' ), $tz_name, $timezone_info['abbr'], $formatted_gmt_offset );
+		} else {
+			$formatted_gmt_offset = $this->format_gmt_offset( intval( get_option( 'gmt_offset', 0 ) ) );
+			$timezone_info['abbr'] = sprintf( 'UTC%s', $formatted_gmt_offset );
+
+			/* translators: %s: UTC offset  */
+			$timezone_info['description'] = sprintf( __( 'Timezone is %s.' ), $timezone_info['abbr'] );
+		}
+
+		return $timezone_info;
+	}
+
+	/**
+	 * Format GMT Offset.
+	 *
+	 * @see wp_timezone_choice()
+	 * @param float $offset Offset in hours.
+	 * @return string Formatted offset.
+	 */
+	public function format_gmt_offset( $offset ) {
+		if ( 0 <= $offset ) {
+			$formatted_offset = '+' . (string) $offset;
+		} else {
+			$formatted_offset = (string) $offset;
+		}
+		$formatted_offset = str_replace(
+			array( '.25', '.5', '.75' ),
+			array( ':15', ':30', ':45' ),
+			$formatted_offset
+		);
+		return $formatted_offset;
 	}
 }
