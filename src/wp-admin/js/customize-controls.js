@@ -1258,9 +1258,11 @@
 						completeCallback: expand
 					});
 				} else {
-					api.panel.each( function( panel ) {
-						panel.collapse();
-					});
+					if ( ! args.allowMultiple ) {
+						api.panel.each(function (panel) {
+							panel.collapse();
+						});
+					}
 					expand();
 				}
 
@@ -4635,20 +4637,41 @@
 			footerActions = $( '#customize-footer-actions' );
 
 		api.section( 'publish_settings', function( section ) {
+			var backgroundEls, animationDuration = 500, updateArgumentsQueue;
+
+			updateArgumentsQueue = function() {
+				section.expandedArgumentsQueue = [ {
+					unchanged: true,
+					allowMultiple: true
+				} ];
+			};
+
+			updateArgumentsQueue();
+			section.contentContainer.find( '.customize-action' ).text( api.l10n.updating );
+			section.contentContainer.find( '.customize-section-back' ).removeAttr( 'tabindex' );
 			publishSettingsBtn.prop( 'disabled', false );
+
 			publishSettingsBtn.on( 'click', function( event ) {
 				event.preventDefault();
-
-				// @todo Change expand animation to SlidUp/SlideDown.
-				if ( section.expanded.get() ) {
-					section.collapse();
-				} else {
-					section.expand();
-				}
+				updateArgumentsQueue();
+				section.expanded.set( ! section.expanded.get() );
 			} );
 
 			section.expanded.bind( function( isExpanded ) {
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
+				backgroundEls = $( '.customize-pane-child, .customize-info, .customize-pane-parent' ).not( section.contentContainer );
+
+				updateArgumentsQueue();
+				publishSettingsBtn.toggleClass( 'active', isExpanded );
+				section.container.toggleClass( 'publish-settings-open', isExpanded );
+
+				if ( isExpanded ) {
+					_.delay( function() {
+						backgroundEls.toggleClass( 'hidden', section.expanded.get() );
+					}, animationDuration );
+				} else {
+					backgroundEls.removeClass( 'hidden' );
+				}
 			} );
 		} );
 
@@ -5098,9 +5121,11 @@
 				if ( ! activated() ) {
 					saveBtn.val( api.l10n.activate );
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
+					publishSettingsBtn.prop( 'disabled', false );
 
 				} else if ( '' === changesetStatus.get() && saved() ) {
-					saveBtn.val( api.l10n.saved );
+					saveBtn.val( api.l10n.published );
+					publishSettingsBtn.prop( 'disabled', true );
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
 				} else {
@@ -5112,6 +5137,7 @@
 						saveBtn.val( api.l10n.publish );
 					}
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
+					publishSettingsBtn.prop( 'disabled', false );
 				}
 
 				/*
