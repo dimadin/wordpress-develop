@@ -4620,7 +4620,7 @@
 			footerActions = $( '#customize-footer-actions' );
 
 		api.section( 'publish_settings', function( section ) {
-			var otherPanes, animationDuration = 500, updateArgumentsQueue;
+			var backgroundEls, animationDuration = 500, updateArgumentsQueue;
 
 			updateArgumentsQueue = function() {
 				section.expandedArgumentsQueue = [ {
@@ -4631,6 +4631,7 @@
 
 			updateArgumentsQueue();
 			section.contentContainer.find( '.customize-action' ).text( api.l10n.updating );
+			section.contentContainer.find( '.customize-section-back' ).removeAttr( 'tabindex' );
 			publishSettingsBtn.prop( 'disabled', false );
 
 			publishSettingsBtn.on( 'click', function( event ) {
@@ -4642,17 +4643,17 @@
 			section.expanded.bind( function( isExpanded ) {
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
 
-				otherPanes = $( '.customize-pane-child' ).not( section.contentContainer );
+				backgroundEls = $( '.customize-pane-child, .customize-info, .customize-pane-parent' ).not( section.contentContainer );
 
 				updateArgumentsQueue();
 
 				if ( isExpanded ) {
 					section.container.addClass( 'active' );
 					_.delay( function() {
-						otherPanes.toggleClass( 'hidden', section.expanded.get() );
+						backgroundEls.toggleClass( 'hidden', section.expanded.get() );
 					}, animationDuration );
 				} else {
-					otherPanes.removeClass( 'hidden' );
+					backgroundEls.removeClass( 'hidden' );
 					section.container.removeClass( 'active' );
 				}
 			} );

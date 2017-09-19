@@ -86,10 +86,6 @@ body {
 	padding-right: 12px;
 }
 
-#customize-control-changeset_status label:first-of-type {
-	border-top: 1px solid #ddd;
-}
-
 .date-time-fields .month-field {
 	width: 79px;
 }
@@ -112,6 +108,10 @@ body {
 	padding-top: 10px;
 	padding-bottom: 10px;
 	font-weight: 500;
+}
+
+#customize-control-changeset_status label:first-of-type {
+	border-top: 1px solid #ddd;
 }
 
 #customize-control-changeset_status .customize-control-title {
@@ -162,7 +162,7 @@ body {
 }
 
 #accordion-section-publish_settings,
-.customize-pane-child.open.hidden {
+.customize-pane-child.hidden {
 	display: none !important;
 }
 
