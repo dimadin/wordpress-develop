@@ -555,6 +555,7 @@ function wp_default_scripts( &$scripts ) {
 		'published'          => __( 'Published' ),
 		'saveDraft'          => __( 'Save Draft' ),
 		'draftSaved'         => __( 'Draft Saved' ),
+		'updating'           => __( 'Updating' ),
 		'schedule'           => __( 'Schedule' ),
 		'scheduled'          => __( 'Scheduled' ),
 		'saveAlert'          => __( 'The changes you made will be lost if you navigate away from this page.' ),

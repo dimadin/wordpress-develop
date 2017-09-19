@@ -4630,6 +4630,7 @@
 			};
 
 			updateArgumentsQueue();
+			section.contentContainer.find( '.customize-action' ).text( api.l10n.updating );
 			publishSettingsBtn.prop( 'disabled', false );
 
 			publishSettingsBtn.on( 'click', function( event ) {
