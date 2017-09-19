@@ -280,7 +280,7 @@ final class WP_Customize_Manager {
 		}
 
 		$this->original_stylesheet = get_stylesheet();
-		$this->theme = wp_get_theme( $args['theme'] );
+		$this->theme = wp_get_theme( 0 === validate_file( $args['theme'] ) ? $args['theme'] : null );
 		$this->messenger_channel = $args['messenger_channel'];
 		$this->settings_previewed = ! empty( $args['settings_previewed'] );
 		$this->autosaved = ! empty( $args['autosaved'] );
@@ -499,7 +499,7 @@ final class WP_Customize_Manager {
 			return;
 		}
 
-		if ( ! preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $this->_changeset_uuid ) ) {
+		if ( ! wp_is_uuid( $this->_changeset_uuid ) ) {
 			$this->wp_die( -1, __( 'Invalid changeset UUID' ) );
 		}
 
@@ -2333,7 +2333,7 @@ final class WP_Customize_Manager {
 		if ( $args['autosave'] ) {
 			if ( $args['date_gmt'] ) {
 				return new WP_Error( 'illegal_autosave_with_date_gmt' );
-			} elseif ( $args['date_status'] ) {
+			} elseif ( $args['status'] ) {
 				return new WP_Error( 'illegal_autosave_with_status' );
 			} elseif ( $args['user_id'] && get_current_user_id() !== $args['user_id'] ) {
 				return new WP_Error( 'illegal_autosave_with_non_current_user' );
@@ -4153,10 +4153,6 @@ final class WP_Customize_Manager {
 			$title = __( 'Header Media' );
 			$description = '<p>' . __( 'If you add a video, the image will be used as a fallback while the video loads.' ) . '</p>';
 
-			// @todo Customizer sections should support having notifications just like controls do. See <https://core.trac.wordpress.org/ticket/38794>.
-			$description .= '<div class="customize-control-notifications-container header-video-not-currently-previewable" style="display: none"><ul>';
-			$description .= '<li class="notice notice-info">' . __( 'This theme doesn\'t support video headers on this page. Navigate to the front page or another page that supports video headers.' ) . '</li>';
-			$description .= '</ul></div>';
 			$width = absint( get_theme_support( 'custom-header', 'width' ) );
 			$height = absint( get_theme_support( 'custom-header', 'height' ) );
 			if ( $width && $height ) {
