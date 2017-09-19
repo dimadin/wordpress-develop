@@ -3745,6 +3745,7 @@ final class WP_Customize_Manager {
 			'title' => __( 'Publish Settings' ),
 			'priority' => 0,
 			'capability' => 'customize',
+			'active_callback' => array( $this, 'is_theme_active' ),
 		) );
 
 		/* Publish Settings Controls */

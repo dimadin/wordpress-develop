@@ -4701,6 +4701,12 @@
 				} ];
 			};
 
+			// Make sure publish settings are not available until the theme has been activated.
+			if ( ! api.settings.theme.active ) {
+				section.active.set( false );
+				section.active.link( api.state( 'activated' ) );
+			}
+
 			updateArgumentsQueue();
 			section.contentContainer.find( '.customize-action' ).text( api.l10n.updating );
 			section.contentContainer.find( '.customize-section-back' ).removeAttr( 'tabindex' );
