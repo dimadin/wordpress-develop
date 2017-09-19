@@ -4643,6 +4643,24 @@
 		api.trigger( 'pane-contents-reflowed' );
 	}, api );
 
+	// Define state values.
+	api.state = new api.Values();
+	_.each( [
+		'saved',
+		'saving',
+		'activated',
+		'processing',
+		'paneVisible',
+		'expandedPanel',
+		'expandedSection',
+		'changesetStatus',
+		'selectedChangesetStatus',
+		'previewerAlive',
+		'editShortcutVisibility'
+	], function( name ) {
+		api.state.create( name );
+	});
+
 	$( function() {
 		api.settings = window._wpCustomizeSettings;
 		api.l10n = window._wpCustomizeControlsL10n;
@@ -5140,19 +5158,18 @@
 		});
 
 		// Save and activated states
-		(function() {
-			var state = new api.Values(),
-				saved = state.create( 'saved' ),
-				saving = state.create( 'saving' ),
-				activated = state.create( 'activated' ),
-				processing = state.create( 'processing' ),
-				paneVisible = state.create( 'paneVisible' ),
-				expandedPanel = state.create( 'expandedPanel' ),
-				expandedSection = state.create( 'expandedSection' ),
-				changesetStatus = state.create( 'changesetStatus' ),
-				selectedChangesetStatus = state.create( 'selectedChangesetStatus' ),
-				previewerAlive = state.create( 'previewerAlive' ),
-				editShortcutVisibility  = state.create( 'editShortcutVisibility' ),
+		(function( state ) {
+			var saved = state.instance( 'saved' ),
+				saving = state.instance( 'saving' ),
+				activated = state.instance( 'activated' ),
+				processing = state.instance( 'processing' ),
+				paneVisible = state.instance( 'paneVisible' ),
+				expandedPanel = state.instance( 'expandedPanel' ),
+				expandedSection = state.instance( 'expandedSection' ),
+				changesetStatus = state.instance( 'changesetStatus' ),
+				selectedChangesetStatus = state.instance( 'selectedChangesetStatus' ),
+				previewerAlive = state.instance( 'previewerAlive' ),
+				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
 
 			state.bind( 'change', function() {
@@ -5281,10 +5298,7 @@
 			changesetStatus.bind( function( newStatus ) {
 				populateChangesetUuidParam( '' !== newStatus && 'publish' !== newStatus );
 			} );
-
-			// Expose states to the API.
-			api.state = state;
-		}());
+		}( api.state ) );
 
 		// Check if preview url is valid and load the preview frame.
 		if ( api.previewer.previewUrl() ) {
