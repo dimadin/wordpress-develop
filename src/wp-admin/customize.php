@@ -138,7 +138,7 @@ do_action( 'customize_controls_print_scripts' );
 			?>
 			<div id="customize-save-button-wrapper" class="customize-save-button-wrapper <?php echo $capability ? '' : 'hidden'; ?>" >
 				<?php submit_button( $save_text, 'primary save', 'save', false ); ?>
-				<button id="publish-settings" class="publish-settings button-primary button dashicons dashicons-admin-generic" aria-label="<?php _e( 'Publish Settings' ); ?>" aria-expanded="false" disabled></button>
+				<button id="publish-settings" class="publish-settings button-primary button dashicons dashicons-admin-generic" aria-label="<?php esc_attr_e( 'Publish Settings' ); ?>" aria-expanded="false" disabled></button>
 			</div>
 			<span class="spinner"></span>
 			<button type="button" class="customize-controls-preview-toggle">

@@ -161,7 +161,8 @@ body {
 	border-right: none;
 }
 
-#accordion-section-publish_settings {
+#accordion-section-publish_settings,
+.customize-pane-child.open.hidden {
 	display: none !important;
 }
 

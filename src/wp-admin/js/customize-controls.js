@@ -4620,23 +4620,40 @@
 			footerActions = $( '#customize-footer-actions' );
 
 		api.section( 'publish_settings', function( section ) {
-			publishSettingsBtn.prop( 'disabled', false );
-			publishSettingsBtn.on( 'click', function( event ) {
-				event.preventDefault();
+			var otherPanes, animationDuration = 500, updateArgumentsQueue;
 
+			updateArgumentsQueue = function() {
 				section.expandedArgumentsQueue = [ {
 					unchanged: true,
-					allowMultiple: true,
-					completeCallback: function() {
-						section.container.toggleClass( 'active', section.expanded.get() );
-					}
+					allowMultiple: true
 				} ];
+			};
 
+			updateArgumentsQueue();
+			publishSettingsBtn.prop( 'disabled', false );
+
+			publishSettingsBtn.on( 'click', function( event ) {
+				event.preventDefault();
+				updateArgumentsQueue();
 				section.expanded.set( ! section.expanded.get() );
 			} );
 
 			section.expanded.bind( function( isExpanded ) {
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
+
+				otherPanes = $( '.customize-pane-child' ).not( section.contentContainer );
+
+				updateArgumentsQueue();
+
+				if ( isExpanded ) {
+					section.container.addClass( 'active' );
+					_.delay( function() {
+						otherPanes.toggleClass( 'hidden', section.expanded.get() );
+					}, animationDuration );
+				} else {
+					otherPanes.removeClass( 'hidden' );
+					section.container.removeClass( 'active' );
+				}
 			} );
 		} );
 
