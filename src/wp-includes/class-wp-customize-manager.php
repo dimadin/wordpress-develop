@@ -3588,7 +3588,10 @@ final class WP_Customize_Manager {
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
 				'status' => $this->changeset_post_id() ? get_post_status( $this->changeset_post_id() ) : '',
+				'publishDate' => $this->changeset_post_id() ? get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() ) : '',
 			),
+			'initialServerDate' => current_time( 'mysql', false ),
+			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
 			'timeouts' => array(
 				'windowRefresh' => 250,
 				'changesetAutoSave' => AUTOSAVE_INTERVAL * 1000,

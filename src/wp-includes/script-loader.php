@@ -558,6 +558,8 @@ function wp_default_scripts( &$scripts ) {
 		'updating'           => __( 'Updating' ),
 		'schedule'           => __( 'Schedule' ),
 		'scheduled'          => __( 'Scheduled' ),
+		'invalidDateError'   => __( 'Invalid Date' ),
+		'futureDateError'    => __( 'Please select a future date' ),
 		'saveAlert'          => __( 'The changes you made will be lost if you navigate away from this page.' ),
 		'saved'              => __( 'Saved' ),
 		'cancel'             => __( 'Cancel' ),

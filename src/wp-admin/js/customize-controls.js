@@ -3689,7 +3689,9 @@
 	api.DateTimeControl = api.Control.extend({
 
 		dateInputs: {},
-		dateComponents: {},
+		inputElements: {},
+		initialServerDate: '',
+		initialServerTimestamp: 0,
 
 		/**
 		 * Initialize behaviors.
@@ -3697,16 +3699,154 @@
 		 * @since 4.9.0
 		 * @returns {void}
 		 */
-		ready: function() {
+		ready: function ready() {
 			var control = this;
 			control.dateInputs = control.container.find( '.date-input' );
-			control.dateComponents = {};
+
+			if ( ! control.setting ) {
+				control.setting = new api.Value();
+			}
+
+			if ( ! control.setting.get() ) {
+				control.setting.set( api.settings.initialServerDate );
+			}
 
 			control.dateInputs.each( function() {
-			    var input = $( this ), component;
+			    var input = $( this ), component, element;
 			    component = input.data( 'component' );
-				control.dateComponents[ component ] = input;
+				element = new api.Element( input );
+				control.inputElements[ component ] = element;
+				control.elements.push( element );
 			} );
+
+			control.validateInputs();
+			control.populateDateInputs();
+		},
+
+		/**
+		 * Parse datetime string.
+		 *
+		 * @param {string} datetime Date/Time string.
+		 * @param {boolean} ampmFormat If ampm format is required.
+		 * @returns {object|null} Returns object containing date components or null if parse error.
+		 */
+		parseDateTime: function parseDateTime( datetime, ampmFormat ) {
+			var matches, date, ampmDate;
+
+			if ( datetime ) {
+				matches = datetime.match( /^(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)$/ );
+			}
+
+			if ( ! matches ) {
+				return null;
+			}
+
+			matches.shift();
+
+			date = {
+				year: matches.shift(),
+				month: matches.shift(),
+				day: matches.shift(),
+				hour: matches.shift(),
+				minute: matches.shift(),
+				second: matches.shift()
+			};
+
+			ampmDate = {
+				year: date.year,
+				month: date.month,
+				day: date.day
+			};
+
+			ampmDate.ampm = date.hour >= 12 ? 'pm' : 'am';
+			ampmDate.hour = date.hour % 12 ? date.hour % 12 : 12;
+			ampmDate.minute = date.minute < 10 ? date.minute : date.minute;
+
+			return ampmFormat ? ampmDate : date;
+		},
+
+		/**
+		 * Validate and updates input.
+		 * @todo Validation should happen only if indicated.
+		 *
+		 * @return {void}
+		 */
+		validateInputs: function() {
+			var control = this, element, validateAndUpdateDay, max, min;
+
+			_.each( [ 'day', 'year', 'hour', 'minute' ], function( type ) {
+				control.inputElements[ type ].bind( function( value ) {
+					element = control.inputElements[ type ];
+					max = parseInt( element.element.attr( 'max' ), 10 );
+					min = parseInt( element.element.attr( 'min' ), 10 );
+
+					if ( value > max ) {
+						element.set( max );
+					} else if ( value < min ) {
+						element.set( min );
+					}
+				} );
+			} );
+
+			validateAndUpdateDay = function() {
+				var daysInMonth, year, month;
+
+				year = control.inputElements.year();
+				month = control.inputElements.month();
+
+				if ( month && year ) {
+					daysInMonth = new Date( control.inputElements.year(), month, 0 ).getDate();
+					control.inputElements.day.element.attr( 'max', daysInMonth );
+					if ( control.inputElements.day() > daysInMonth ) {
+						control.inputElements.day( daysInMonth );
+					}
+				}
+			};
+
+			control.inputElements.month.bind( validateAndUpdateDay );
+			control.inputElements.year.bind( validateAndUpdateDay );
+			control.inputElements.day.bind( validateAndUpdateDay );
+		},
+
+		/**
+		 * Get date from inputs.
+		 *
+		 * @returns {Date|null} Date created from inputs or null if invalid date.
+		 */
+		getDateFromInputs: function getDateFromInputs() {
+			var control = this, date;
+			date = new Date(
+				parseInt( control.inputElements.year.get(), 10 ),
+				parseInt( control.inputElements.month.get(), 10 ) - 1,
+				parseInt( control.inputElements.day.get(), 10 ),
+				parseInt( control.inputElements.hour.get(), 10 ),
+				parseInt( control.inputElements.minute.get(), 10 )
+			);
+			if ( isNaN( date.valueOf() ) ) {
+				return null;
+			}
+			return date;
+		},
+
+		/**
+		 * Populates date inputs in date fields.
+		 *
+		 * @returns {boolean} Whether the inputs were populated.
+		 */
+		populateDateInputs: function populateDateInputs() {
+			var control = this, parsed;
+
+			parsed = control.parseDateTime( control.setting.get(), true );
+
+			if ( ! parsed ) {
+				return false;
+			}
+
+			_.each( control.inputElements, function( element, component ) {
+				element.set( parsed[ component ] );
+			} );
+
+			return true;
 		}
 	});
 

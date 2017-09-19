@@ -94,7 +94,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 					</label>
 					<label class="am-pm-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'AM / PM' ); ?></span>
-						<select class="date-input" data-component="am_pm">
+						<select class="date-input" data-component="ampm">
 							<option value="am"><?php esc_html_e( 'AM' ); ?></option>
 							<option value="pm"><?php esc_html_e( 'PM' ); ?></option>
 						</select>
