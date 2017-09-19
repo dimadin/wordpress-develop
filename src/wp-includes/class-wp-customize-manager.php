@@ -271,7 +271,7 @@ final class WP_Customize_Manager {
 		}
 
 		$this->original_stylesheet = get_stylesheet();
-		$this->theme = wp_get_theme( $args['theme'] );
+		$this->theme = wp_get_theme( 0 === validate_file( $args['theme'] ) ? $args['theme'] : null );
 		$this->messenger_channel = $args['messenger_channel'];
 		$this->settings_previewed = ! empty( $args['settings_previewed'] );
 		$this->_changeset_uuid = $args['changeset_uuid'];
@@ -488,7 +488,7 @@ final class WP_Customize_Manager {
 			return;
 		}
 
-		if ( ! preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $this->_changeset_uuid ) ) {
+		if ( ! wp_is_uuid( $this->_changeset_uuid ) ) {
 			$this->wp_die( -1, __( 'Invalid changeset UUID' ) );
 		}
 
@@ -3970,10 +3970,6 @@ final class WP_Customize_Manager {
 			$title = __( 'Header Media' );
 			$description = '<p>' . __( 'If you add a video, the image will be used as a fallback while the video loads.' ) . '</p>';
 
-			// @todo Customizer sections should support having notifications just like controls do. See <https://core.trac.wordpress.org/ticket/38794>.
-			$description .= '<div class="customize-control-notifications-container header-video-not-currently-previewable" style="display: none"><ul>';
-			$description .= '<li class="notice notice-info">' . __( 'This theme doesn\'t support video headers on this page. Navigate to the front page or another page that supports video headers.' ) . '</li>';
-			$description .= '</ul></div>';
 			$width = absint( get_theme_support( 'custom-header', 'width' ) );
 			$height = absint( get_theme_support( 'custom-header', 'height' ) );
 			if ( $width && $height ) {
