@@ -25,19 +25,6 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public $type = 'date_time';
 
 	/**
-	 * Constructor.
-	 *
-	 * @since 4.9.0
-	 *
-	 * @param WP_Customize_Manager $manager Customizer bootstrap instance.
-	 * @param string               $id      Control ID.
-	 * @param array                $args    Optional. Arguments to override class property defaults.
-	 */
-	public function __construct( $manager, $id, $args = array() ) {
-		parent::__construct( $manager, $id, $args );
-	}
-
-	/**
 	 * Don't render the control's content - it's rendered with a JS template.
 	 *
 	 * @since 4.9.0
@@ -112,7 +99,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 							<option value="pm"><?php esc_html_e( 'PM' ); ?></option>
 						</select>
 					</label>
-					<span class="date-timezone" aria-label="<?php esc_attr_e( 'Timezone' ); ?>" title="<?php esc_attr_e( $timezone_info['description'] ) ?>"><?php esc_html_e( $timezone_info['abbr'] ); ?></span>
+					<span class="date-timezone" aria-label="<?php esc_attr_e( 'Timezone' ); ?>" title="<?php echo esc_attr( $timezone_info['description'] ); ?>"><?php echo esc_html( $timezone_info['abbr'] ); ?></span>
 				</div>
 			</div>
 		</div>
@@ -124,6 +111,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	 *
 	 * Based on touch_time().
 	 *
+	 * @since 4.9.0
 	 * @see touch_time()
 	 *
 	 * @return array
@@ -131,7 +119,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public function get_month_choices() {
 		global $wp_locale;
 		$months = array();
-		for ( $i = 1; $i < 13; $i = $i + 1 ) {
+		for ( $i = 1; $i < 13; $i++ ) {
 			$month_number = zeroise( $i, 2 );
 			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
 
@@ -146,6 +134,8 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 
 	/**
 	 * Get timezone info.
+	 *
+	 * @since 4.9.0
 	 *
 	 * @return array abbr and description.
 	 */
@@ -176,7 +166,9 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	/**
 	 * Format GMT Offset.
 	 *
+	 * @since 4.9.0
 	 * @see wp_timezone_choice()
+	 *
 	 * @param float $offset Offset in hours.
 	 * @return string Formatted offset.
 	 */

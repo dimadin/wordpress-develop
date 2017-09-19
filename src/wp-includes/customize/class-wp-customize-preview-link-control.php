@@ -25,19 +25,6 @@ class WP_Customize_Preview_Link_Control extends WP_Customize_Control {
 	public $type = 'preview_link';
 
 	/**
-	 * Constructor.
-	 *
-	 * @since 4.9.0
-	 *
-	 * @param WP_Customize_Manager $manager Customizer bootstrap instance.
-	 * @param string               $id      Control ID.
-	 * @param array                $args    Optional. Arguments to override class property defaults.
-	 */
-	public function __construct( $manager, $id, $args = array() ) {
-		parent::__construct( $manager, $id, $args );
-	}
-
-	/**
 	 * Don't render the control's content - it's rendered with a JS template.
 	 *
 	 * @since 4.9.0
@@ -51,7 +38,7 @@ class WP_Customize_Preview_Link_Control extends WP_Customize_Control {
 	 */
 	public function content_template() {
 		?>
-		<# _.defaults( data, <?php echo wp_json_encode( $this->json() ) ?> ); #>
+		<# _.defaults( data, <?php echo wp_json_encode( $this->json() ); ?> ); #>
 
 		<span class="customize-control-title">
 			<label>{{ data.label }}</label>

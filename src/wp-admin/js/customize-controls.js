@@ -1269,7 +1269,7 @@
 					});
 				} else {
 					if ( ! args.allowMultiple ) {
-						api.panel.each(function (panel) {
+						api.panel.each( function( panel ) {
 							panel.collapse();
 						});
 					}
@@ -3680,7 +3680,7 @@
 	});
 
 	/**
-	 * wp.customize.DateTimeControl
+	 * Class wp.customize.DateTimeControl.
 	 *
 	 * @constructor
 	 * @augments wp.customize.Control
@@ -3692,7 +3692,10 @@
 		dateComponents: {},
 
 		/**
+		 * Initialize behaviors.
+		 *
 		 * @since 4.9.0
+		 * @returns {void}
 		 */
 		ready: function() {
 			var control = this;
@@ -3708,7 +3711,7 @@
 	});
 
 	/**
-	 * wp.customize.PreviewLinkControl
+	 * Class wp.customize.PreviewLinkControl.
 	 *
 	 * @constructor
 	 * @augments wp.customize.Control
@@ -3717,7 +3720,10 @@
 	api.PreviewLinkControl = api.Control.extend({
 
 		/**
+		 * Initialize behaviors.
+		 *
 		 * @since 4.9.0
+		 * @returns {void}
 		 */
 		ready: function() {
 			var control = this, copyButton, inputNode, element, getLink;
