@@ -4642,19 +4642,18 @@
 
 			section.expanded.bind( function( isExpanded ) {
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
-
 				backgroundEls = $( '.customize-pane-child, .customize-info, .customize-pane-parent' ).not( section.contentContainer );
 
 				updateArgumentsQueue();
+				publishSettingsBtn.toggleClass( 'active', isExpanded );
+				section.container.toggleClass( 'publish-settings-open', isExpanded );
 
 				if ( isExpanded ) {
-					section.container.addClass( 'publish-settings-open' );
 					_.delay( function() {
 						backgroundEls.toggleClass( 'hidden', section.expanded.get() );
 					}, animationDuration );
 				} else {
 					backgroundEls.removeClass( 'hidden' );
-					section.container.removeClass( 'publish-settings-open' );
 				}
 			} );
 		} );
@@ -5099,9 +5098,11 @@
 				if ( ! activated() ) {
 					saveBtn.val( api.l10n.activate );
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
+					publishSettingsBtn.prop( 'disabled', false );
 
 				} else if ( '' === changesetStatus.get() && saved() ) {
-					saveBtn.val( api.l10n.saved );
+					saveBtn.val( api.l10n.published );
+					publishSettingsBtn.prop( 'disabled', true );
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
 				} else {
@@ -5113,6 +5114,7 @@
 						saveBtn.val( api.l10n.publish );
 					}
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
+					publishSettingsBtn.prop( 'disabled', false );
 				}
 
 				/*
