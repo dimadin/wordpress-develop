@@ -4648,13 +4648,13 @@
 				updateArgumentsQueue();
 
 				if ( isExpanded ) {
-					section.container.addClass( 'active' );
+					section.container.addClass( 'publish-settings-open' );
 					_.delay( function() {
 						backgroundEls.toggleClass( 'hidden', section.expanded.get() );
 					}, animationDuration );
 				} else {
 					backgroundEls.removeClass( 'hidden' );
-					section.container.removeClass( 'active' );
+					section.container.removeClass( 'publish-settings-open' );
 				}
 			} );
 		} );
