@@ -32,8 +32,12 @@ body {
 
 #customize-save-button-wrapper .save {
 	float: left;
-	border-radius: 3px 0 0 3px;
+	border-radius: 3px;
 	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button. */
+	display: none; /* Shown when ready. */
+}
+#customize-save-button-wrapper .save.has-next-sibling {
+	border-radius: 3px 0 0 3px;
 }
 
 #publish-settings {
@@ -45,6 +49,7 @@ body {
 	font-size: 14px;
 	width: 30px;
 	float: left;
+	display: none; /* Shown when ready. */
 }
 
 #customize-header-actions .spinner {

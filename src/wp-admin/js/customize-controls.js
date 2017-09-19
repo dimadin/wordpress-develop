@@ -4831,8 +4831,9 @@
 			publishSettingsBtn = $( '#publish-settings' ),
 			footerActions = $( '#customize-footer-actions' );
 
+		saveBtn.show();
 		api.section( 'publish_settings', function( section ) {
-			var backgroundEls, animationDuration = 500, updateArgumentsQueue;
+			var backgroundEls, animationDuration = 500, updateArgumentsQueue, updateButtonsState;
 
 			updateArgumentsQueue = function() {
 				section.expandedArgumentsQueue = [ {
@@ -4846,6 +4847,14 @@
 				section.active.set( false );
 				section.active.link( api.state( 'activated' ) );
 			}
+
+			// Bind visibility of the publish settings button to whether the section is active.
+			updateButtonsState = function() {
+				publishSettingsBtn.toggle( section.active.get() );
+				saveBtn.toggleClass( 'has-next-sibling', section.active.get() );
+			};
+			updateButtonsState();
+			section.active.bind( updateButtonsState );
 
 			updateArgumentsQueue();
 			section.contentContainer.find( '.customize-action' ).text( api.l10n.updating );
@@ -5398,9 +5407,7 @@
 				}
 			});
 
-			publishSettingsBtn.toggle( activated.get() );
 			activated.bind( function( to ) {
-				publishSettingsBtn.toggle( to );
 				if ( to ) {
 					api.trigger( 'activated' );
 				}
