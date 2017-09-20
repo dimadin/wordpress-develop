@@ -216,6 +216,7 @@
 			setting.id = id;
 			setting.transport = setting.transport || 'refresh';
 			setting._dirty = options.dirty || false;
+			setting['default'] = options['default'];
 			setting.notifications = new api.Values({ defaultConstructor: api.Notification });
 
 			// Whenever the setting's value changes, refresh the preview.
@@ -4926,11 +4927,11 @@
 			var constructor = api.settingConstructor[ data.type ] || api.Setting,
 				setting;
 
-			setting = new constructor( id, data.value, {
-				transport: data.transport,
-				previewer: api.previewer,
-				dirty: !! data.dirty
-			} );
+			setting = new constructor( id, data.value, _.extend(
+				{},
+				data,
+				{ previewer: api.previewer }
+			) );
 			api.add( id, setting );
 		});
 

@@ -805,6 +805,7 @@ class WP_Customize_Setting {
 			'transport' => $this->transport,
 			'dirty'     => $this->dirty,
 			'type'      => $this->type,
+			'default'   => $this->default,
 		);
 	}
 
