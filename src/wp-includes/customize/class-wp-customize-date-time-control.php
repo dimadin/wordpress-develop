@@ -41,7 +41,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public $max_year = 9999;
 
 	/**
-	 * Allow past date, if set to false, user can only select future date.
+	 * Allow past date, if set to false user can only select future date.
 	 *
 	 * @since 4.9.0
 	 * @var boolean
@@ -49,12 +49,12 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public $allow_past_date = true;
 
 	/**
-	 * If set to false, the output will be in Y-m-d H:i:s format.
+	 * If set to false, value will be in Y-m-d H:i:s format.
 	 *
 	 * @since 4.9.0
 	 * @var boolean
 	 */
-	public $output_12_hour_format = true;
+	public $save_twelve_hour_format = true;
 
 	/**
 	 * Don't render the control's content - it's rendered with a JS template.
@@ -66,6 +66,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	/**
 	 * Export data to JS.
 	 *
+	 * @since 4.9.0
 	 * @return array
 	 */
 	public function json() {
@@ -74,7 +75,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 		$data['maxYear'] = intval( $this->max_year );
 		$data['minYear'] = intval( $this->min_year );
 		$data['allowPastDate'] = $this->allow_past_date ? true : false;
-		$data['output12HourFormat'] = $this->output_12_hour_format ? true : false;
+		$data['saveTwelveHourFormat'] = $this->save_twelve_hour_format ? true : false;
 
 		return $data;
 	}
@@ -124,7 +125,8 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 					<span class="time-special-char date-time-separator">,</span>
 					<label class="year-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Year' ); ?></span>
-						<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="{{ data.minYear }}" value="{{ data.year }}" max="{{ data.maxYear }}" />
+						<#  data.maxYearLength = String( data.maxYear ).length; #>
+						<input type="number" size="4" maxlength="{{ data.maxYearLength }}" autocomplete="off" class="date-input year" data-component="year" min="{{ data.minYear }}" value="{{ data.year }}" max="{{ data.maxYear }}" />
 					</label>
 				</div>
 			</div>

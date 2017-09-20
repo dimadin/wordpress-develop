@@ -3692,7 +3692,7 @@
 		inputElements: {},
 		initialServerDate: '',
 		initialServerTimestamp: 0,
-		dateFormat: [ 'year', '-', 'month', '-', 'day', ' ', 'hour', ':', 'minute', 'ampm' ],
+		invalidDate: false,
 
 		/**
 		 * Initialize behaviors.
@@ -3702,6 +3702,9 @@
 		 */
 		ready: function ready() {
 			var control = this;
+
+			_.bindAll( control, 'populateSetting', 'updateDaysForMonth' );
+
 			control.dateInputs = control.container.find( '.date-input' );
 
 			if ( ! control.setting ) {
@@ -3720,25 +3723,28 @@
 				control.elements.push( element );
 			} );
 
-			_.bindAll( control, 'populateSetting' );
 			control.dateInputs.on( 'input', control.populateSetting );
-
-			control.validateInputs();
+			control.inputElements.month.bind( control.updateDaysForMonth );
+			control.inputElements.year.bind( control.updateDaysForMonth );
 			control.populateDateInputs();
 		},
 
 		/**
 		 * Parse datetime string.
 		 *
-		 * @param {string} datetime Date/Time string.
-		 * @param {boolean} ampmFormat If ampm format is required.
+		 * @param {string} datetime Date/Time string. Can accept datetime in Y-m-d H:i:s or Y-m-d H:ia format.
+		 * @param {boolean} twentyFourHourFormat If twenty four hour format array is required.
 		 * @returns {object|null} Returns object containing date components or null if parse error.
 		 */
-		parseDateTime: function parseDateTime( datetime, ampmFormat ) {
-			var matches, date, ampmDate;
+		parseDateTime: function parseDateTime( datetime, twentyFourHourFormat ) {
+			var control = this, matches, date, matchedTwelveHour, midDayHour = 12;
 
 			if ( datetime ) {
 				matches = datetime.match( /^(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)$/ );
+				if ( ! matches ) {
+					matches = datetime.match( /^(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d)([aApP][mM])$/ );
+					matchedTwelveHour = matches;
+				}
 			}
 
 			if ( ! matches ) {
@@ -3756,60 +3762,73 @@
 				second: matches.shift()
 			};
 
-			ampmDate = {
-				year: date.year,
-				month: date.month,
-				day: date.day
-			};
+			if ( matchedTwelveHour ) {
+				if ( ! twentyFourHourFormat ) {
+					date.ampm = _.clone( date.second );
+					delete date.second;
+				} else {
+					date.hour = control.convertHourToTwentyFourHourFormat( date.hour, _.clone( date.second ) );
+					date.second = '00';
+				}
+			}
 
-			ampmDate.ampm = date.hour >= 12 ? 'pm' : 'am';
-			ampmDate.hour = date.hour % 12 ? date.hour % 12 : 12;
-			ampmDate.minute = date.minute < 10 ? date.minute : date.minute;
+			if ( ! twentyFourHourFormat && ! matchedTwelveHour ) {
+				date.hour = parseInt( date.hour, 10 );
+				date.ampm = date.hour >= midDayHour ? 'pm' : 'am';
+				date.hour = date.hour % midDayHour ? String( date.hour % midDayHour ) : String( midDayHour );
+				delete date.second;
+			}
 
-			return ampmFormat ? ampmDate : date;
+			return date;
 		},
 
 		/**
-		 * Validate and updates input.
+		 * Validates if input components have valid date and time.
+		 *
+		 * @return {boolean} If date input fields has error.
+		 */
+		validateInputs: function validateInputs() {
+			var control = this;
+
+			control.invalidDate = false;
+
+			_.each( [ 'day', 'hour', 'year', 'minute' ], function( component ) {
+				var element, max, min, maxLength, value;
+
+				if ( ! control.invalidDate ) {
+					element = control.inputElements[ component ];
+					max = parseInt( element.element.attr( 'max' ), 10 );
+					min = parseInt( element.element.attr( 'min' ), 10 );
+					maxLength = parseInt( element.element.attr( 'maxlength' ), 10 );
+					value = parseInt( element(), 10 );
+					control.invalidDate = value > max || value < min || String( value ).length > maxLength || ! _.isEmpty( value );
+					control.toggleNotification( component );
+				}
+			} );
+
+			return control.invalidDate;
+		},
+
+		/**
+		 * Updates number of days according to the month and year selected.
 		 *
 		 * @return {void}
 		 */
-		validateInputs: function() {
-			var control = this, element, validateAndUpdateDay, max, min;
+		updateDaysForMonth: function updateDaysForMonth() {
+			var control = this, daysInMonth, year, month, day;
 
-			_.each( [ 'day', 'year', 'hour', 'minute' ], function( type ) {
-				control.inputElements[ type ].bind( function( value ) {
-					element = control.inputElements[ type ];
-					max = parseInt( element.element.attr( 'max' ), 10 );
-					min = parseInt( element.element.attr( 'min' ), 10 );
+			month = control.inputElements.month();
+			year = control.inputElements.year();
+			day = parseInt( control.inputElements.day(), 10 );
 
-					if ( value > max ) {
-						element.set( max );
-					} else if ( value < min ) {
-						element.set( min );
-					}
-				} );
-			} );
+			if ( month && year ) {
+				daysInMonth = new Date( year, month, 0 ).getDate();
+				control.inputElements.day.element.attr( 'max', daysInMonth );
 
-			validateAndUpdateDay = function() {
-				var daysInMonth, day, year, month;
-
-				day = parseInt( control.inputElements.day(), 10 );
-				year = parseInt( control.inputElements.year(), 10 );
-				month = parseInt( control.inputElements.month(), 10 );
-
-				if ( month && year ) {
-					daysInMonth = new Date( year, month, 0 ).getDate();
-					control.inputElements.day.element.attr( 'max', daysInMonth );
-					if ( day > daysInMonth ) {
-						control.inputElements.day( daysInMonth );
-					}
+				if ( day > daysInMonth ) {
+					control.inputElements.day( daysInMonth );
 				}
-			};
-
-			control.inputElements.month.bind( validateAndUpdateDay );
-			control.inputElements.year.bind( validateAndUpdateDay );
-			control.inputElements.day.bind( validateAndUpdateDay );
+			}
 		},
 
 		/**
@@ -3818,8 +3837,12 @@
 		 * @returns {boolean} Whether the date inputs currently represent a valid date.
 		 */
 		populateSetting: function populateSetting() {
-			var control = this, date = '', hourIn12HourFormat,
-				hourIn24HourFormat, ampm, getElementValue, pad;
+			var control = this, date = '', dateFormat, hourInTwentyFourHourFormat,
+				getElementValue, pad;
+
+			if ( control.validateInputs() ) {
+				return false;
+			}
 
 			pad = function( number, padding ) {
 				var zeros;
@@ -3838,31 +3861,44 @@
 				} else if ( 'year' === component ) {
 					value = pad( value, 4 );
 				}
-
 				return value;
 			};
 
-			if ( ! control.params.output12HourFormat ) {
-				ampm = control.inputElements.ampm();
-				hourIn12HourFormat = parseInt( control.inputElements.hour(), 10  );
-
-				if ( 'pm' === ampm && hourIn12HourFormat < 12 ) {
-					hourIn24HourFormat = hourIn12HourFormat + 12;
-				} else if ( 'am' === ampm && 12 === hourIn12HourFormat ) {
-					hourIn24HourFormat = hourIn12HourFormat - 12;
-				} else {
-					hourIn24HourFormat = hourIn12HourFormat;
-				}
-
-				control.dateFormat = [ 'year', '-', 'month', '-', 'day', ' ', pad( hourIn24HourFormat, 2 ), ':', 'minute', ':', '00' ];
+			if ( control.params.saveTwelveHourFormat ) {
+				dateFormat = [ 'year', '-', 'month', '-', 'day', ' ', 'hour', ':', 'minute', 'ampm' ];
+			} else {
+				hourInTwentyFourHourFormat = control.convertHourToTwentyFourHourFormat( control.inputElements.hour(), control.inputElements.ampm() );
+				dateFormat = [ 'year', '-', 'month', '-', 'day', ' ', pad( hourInTwentyFourHourFormat, 2 ), ':', 'minute', ':', '00' ];
 			}
 
-			_.each( control.dateFormat, function( component ) {
+			_.each( dateFormat, function( component ) {
 				date += control.inputElements[ component ] ? getElementValue( component ) : component;
 			} );
 
 			control.setting.set( date );
-			console.info( date );
+		},
+
+		/**
+		 * Convert hour in twelve hour format to twenty four hour format.
+		 *
+		 * @param {string} hourInTwelveHourFormat Hour in twelve hour format.
+		 * @param {string} ampm am/pm
+		 * @return {string} Hour in twenty four hour format.
+		 */
+		convertHourToTwentyFourHourFormat: function convertHour( hourInTwelveHourFormat, ampm ) {
+			var hourInTwentyFourHourFormat, hour, midDayHour = 12;
+
+			hour = parseInt( hourInTwelveHourFormat, 10 );
+
+			if ( 'pm' === ampm && hour < midDayHour ) {
+				hourInTwentyFourHourFormat = hour + midDayHour;
+			} else if ( 'am' === ampm && midDayHour === hour ) {
+				hourInTwentyFourHourFormat = hour - midDayHour;
+			} else {
+				hourInTwentyFourHourFormat = hour;
+			}
+
+			return String( hourInTwentyFourHourFormat );
 		},
 
 		/**
@@ -3873,7 +3909,7 @@
 		populateDateInputs: function populateDateInputs() {
 			var control = this, parsed;
 
-			parsed = control.parseDateTime( control.setting.get(), true );
+			parsed = control.parseDateTime( control.setting.get() );
 
 			if ( ! parsed ) {
 				return false;
@@ -3884,6 +3920,29 @@
 			} );
 
 			return true;
+		},
+
+		/**
+		 * Toggle error notification for date control.
+		 *
+		 * @param {string} component Date component name.
+		 * @return {void}
+		 */
+		toggleNotification: function toggleNotification( component ) {
+			var control = this, notificationCode, notification;
+
+			notificationCode = 'invalid_scheduled_date';
+
+			if ( control.invalidDate ) {
+				notification = new api.Notification( notificationCode, {
+					type: 'error',
+					message: api.l10n.invalid + ' ' + component
+				} );
+				control.notifications.add( notificationCode, notification );
+				control.inputElements[ component ].element.focus();
+			} else {
+				control.notifications.remove( notificationCode );
+			}
 		}
 	});
 
@@ -6295,7 +6354,7 @@
 				element.sync( api.state( 'selectedChangesetStatus' ) );
 				element.set( api.state( 'selectedChangesetStatus' ).get() );
 
-				api.control( 'changeset_schedule_date', function( dateControl ) {
+				api.control( 'changeset_scheduled_date', function( dateControl ) {
 					var toggleDateControl;
 
 					dateControl.notifications.alt = true;

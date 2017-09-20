@@ -3766,13 +3766,13 @@ final class WP_Customize_Manager {
 			'capability' => 'customize',
 		) );
 
-		$this->add_control( new WP_Customize_Date_Time_Control( $this, 'changeset_schedule_date', array(
+		$this->add_control( new WP_Customize_Date_Time_Control( $this, 'changeset_scheduled_date', array(
 			'section' => 'publish_settings',
 			'settings' => array(),
 			'type' => 'date_time',
 			'min_year' => date( 'Y' ),
 			'allow_past_date' => false,
-			'output_12_hour_format' => false,
+			'save_twelve_hour_format' => false,
 			'description' => __( 'Schedule your customization changes to publish ( "go live" ) at a future date.' ),
 			'capability' => 'customize',
 		) ) );

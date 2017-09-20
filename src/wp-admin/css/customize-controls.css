@@ -246,7 +246,7 @@ body {
 	padding-bottom: 0;
 }
 
-#customize-control-changeset_schedule_date {
+#customize-control-changeset_scheduled_date {
 	box-sizing: content-box;
 	width: 100%;
 	margin-left: -12px;
@@ -256,7 +256,7 @@ body {
 	margin-bottom: 0;
 }
 
-#customize-control-changeset_schedule_date .customize-control-description {
+#customize-control-changeset_scheduled_date .customize-control-description {
 	font-style: normal;
 }
 
