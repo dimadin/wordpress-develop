@@ -3771,7 +3771,10 @@ final class WP_Customize_Manager {
 				'hasAutosaveRevision' => ! empty( $autosave_revision_post ),
 				'latestAutoDraftUuid' => $autosave_autodraft_post ? $autosave_autodraft_post->post_name : null,
 				'status' => $this->changeset_post_id() ? get_post_status( $this->changeset_post_id() ) : '',
+				'publishDate' => $this->changeset_post_id() ? get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() ) : '',
 			),
+			'initialServerDate' => current_time( 'mysql', false ),
+			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
 			'timeouts' => array(
 				'windowRefresh' => 250,
 				'changesetAutoSave' => AUTOSAVE_INTERVAL * 1000,
@@ -3928,6 +3931,7 @@ final class WP_Customize_Manager {
 			'title' => __( 'Publish Settings' ),
 			'priority' => 0,
 			'capability' => 'customize',
+			'active_callback' => array( $this, 'is_theme_active' ),
 		) );
 
 		/* Publish Settings Controls */

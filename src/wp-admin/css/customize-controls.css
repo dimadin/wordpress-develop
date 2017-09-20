@@ -32,10 +32,12 @@ body {
 
 #customize-save-button-wrapper .save {
 	float: left;
-	border-radius: 3px 0 0 3px;
-	-webkit-box-shadow: none;
-	-moz-box-shadow: none;
+	border-radius: 3px;
 	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button. */
+	display: none; /* Shown when ready. */
+}
+#customize-save-button-wrapper .save.has-next-sibling {
+	border-radius: 3px 0 0 3px;
 }
 
 #publish-settings {
@@ -43,12 +45,11 @@ body {
 	border-radius: 0 3px 3px 0;
 	padding-left: 0;
 	padding-right: 0;
-	-webkit-box-shadow: none;
-	-moz-box-shadow: none;
 	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button. */
 	font-size: 14px;
 	width: 30px;
 	float: left;
+	display: none; /* Shown when ready. */
 }
 
 #customize-header-actions .spinner {
@@ -187,26 +188,34 @@ body {
 }
 
 #customize-theme-controls .accordion-section-content#sub-accordion-section-publish_settings {
+	-webkit-transform: translate( 0, -100% );
 	transform: translate( 0, -100% );
 	left: 0;
 	top: 0;
+	height: auto;
 	z-index: 99999;
-	height:100%;
 	background: #f1f1f1;
-	-moz-transition: 0.3s;
-	-webkit-transition: 0.3s;
-	-o-transition: 0.3s;
-	transition: 0.3s;
+	transition: 0.5s;
+	-moz-transition-timing-function: cubic-bezier(1.2, 0.9, 0.8, 1.2);
+	-webkit-transition-timing-function: cubic-bezier(1.2, 0.9, 0.8, 1.2);
+	-o-transition-timing-function: cubic-bezier(1.2, 0.9, 0.8, 1.2);
+	transition-timing-function: cubic-bezier(1.2, 0.9, 0.8, 1.2);
 }
 
 #customize-theme-controls .accordion-section-content#sub-accordion-section-publish_settings.publish-settings-open {
 	visibility: visible;
 	display: block;
+	min-height:100%;
+	-webkit-transform: translate( 0, 0 );
 	transform: translate( 0, 0 );
-	-moz-transition: 0.3s;
-	-webkit-transition: 0.3s;
-	-o-transition: 0.3s;
-	transition: 0.3s;
+	-moz-transition-duration: 0.3s;
+	-webkit-transition-duration: 0.3s;
+	-o-transition-duration: 0.3s;
+	transition-duration: 0.3s;
+	-moz-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+	-webkit-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+	-o-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+	transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
 }
 
 #customize-controls .customize-info.section-meta {
