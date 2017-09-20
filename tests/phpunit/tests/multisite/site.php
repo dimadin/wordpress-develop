@@ -10,19 +10,53 @@ if ( is_multisite() ) :
  */
 class Tests_Multisite_Site extends WP_UnitTestCase {
 	protected $suppress = false;
+	protected static $network_ids;
+	protected static $site_ids;
 
 	function setUp() {
 		global $wpdb;
 		parent::setUp();
 		$this->suppress = $wpdb->suppress_errors();
-
-		$_SERVER[ 'REMOTE_ADDR' ] = '';
 	}
 
 	function tearDown() {
 		global $wpdb;
 		$wpdb->suppress_errors( $this->suppress );
 		parent::tearDown();
+	}
+
+	public static function wpSetUpBeforeClass( $factory ) {
+		self::$network_ids = array(
+			'make.wordpress.org/' => array( 'domain' => 'make.wordpress.org', 'path' => '/' ),
+		);
+
+		foreach ( self::$network_ids as &$id ) {
+			$id = $factory->network->create( $id );
+		}
+		unset( $id );
+
+		self::$site_ids = array(
+			'make.wordpress.org/'     => array( 'domain' => 'make.wordpress.org', 'path' => '/',         'site_id' => self::$network_ids['make.wordpress.org/'] ),
+			'make.wordpress.org/foo/' => array( 'domain' => 'make.wordpress.org', 'path' => '/foo/',     'site_id' => self::$network_ids['make.wordpress.org/'] ),
+		);
+
+		foreach ( self::$site_ids as &$id ) {
+			$id = $factory->blog->create( $id );
+		}
+		unset( $id );
+	}
+
+	public static function wpTearDownAfterClass() {
+		global $wpdb;
+
+		foreach( self::$site_ids as $id ) {
+			wpmu_delete_blog( $id, true );
+		}
+
+		foreach( self::$network_ids as $id ) {
+			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->sitemeta} WHERE site_id = %d", $id ) );
+			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->site} WHERE id= %d", $id ) );
+		}
 	}
 
 	function test_switch_restore_blog() {
@@ -36,7 +70,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		wp_cache_set( 'switch-test', $current_blog_id, 'switch-test' );
 		$this->assertEquals( $current_blog_id, wp_cache_get( 'switch-test', 'switch-test' ) );
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		$cap_key = wp_get_current_user()->cap_key;
 		switch_to_blog( $blog_id );
@@ -76,7 +110,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	function test_created_site_details() {
 		global $wpdb;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		$this->assertInternalType( 'int', $blog_id );
 		$prefix = $wpdb->get_blog_prefix( $blog_id );
@@ -88,10 +122,6 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		$key = md5( $details->domain . $details->path );
 
 		$this->assertEquals( $details, wp_cache_get( $blog_id . 'short', 'blog-details' ) );
-
-		// get_id_from_blogname(), see #20950
-		$this->assertEquals( $blog_id, get_id_from_blogname( $details->path ) );
-		$this->assertEquals( $blog_id, wp_cache_get( 'get_id_from_blogname_' . trim( $details->path, '/' ), 'blog-details' ) );
 
 		// get_blogaddress_by_name()
 		$this->assertEquals( 'http://' . $details->domain . $details->path, get_blogaddress_by_name( trim( $details->path, '/' ) ) );
@@ -114,9 +144,9 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 			// The table should exist.
 			$this->assertNotEmpty( $table_fields );
 
-			// And the table should not be empty, unless commentmeta or links.
+			// And the table should not be empty, unless commentmeta, termmeta, or links.
 			$result = $wpdb->get_results( "SELECT * FROM $prefix$table LIMIT 1" );
-			if ( 'commentmeta' == $table || 'links' == $table ) {
+			if ( 'commentmeta' == $table || 'termmeta' == $table || 'links' == $table ) {
 				$this->assertEmpty( $result );
 			} else {
 				$this->assertNotEmpty( $result );
@@ -128,11 +158,37 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		$this->assertEquals( 2, (int) get_blog_count() );
 	}
 
+	public function test_site_caches_should_invalidate_when_invalidation_is_not_suspended() {
+		$site_id = self::factory()->blog->create();
+
+		$details = get_site( $site_id );
+
+		$suspend = wp_suspend_cache_invalidation( false );
+		update_blog_details( $site_id, array( 'path' => '/a-non-random-test-path/' ) );
+		$new_details = get_site( $site_id );
+		wp_suspend_cache_invalidation( $suspend );
+
+		$this->assertNotEquals( $details->path, $new_details->path );
+	}
+
+	public function test_site_caches_should_not_invalidate_when_invalidation_is_suspended() {
+		$site_id = self::factory()->blog->create();
+
+		$details = get_site( $site_id );
+
+		$suspend = wp_suspend_cache_invalidation();
+		update_blog_details( $site_id, array( 'path' => '/a-non-random-test-path/' ) );
+		$new_details = get_site( $site_id );
+		wp_suspend_cache_invalidation( $suspend );
+
+		$this->assertEquals( $details->path, $new_details->path );
+	}
+
 	/**
 	 * When a site is flagged as 'deleted', its data should be cleared from cache.
 	 */
 	function test_data_in_cache_after_wpmu_delete_blog_drop_false() {
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		$details = get_blog_details( $blog_id, false );
 		$key = md5( $details->domain . $details->path );
@@ -140,7 +196,6 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		// Delete the site without forcing a table drop.
 		wpmu_delete_blog( $blog_id, false );
 
-		$this->assertEquals( false, wp_cache_get( 'get_id_from_blogname_' . trim( $details->path, '/' ), 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $blog_id, 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $blog_id . 'short', 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $key, 'blog-lookup' ) );
@@ -153,7 +208,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	function test_data_in_tables_after_wpmu_delete_blog_drop_false() {
 		global $wpdb;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		// Delete the site without forcing a table drop.
 		wpmu_delete_blog( $blog_id, false );
@@ -171,7 +226,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * When a site is fully deleted, its data should be cleared from cache.
 	 */
 	function test_data_in_cache_after_wpmu_delete_blog_drop_true() {
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		$details = get_blog_details( $blog_id, false );
 		$key = md5( $details->domain . $details->path );
@@ -179,7 +234,6 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		// Delete the site and force a table drop.
 		wpmu_delete_blog( $blog_id, true );
 
-		$this->assertEquals( false, wp_cache_get( 'get_id_from_blogname_' . trim( $details->path, '/' ), 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $blog_id, 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $blog_id . 'short', 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $key, 'blog-lookup' ) );
@@ -192,7 +246,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	function test_data_in_tables_after_wpmu_delete_blog_drop_true() {
 		global $wpdb;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		// Delete the site and force a table drop.
 		wpmu_delete_blog( $blog_id, true );
@@ -218,7 +272,6 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		// Delete the site and force a table drop.
 		wpmu_delete_blog( $blog_id, true );
 
-		$this->assertEquals( false, wp_cache_get( 'get_id_from_blogname_' . trim( $details->path, '/' ), 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $blog_id, 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $blog_id . 'short', 'blog-details' ) );
 		$this->assertEquals( false, wp_cache_get( $key, 'blog-lookup' ) );
@@ -249,7 +302,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * The site count of a network should change when a site is flagged as 'deleted'.
 	 */
 	function test_network_count_after_wpmu_delete_blog_drop_false() {
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		// Delete the site without forcing a table drop.
 		wpmu_delete_blog( $blog_id, false );
@@ -263,7 +316,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * The site count of a network should change when a site is fully deleted.
 	 */
 	function test_blog_count_after_wpmu_delete_blog_drop_true() {
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		// Delete the site and force a table drop.
 		wpmu_delete_blog( $blog_id, true );
@@ -279,13 +332,13 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * should change with upload directories.
 	 */
 	function test_upload_directories_after_multiple_wpmu_delete_blog() {
-		$filename = rand_str().'.jpg';
-		$contents = rand_str();
+		$filename = __FUNCTION__ . '.jpg';
+		$contents = __FUNCTION__ . '_contents';
 
 		// Upload a file to the main site on the network.
 		$file1 = wp_upload_bits( $filename, null, $contents );
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		switch_to_blog( $blog_id );
 		$file2 = wp_upload_bits( $filename, null, $contents );
@@ -294,14 +347,14 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		wpmu_delete_blog( $blog_id, true );
 
 		// The file on the main site should still exist. The file on the deleted site should not.
-		$this->assertTrue( file_exists( $file1['file'] ) );
-		$this->assertFalse( file_exists( $file2['file'] ) );
+		$this->assertFileExists( $file1['file'] );
+		$this->assertFileNotExists( $file2['file'] );
 
 		wpmu_delete_blog( $blog_id, true );
 
 		// The file on the main site should still exist. The file on the deleted site should not.
-		$this->assertTrue( file_exists( $file1['file'] ) );
-		$this->assertFalse( file_exists( $file2['file'] ) );
+		$this->assertFileExists( $file1['file'] );
+		$this->assertFileNotExists( $file2['file'] );
 	}
 
 	function test_wpmu_update_blogs_date() {
@@ -310,7 +363,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		wpmu_update_blogs_date();
 
 		// compare the update time with the current time, allow delta < 2
-		$blog = get_blog_details( $wpdb->blogid );
+		$blog = get_site( $wpdb->blogid );
 		$current_time = time();
 		$time_difference = $current_time - strtotime( $blog->last_updated );
 		$this->assertLessThan( 2, $time_difference );
@@ -331,7 +384,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 */
 	function test_get_blog_details_when_site_does_not_exist() {
 		// Create an unused site so that we can then assume an invalid site ID.
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 		$blog_id++;
 
 		// Prime the cache for an invalid site.
@@ -341,7 +394,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		$this->assertEquals( -1, wp_cache_get( $blog_id, 'blog-details' ) );
 
 		// Create a site in the invalid site's place.
-		$this->factory->blog->create();
+		self::factory()->blog->create();
 
 		// When a new site is created, its cache is cleared through refresh_blog_details.
 		$this->assertFalse( wp_cache_get( $blog_id, 'blog-details' )  );
@@ -372,19 +425,19 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 		update_blog_details( $blog_id, array( 'spam' => 1 ) );
 
 		add_action( 'make_ham_blog', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'spam', 0 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '0', $blog->spam );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'spam' stays the same.
 		update_blog_status( $blog_id, 'spam', 0 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '0', $blog->spam );
 		$this->assertEquals( 2, $test_action_counter );
@@ -396,18 +449,18 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		add_action( 'make_spam_blog', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'spam', 1 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '1', $blog->spam );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'spam' stays the same.
 		update_blog_status( $blog_id, 'spam', 1 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '1', $blog->spam );
 		$this->assertEquals( 2, $test_action_counter );
@@ -419,18 +472,18 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		add_action( 'archive_blog', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'archived', 1 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '1', $blog->archived );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'archived' stays the same.
 		update_blog_status( $blog_id, 'archived', 1 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '1', $blog->archived );
 		$this->assertEquals( 2, $test_action_counter );
@@ -442,19 +495,19 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 		update_blog_details( $blog_id, array( 'archived' => 1 ) );
 
 		add_action( 'unarchive_blog', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'archived', 0 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '0', $blog->archived );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'archived' stays the same.
 		update_blog_status( $blog_id, 'archived', 0 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 		$this->assertEquals( '0', $blog->archived );
 		$this->assertEquals( 2, $test_action_counter );
 
@@ -465,18 +518,18 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		add_action( 'make_delete_blog', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'deleted', 1 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '1', $blog->deleted );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'deleted' stays the same.
 		update_blog_status( $blog_id, 'deleted', 1 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '1', $blog->deleted );
 		$this->assertEquals( 2, $test_action_counter );
@@ -488,19 +541,19 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 		update_blog_details( $blog_id, array( 'deleted' => 1 ) );
 
 		add_action( 'make_undelete_blog', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'deleted', 0 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '0', $blog->deleted );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'deleted' stays the same.
 		update_blog_status( $blog_id, 'deleted', 0 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '0', $blog->deleted );
 		$this->assertEquals( 2, $test_action_counter );
@@ -512,18 +565,18 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		add_action( 'mature_blog', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'mature', 1 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '1', $blog->mature );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'mature' stays the same.
 		update_blog_status( $blog_id, 'mature', 1 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '1', $blog->mature );
 		$this->assertEquals( 2, $test_action_counter );
@@ -535,19 +588,19 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 		update_blog_details( $blog_id, array( 'mature' => 1 ) );
 
 		add_action( 'unmature_blog', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'mature', 0 );
 
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 		$this->assertEquals( '0', $blog->mature );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'mature' stays the same.
 		update_blog_status( $blog_id, 'mature', 0 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '0', $blog->mature );
 		$this->assertEquals( 2, $test_action_counter );
@@ -559,18 +612,18 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		add_action( 'update_blog_public', array( $this, '_action_counter_cb' ), 10 );
 		update_blog_status( $blog_id, 'public', 0 );
 
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 		$this->assertEquals( '0', $blog->public );
 		$this->assertEquals( 1, $test_action_counter );
 
 		// The action should fire if the status of 'mature' stays the same.
 		update_blog_status( $blog_id, 'public', 0 );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( '0', $blog->public );
 		$this->assertEquals( 2, $test_action_counter );
@@ -579,105 +632,15 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test the default arguments for wp_get_sites, which should return only
-	 * public sites from the current network.
-	 *
-	 * @ticket 14511
-	 */
-	function test_wp_get_sites_with_default_arguments() {
-		$this->factory->blog->create( array( 'site_id' => 2 ) );
-
-		$this->assertCount( 1, wp_get_sites() );
-	}
-
-	/**
-	 * No sites should match a query that specifies an invalid network ID.
-	 */
-	function test_wp_get_sites_with_invalid_network_id() {
-		$this->assertcount( 0, wp_get_sites( array( 'network_id' => 999 ) ) );
-	}
-
-	/**
-	 * A network ID of null should query for all public sites on all networks.
-	 */
-	function test_wp_get_sites_with_network_id_null() {
-		$this->factory->blog->create( array( 'site_id' => 2 ) );
-
-		$this->assertCount( 2, wp_get_sites( array( 'network_id' => null ) ) );
-	}
-
-	/**
-	 * Expect only sites on the specified network ID to be returned.
-	 */
-	function test_wp_get_sites_with_specific_network_id() {
-		$this->factory->blog->create( array( 'site_id' => 2 ) );
-
-		$this->assertCount( 1, wp_get_sites( array( 'network_id' => 2 ) ) );
-	}
-
-	/**
-	 * Expect sites from both networks if both network IDs are specified.
-	 */
-	function test_wp_get_sites_with_multiple_network_ids() {
-		$this->factory->blog->create( array( 'site_id' => 2 ) );
-
-		$this->assertCount( 2, wp_get_sites( array( 'network_id' => array( 1, 2 ) ) ) );
-	}
-
-	/**
-	 * Queries for public or non public sites should work across all networks if network ID is null.
-	 */
-	function test_wp_get_sites_with_public_meta_on_all_networks() {
-		$this->factory->blog->create( array( 'site_id' => 2, 'meta' => array( 'public' => 0 ) ) );
-
-		$this->assertCount( 1, wp_get_sites( array( 'public' => 1, 'network_id' => null ) ) );
-		$this->assertcount( 1, wp_get_sites( array( 'public' => 0, 'network_id' => null ) ) );
-	}
-
-	/**
-	 * If a network ID is specified, queries for public sites should be restricted to that network.
-	 */
-	function test_wp_get_sites_with_public_meta_restrict_to_one_network() {
-		$this->factory->blog->create( array( 'site_id' => 1, 'meta' => array( 'public' => 0 ) ) );
-
-		$this->assertCount( 1, wp_get_sites( array( 'public' => 1, 'network_id' => 1 ) ) );
-		$this->assertCount( 0, wp_get_sites( array( 'public' => 1, 'network_id' => 2 ) ) );
-	}
-
-	/**
-	 * Test the limit and offset arguments for wp_get_sites when multiple sites are available.
-	 */
-	function test_wp_get_sites_limit_offset() {
-		// Create 2 more sites (in addition to the default one)
-		$this->factory->blog->create_many( 2 );
-
-		// Expect first 2 sites when using limit
-		$this->assertCount( 2, wp_get_sites( array( 'limit' => 2 ) ) );
-
-		// Expect only the last 2 sites when using offset of 1 (limit will default to 100)
-		$this->assertCount( 2, wp_get_sites( array( 'offset' => 1 ) ) );
-
-		// Expect only the last 1 site when using offset of 2 and limit of 2
-		$this->assertCount( 1, wp_get_sites( array( 'limit' => 2, 'offset' => 2 ) ) );
-	}
-
-	/**
-	 * Expect 0 sites when using an offset larger than the total number of sites.
-	 */
-	function test_wp_get_sites_offset_greater_than_available_sites() {
-		$this->assertCount( 0, wp_get_sites( array( 'offset' => 20 ) ) );
-	}
-
-	/**
 	 * @ticket 27952
 	 */
 	function test_posts_count() {
-		$this->factory->post->create();
-		$post2 = $this->factory->post->create();
-		$this->assertEquals( 2, get_blog_details()->post_count );
+		self::factory()->post->create();
+		$post2 = self::factory()->post->create();
+		$this->assertEquals( 2, get_site()->post_count );
 
 		wp_delete_post( $post2 );
-		$this->assertEquals( 1, get_blog_details()->post_count );
+		$this->assertEquals( 1, get_site()->post_count );
 	}
 
 	/**
@@ -685,88 +648,12 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 */
 	function test_blog_details_cache_invalidation() {
 		update_option( 'blogname', 'foo' );
-		$details = get_blog_details( get_current_blog_id() );
+		$details = get_site( get_current_blog_id() );
 		$this->assertEquals( 'foo', $details->blogname );
 
 		update_option( 'blogname', 'bar' );
-		$details = get_blog_details( get_current_blog_id() );
+		$details = get_site( get_current_blog_id() );
 		$this->assertEquals( 'bar', $details->blogname );
-	}
-
-	/**
-	 * @ticket 29845
-	 */
-	function test_get_blog_details() {
-		$network_ids = array(
-			'wordpress.org/'         => array( 'domain' => 'wordpress.org', 'path' => '/' ),
-			'make.wordpress.org/'    => array( 'domain' => 'make.wordpress.org', 'path' => '/' ),
-		);
-
-		foreach ( $network_ids as &$id ) {
-			$id = $this->factory->network->create( $id );
-		}
-		unset( $id );
-
-		$ids = array(
-			'wordpress.org/'              => array( 'domain' => 'wordpress.org',      'path' => '/',         'title' => 'Test 1', 'site_id' => $network_ids['wordpress.org/'] ),
-			'wordpress.org/foo/'          => array( 'domain' => 'wordpress.org',      'path' => '/foo/',     'title' => 'Test 2', 'site_id' => $network_ids['wordpress.org/'] ),
-			'wordpress.org/foo/bar/'      => array( 'domain' => 'wordpress.org',      'path' => '/foo/bar/', 'title' => 'Test 3', 'site_id' => $network_ids['wordpress.org/'] ),
-			'make.wordpress.org/'         => array( 'domain' => 'make.wordpress.org', 'path' => '/',         'title' => 'Test 4', 'site_id' => $network_ids['make.wordpress.org/'] ),
-			'make.wordpress.org/foo/'     => array( 'domain' => 'make.wordpress.org', 'path' => '/foo/',     'title' => 'Test 5', 'site_id' => $network_ids['make.wordpress.org/'] ),
-		);
-
-		foreach ( $ids as &$id ) {
-			$id = $this->factory->blog->create( $id );
-		}
-		unset( $id );
-
-		// Retrieve site details by passing only a blog ID.
-		$site = get_blog_details( $ids['wordpress.org/'] );
-		$this->assertEquals( $ids['wordpress.org/'], $site->blog_id );
-		$this->assertEquals( 'Test 1', $site->blogname );
-
-		$site = get_blog_details( $ids['wordpress.org/foo/'] );
-		$this->assertEquals( $ids['wordpress.org/foo/'], $site->blog_id );
-		$this->assertEquals( 'Test 2', $site->blogname );
-
-		$site = get_blog_details( 999 );
-		$this->assertFalse( $site );
-
-		// Retrieve site details by passing an array containing blog_id.
-		$site = get_blog_details( array( 'blog_id' => $ids['wordpress.org/foo/bar/'] ) );
-		$this->assertEquals( $ids['wordpress.org/foo/bar/'], $site->blog_id );
-		$this->assertEquals( 'Test 3', $site->blogname );
-
-		$site = get_blog_details( array( 'blog_id' => $ids['make.wordpress.org/'] ) );
-		$this->assertEquals( $ids['make.wordpress.org/'], $site->blog_id );
-		$this->assertEquals( 'Test 4', $site->blogname );
-
-		$site = get_blog_details( array( 'blog_id' => 999 ) );
-		$this->assertFalse( $site );
-
-		// Retrieve site details by passing an array containing domain and path.
-		$site = get_blog_details( array( 'domain' => 'wordpress.org', 'path' => '/' ) );
-		$this->assertEquals( $ids['wordpress.org/'], $site->blog_id );
-		$this->assertEquals( 'Test 1', $site->blogname );
-
-		$site = get_blog_details( array( 'domain' => 'wordpress.org', 'path' => '/foo/' ) );
-		$this->assertEquals( $ids['wordpress.org/foo/'], $site->blog_id );
-		$this->assertEquals( 'Test 2', $site->blogname );
-
-		$site = get_blog_details( array( 'domain' => 'wordpress.org', 'path' => '/foo/bar/' ) );
-		$this->assertEquals( $ids['wordpress.org/foo/bar/'], $site->blog_id );
-		$this->assertEquals( 'Test 3', $site->blogname );
-
-		$site = get_blog_details( array( 'domain' => 'make.wordpress.org', 'path' => '/' ) );
-		$this->assertEquals( $ids['make.wordpress.org/'], $site->blog_id );
-		$this->assertEquals( 'Test 4', $site->blogname );
-
-		$site = get_blog_details( array( 'domain' => 'make.wordpress.org', 'path' => '/foo/' ) );
-		$this->assertEquals( $ids['make.wordpress.org/foo/'], $site->blog_id );
-		$this->assertEquals( 'Test 5', $site->blogname );
-
-		$site = get_blog_details( array( 'domain' => 'wordpress.org', 'path' => '/zxy/' ) );
-		$this->assertFalse( $site );
 	}
 
 	/**
@@ -774,8 +661,8 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * the blog ID is requested through get_blog_id_from_url().
 	 */
 	function test_get_blog_id_from_url() {
-		$blog_id = $this->factory->blog->create();
-		$details = get_blog_details( $blog_id, false );
+		$blog_id = self::factory()->blog->create();
+		$details = get_site( $blog_id );
 		$key = md5( $details->domain . $details->path );
 
 		// Test the original response and cached response for the newly created site.
@@ -787,8 +674,8 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * Test the case insensitivity of the site lookup.
 	 */
 	function test_get_blog_id_from_url_is_case_insensitive() {
-		$blog_id = $this->factory->blog->create( array( 'domain' => 'example.com', 'path' => '/xyz' ) );
-		$details = get_blog_details( $blog_id, false );
+		$blog_id = self::factory()->blog->create( array( 'domain' => 'example.com', 'path' => '/xyz' ) );
+		$details = get_site( $blog_id );
 
 		$this->assertEquals( $blog_id, get_blog_id_from_url( strtoupper( $details->domain ), strtoupper( $details->path ) ) );
 	}
@@ -797,8 +684,8 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * Test the first and cached responses for a site that does not exist.
 	 */
 	function test_get_blog_id_from_url_that_does_not_exist() {
-		$blog_id = $this->factory->blog->create( array( 'path' => '/xyz' ) );
-		$details = get_blog_details( $blog_id, false );
+		$blog_id = self::factory()->blog->create( array( 'path' => '/xyz' ) );
+		$details = get_site( $blog_id );
 
 		$this->assertEquals( 0, get_blog_id_from_url( $details->domain, 'foo' ) );
 		$this->assertEquals( -1, wp_cache_get( md5( $details->domain . 'foo' ), 'blog-id-cache' ) );
@@ -809,8 +696,8 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * behavior would be expected if passing `false` explicitly to `wpmu_delete_blog()`.
 	 */
 	function test_get_blog_id_from_url_with_deleted_flag() {
-		$blog_id = $this->factory->blog->create();
-		$details = get_blog_details( $blog_id, false );
+		$blog_id = self::factory()->blog->create();
+		$details = get_site( $blog_id );
 		$key = md5( $details->domain . $details->path );
 		wpmu_delete_blog( $blog_id );
 
@@ -823,8 +710,8 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * -1 after an attempt at `get_blog_id_from_url()` is made.
 	 */
 	function test_get_blog_id_from_url_after_dropped() {
-		$blog_id = $this->factory->blog->create();
-		$details = get_blog_details( $blog_id, false );
+		$blog_id = self::factory()->blog->create();
+		$details = get_site( $blog_id );
 		$key = md5( $details->domain . $details->path );
 		wpmu_delete_blog( $blog_id, true );
 
@@ -852,7 +739,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * Test with a site ID other than the main site to ensure a false response.
 	 */
 	function test_is_main_site_is_false_with_other_blog_id() {
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		$this->assertFalse( is_main_site( $blog_id ) );
 	}
@@ -861,7 +748,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * Test with no passed ID after switching to another site ID.
 	 */
 	function test_is_main_site_is_false_after_switch_to_blog() {
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 		switch_to_blog( $blog_id );
 
 		$this->assertFalse( is_main_site() );
@@ -880,7 +767,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		$this->assertEquals( gmstrftime('/%Y/%m'), $info['subdir'] );
 		$this->assertEquals( '', $info['error'] );
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		switch_to_blog( $blog_id );
 		$info = wp_upload_dir();
@@ -898,196 +785,12 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests to handle the possibilities provided for in `get_space_allowed()`,
-	 * which is used when checking for upload quota limits. Originally part of
-	 * ticket #18119.
-	 */
-	function test_get_space_allowed_default() {
-		$this->assertEquals( 100, get_space_allowed() );
-	}
-
-	/**
-	 * When an individual site's option is defined, it is used over the option
-	 * defined at the network level.
-	 */
-	function test_get_space_allowed_from_blog_option() {
-		update_option( 'blog_upload_space', 123 );
-		update_site_option( 'blog_upload_space', 200 );
-		$this->assertEquals( 123, get_space_allowed() );
-	}
-
-	/**
-	 * If an individual site's option is not available, the default network
-	 * level option is used as a fallback.
-	 */
-	function test_get_space_allowed_from_network_option() {
-		update_option( 'blog_upload_space', false );
-		update_site_option( 'blog_upload_space', 200 );
-		$this->assertEquals( 200, get_space_allowed() );
-	}
-
-	/**
-	 * If neither the site or network options are available, 100 is used as
-	 * a hard coded fallback.
-	 */
-	function test_get_space_allowed_no_option_fallback() {
-		update_option( 'blog_upload_space', false );
-		update_site_option( 'blog_upload_space', false );
-		$this->assertEquals( 100, get_space_allowed() );
-	}
-
-	function test_get_space_allowed_negative_blog_option() {
-		update_option( 'blog_upload_space', -1 );
-		update_site_option( 'blog_upload_space', 200 );
-		$this->assertEquals( -1, get_space_allowed() );
-	}
-
-	function test_get_space_allowed_negative_site_option() {
-		update_option( 'blog_upload_space', false );
-		update_site_option( 'blog_upload_space', -1 );
-		$this->assertEquals( -1, get_space_allowed() );
-	}
-
-	/**
-	 * Provide a hardcoded amount for space used when testing upload quota,
-	 * allowed space, and available space.
-	 *
-	 * @return int
-	 */
-	function _filter_space_used() {
-		return 300;
-	}
-
-	function test_upload_is_user_over_quota_default() {
-		$this->assertFalse( upload_is_user_over_quota( false ) );
-	}
-
-	function test_upload_is_user_over_quota_check_enabled() {
-		update_site_option('upload_space_check_disabled', false);
-		$this->assertFalse( upload_is_user_over_quota( false ) );
-	}
-
-	/**
-	 * When the upload space check is disabled, using more than the available
-	 * quota is allowed.
-	 */
-	function test_upload_is_user_over_check_disabled() {
-		update_site_option( 'upload_space_check_disabled', true );
-		update_site_option( 'blog_upload_space', 100 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertFalse( upload_is_user_over_quota( false ) );
-
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-	}
-
-	/**
-	 * If 0 is set for `blog_upload_space`, a fallback of 100 is used.
-	 */
-	function test_upload_is_user_over_quota_upload_space_0() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 0 );
-		$this->assertFalse( upload_is_user_over_quota( false ) );
-	}
-
-	/**
-	 * Filter the space space used as 300 to trigger a true upload quota
-	 * without requiring actual files.
-	 */
-	function test_upload_is_user_over_quota_upload_space_0_filter_space_used() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 0 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertTrue( upload_is_user_over_quota( false ) );
-
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-	}
-
-	function test_upload_is_user_over_quota_upload_space_200() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 200 );
-		$this->assertFalse( upload_is_user_over_quota( false ) );
-	}
-
-	function test_upload_is_user_over_quota_upload_space_200_filter_space_used() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 200 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertTrue( upload_is_user_over_quota( false ) );
-
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-	}
-
-	/**
-	 * If the space used is exactly the same as the available quota, an over
-	 * quota response is not expected.
-	 */
-	function test_upload_is_user_over_quota_upload_space_exact() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 300 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertFalse( upload_is_user_over_quota( false ) );
-
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-	}
-
-	function test_upload_is_user_over_quota_upload_space_negative() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', -1 );
-		$this->assertTrue( upload_is_user_over_quota( false ) );
-	}
-
-	function test_is_upload_space_available_default() {
-		$this->assertTrue( is_upload_space_available() );
-	}
-
-	function test_is_upload_space_available_check_disabled() {
-		update_site_option( 'upload_space_check_disabled', true );
-		$this->assertTrue( is_upload_space_available() );
-	}
-
-	function test_is_upload_space_available_space_used_is_less() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 350 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertTrue( is_upload_space_available() );
-
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-	}
-
-	function test_is_upload_space_available_space_used_is_more() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 250 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertFalse( is_upload_space_available() );
-
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-	}
-
-	function test_is_upload_space_available_upload_space_0() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 0 );
-		$this->assertTrue( is_upload_space_available() );
-	}
-
-	function test_is_upload_space_available_upload_space_negative() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', -1 );
-		$this->assertFalse( is_upload_space_available() );
-	}
-
-	/**
 	 * Test the primary purpose of get_blog_post(), to retrieve a post from
 	 * another site on the network.
 	 */
 	function test_get_blog_post_from_another_site_on_network() {
-		$blog_id = $this->factory->blog->create();
-		$post_id = $this->factory->post->create(); // Create a post on the primary site, ID 1.
+		$blog_id = self::factory()->blog->create();
+		$post_id = self::factory()->post->create(); // Create a post on the primary site, ID 1.
 		$post = get_post( $post_id );
 		switch_to_blog( $blog_id );
 
@@ -1101,7 +804,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * If get_blog_post() is used on the same site, it should still work.
 	 */
 	function test_get_blog_post_from_same_site() {
-		$post_id = $this->factory->post->create();
+		$post_id = self::factory()->post->create();
 
 		$this->assertEquals( get_blog_post( 1, $post_id ), get_post( $post_id ) );
 	}
@@ -1125,13 +828,13 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	}
 
 	function test_domain_exists_with_default_site_id() {
-		$details = get_blog_details( 1, false );
+		$details = get_site( 1 );
 
 		$this->assertEquals( 1, domain_exists( $details->domain, $details->path ) );
 	}
 
 	function test_domain_exists_with_specified_site_id() {
-		$details = get_blog_details( 1, false );
+		$details = get_site( 1 );
 
 		$this->assertEquals( 1, domain_exists( $details->domain, $details->path, $details->site_id ) );
 	}
@@ -1141,7 +844,7 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 * it is marked as not existing.
 	 */
 	function test_domain_does_not_exist_with_invalid_site_id() {
-		$details = get_blog_details( 1, false );
+		$details = get_site( 1 );
 
 		$this->assertEquals( null, domain_exists( $details->domain, $details->path, 999 ) );
 	}
@@ -1152,10 +855,9 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 
 	function test_domain_filtered_to_exist() {
 		add_filter( 'domain_exists', array( $this, '_domain_exists_cb' ), 10, 4 );
-
-		$this->assertEquals( 1234, domain_exists( 'foo', 'bar' ) );
-
+		$exists = domain_exists( 'foo', 'bar' );
 		remove_filter( 'domain_exists', array( $this, '_domain_exists_cb' ), 10, 4 );
+		$this->assertEquals( 1234, $exists );
 	}
 
 	/**
@@ -1164,11 +866,12 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	 */
 	function test_slashed_path_in_domain_exists() {
 		add_filter( 'domain_exists', array( $this, '_domain_exists_cb' ), 10, 4 );
+		$exists1 = domain_exists( 'foo', 'bar' );
+		$exists2 = domain_exists( 'foo', 'bar/' );
+		remove_filter( 'domain_exists', array( $this, '_domain_exists_cb' ), 10, 4 );
 
 		// Make sure the same result is returned with or without a trailing slash
-		$this->assertEquals( domain_exists( 'foo', 'bar' ), domain_exists( 'foo', 'bar/' ) );
-
-		remove_filter( 'domain_exists', array( $this, '_domain_exists_cb' ), 10, 4 );
+		$this->assertEquals( $exists1, $exists2 );
 	}
 
 	/**
@@ -1185,6 +888,174 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	function test_get_blogaddress_by_id_with_invalid_id() {
 		$blogaddress = get_blogaddress_by_id( 42 );
 		$this->assertEquals( '', $blogaddress );
+	}
+
+	/**
+	 * @ticket 14867
+	 */
+	function test_get_blogaddress_by_id_scheme_reflects_blog_scheme() {
+		$blog = self::factory()->blog->create();
+
+		$this->assertSame( 'http', parse_url( get_blogaddress_by_id( $blog ), PHP_URL_SCHEME ) );
+
+		update_blog_option( $blog, 'home', set_url_scheme( get_blog_option( $blog, 'home' ), 'https' ) );
+
+		$this->assertSame( 'https', parse_url( get_blogaddress_by_id( $blog ), PHP_URL_SCHEME ) );
+	}
+
+	/**
+	 * @ticket 14867
+	 */
+	function test_get_blogaddress_by_id_scheme_is_unaffected_by_request() {
+		$blog = self::factory()->blog->create();
+
+		$this->assertFalse( is_ssl() );
+		$this->assertSame( 'http', parse_url( get_blogaddress_by_id( $blog ), PHP_URL_SCHEME ) );
+
+		$_SERVER['HTTPS'] = 'on';
+
+		$is_ssl  = is_ssl();
+		$address = parse_url( get_blogaddress_by_id( $blog ), PHP_URL_SCHEME );
+
+		$this->assertTrue( $is_ssl );
+		$this->assertSame( 'http', $address );
+	}
+
+	/**
+	 * @ticket 33620
+	 * @dataProvider data_new_blog_url_schemes
+	 */
+	function test_new_blog_url_schemes( $home_scheme, $siteurl_scheme, $force_ssl_admin ) {
+		$current_site = get_current_site();
+
+		$home    = get_option( 'home' );
+		$siteurl = get_site_option( 'siteurl' );
+		$admin   = force_ssl_admin();
+
+		// Setup:
+		update_option( 'home', set_url_scheme( $home, $home_scheme ) );
+		update_site_option( 'siteurl', set_url_scheme( $siteurl, $siteurl_scheme ) );
+		force_ssl_admin( $force_ssl_admin );
+
+		// Install:
+		$new = wpmu_create_blog( $current_site->domain, '/new-blog/', 'New Blog', get_current_user_id() );
+
+		// Reset:
+		update_option( 'home', $home );
+		update_site_option( 'siteurl', $siteurl );
+		force_ssl_admin( $admin );
+
+		// Assert:
+		$this->assertNotWPError( $new );
+		$this->assertSame( $home_scheme, parse_url( get_blog_option( $new, 'home' ), PHP_URL_SCHEME ) );
+		$this->assertSame( $siteurl_scheme, parse_url( get_blog_option( $new, 'siteurl' ), PHP_URL_SCHEME ) );
+	}
+
+	function data_new_blog_url_schemes() {
+		return array(
+			array(
+				'https',
+				'https',
+				false,
+			),
+			array(
+				'http',
+				'https',
+				false,
+			),
+			array(
+				'https',
+				'http',
+				false,
+			),
+			array(
+				'http',
+				'http',
+				false,
+			),
+			array(
+				'http',
+				'http',
+				true,
+			),
+		);
+	}
+
+	/**
+	 * @ticket 36918
+	 */
+	function test_new_blog_locale() {
+		$current_site = get_current_site();
+
+		add_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10, 3 );
+		update_site_option( 'WPLANG', 'de_DE' );
+		remove_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10 );
+
+		// No locale, use default locale.
+		add_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10, 3 );
+		$blog_id = wpmu_create_blog( $current_site->domain, '/de-de/', 'New Blog', get_current_user_id() );
+		remove_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10 );
+
+		$this->assertNotWPError( $blog_id );
+		$this->assertSame( 'de_DE', get_blog_option( $blog_id, 'WPLANG' ) );
+
+		// Custom locale.
+		add_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10, 3 );
+		$blog_id = wpmu_create_blog( $current_site->domain, '/es-es/', 'New Blog', get_current_user_id(), array( 'WPLANG' => 'es_ES' ) );
+		remove_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10 );
+
+		$this->assertNotWPError( $blog_id );
+		$this->assertSame( 'es_ES', get_blog_option( $blog_id, 'WPLANG' ) );
+
+		// en_US locale.
+		add_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10, 3 );
+		$blog_id = wpmu_create_blog( $current_site->domain, '/en-us/', 'New Blog', get_current_user_id(), array( 'WPLANG' => '' ) );
+		remove_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10 );
+
+		$this->assertNotWPError( $blog_id );
+		$this->assertSame( '', get_blog_option( $blog_id, 'WPLANG' ) );
+	}
+
+	/**
+	 * @ticket 40503
+	 */
+	function test_different_network_language() {
+		$network = get_network( self::$network_ids['make.wordpress.org/'] );
+
+		add_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10, 3 );
+
+		update_network_option( self::$network_ids['make.wordpress.org/'], 'WPLANG', 'wibble' );
+		$blog_id = wpmu_create_blog( $network->domain, '/de-de/', 'New Blog', get_current_user_id(), array(), $network->id );
+
+		remove_filter( 'sanitize_option_WPLANG', array( $this, 'filter_allow_unavailable_languages' ), 10 );
+
+		$this->assertSame( get_network_option( self::$network_ids['make.wordpress.org/'], 'WPLANG' ), get_blog_option( $blog_id, 'WPLANG' ) );
+	}
+
+	/**
+	 * Allows to set the WPLANG option to any language.
+	 *
+	 * @param string $value          The sanitized option value.
+	 * @param string $option         The option name.
+	 * @param string $original_value The original value passed to the function.
+	 * @return string The orginal value.
+	 */
+	function filter_allow_unavailable_languages( $value, $option, $original_value ) {
+		return $original_value;
+	}
+
+	/**
+	 * @ticket 29684
+	 */
+	public function test_is_main_site_different_network() {
+		$this->assertTrue( is_main_site( self::$site_ids['make.wordpress.org/'], self::$network_ids['make.wordpress.org/'] ) );
+	}
+
+	/**
+	 * @ticket 29684
+	 */
+	public function test_is_main_site_different_network_random_site() {
+		$this->assertFalse( is_main_site( self::$site_ids['make.wordpress.org/foo/'], self::$network_ids['make.wordpress.org/'] ) );
 	}
 }
 

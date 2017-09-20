@@ -1,8 +1,8 @@
-/* global wp */
+/* global wp, test, ok, equal, module */
 
 jQuery( function( $ ) {
 	var FooSuperClass, BarSubClass, foo, bar, ConstructorTestClass, newConstructor, constructorTest, $mockElement, mockString,
-	firstInitialValue, firstValueInstance, wasCallbackFired, mockValueCallback;
+	firstInitialValue, firstValueInstance, valuesInstance, wasCallbackFired, mockValueCallback;
 
 	module( 'Customize Base: Class' );
 
@@ -158,4 +158,95 @@ jQuery( function( $ ) {
 		firstValueInstance.set( 'newValue' );
 		ok( wasCallbackFired );
 	});
+
+	module( 'Customize Base: Values Class' );
+
+	valuesInstance = new wp.customize.Values();
+
+	test( 'Correct events are triggered when adding to or removing from Values collection', function() {
+		var hasFooOnAdd = false,
+			hasFooOnRemove = false,
+			hasFooOnRemoved = true,
+			valuePassedToAdd = false,
+			valuePassedToRemove = false,
+			valuePassedToRemoved = false,
+			wasEventFiredOnRemoval = false,
+			fooValue = new wp.customize.Value( 'foo' );
+
+		// Test events when adding new value.
+		valuesInstance.bind( 'add', function( value ) {
+			hasFooOnAdd = valuesInstance.has( 'foo' );
+			valuePassedToAdd = value;
+		} );
+		valuesInstance.add( 'foo', fooValue );
+		ok( hasFooOnAdd );
+		equal( valuePassedToAdd.get(), fooValue.get() );
+
+		// Test events when removing the value.
+		valuesInstance.bind( 'remove', function( value ) {
+			hasFooOnRemove = valuesInstance.has( 'foo' );
+			valuePassedToRemove = value;
+			wasEventFiredOnRemoval = true;
+		} );
+		valuesInstance.bind( 'removed', function( value ) {
+			hasFooOnRemoved = valuesInstance.has( 'foo' );
+			valuePassedToRemoved = value;
+			wasEventFiredOnRemoval = true;
+		} );
+		valuesInstance.remove( 'foo' );
+		ok( hasFooOnRemove );
+		equal( valuePassedToRemove.get(), fooValue.get() );
+		ok( ! hasFooOnRemoved );
+		equal( valuePassedToRemoved.get(), fooValue.get() );
+
+		// Confirm no events are fired when nonexistent value is removed.
+		wasEventFiredOnRemoval = false;
+		valuesInstance.remove( 'bar' );
+		ok( ! wasEventFiredOnRemoval );
+	});
+
+	module( 'Customize Base: Notification' );
+	test( 'Notification object exists and has expected properties', function ( assert ) {
+		var notification = new wp.customize.Notification( 'mycode', {
+			'message': 'Hello World',
+			'type': 'update',
+			'setting': 'blogname',
+			'fromServer': true,
+			'data': { 'foo': 'bar' }
+		} );
+
+		assert.equal( 'mycode', notification.code );
+		assert.equal( 'Hello World', notification.message );
+		assert.equal( 'update', notification.type );
+		assert.equal( 'blogname', notification.setting );
+		assert.equal( true, notification.fromServer );
+		assert.deepEqual( { 'foo': 'bar' }, notification.data );
+
+		notification = new wp.customize.Notification( 'mycode2', {
+			'message': 'Hello Space'
+		} );
+		assert.equal( 'mycode2', notification.code );
+		assert.equal( 'Hello Space', notification.message );
+		assert.equal( 'error', notification.type );
+		assert.equal( null, notification.data );
+	} );
+
+	module( 'Customize Base: utils.parseQueryString' );
+	test( 'wp.customize.utils.parseQueryString works', function( assert ) {
+		var queryParams;
+		queryParams = wp.customize.utils.parseQueryString( 'a=1&b=2' );
+		assert.ok( _.isEqual( queryParams, { a: '1', b: '2' } ) );
+
+		queryParams = wp.customize.utils.parseQueryString( 'a+b=1&b=Hello%20World' );
+		assert.ok( _.isEqual( queryParams, { 'a_b': '1', b: 'Hello World' } ) );
+
+		queryParams = wp.customize.utils.parseQueryString( 'a%20b=1&b=Hello+World' );
+		assert.ok( _.isEqual( queryParams, { 'a_b': '1', b: 'Hello World' } ) );
+
+		queryParams = wp.customize.utils.parseQueryString( 'a=1&b' );
+		assert.ok( _.isEqual( queryParams, { 'a': '1', b: null } ) );
+
+		queryParams = wp.customize.utils.parseQueryString( 'a=1&b=' );
+		assert.ok( _.isEqual( queryParams, { 'a': '1', b: '' } ) );
+	} );
 });

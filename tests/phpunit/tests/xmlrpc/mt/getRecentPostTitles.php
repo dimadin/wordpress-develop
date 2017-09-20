@@ -7,7 +7,7 @@ class Tests_XMLRPC_mt_getRecentPostTitles extends WP_XMLRPC_UnitTestCase {
 
 	function test_invalid_username_password() {
 		$result = $this->myxmlrpcserver->mt_getRecentPostTitles( array( 1, 'username', 'password' ) );
-		$this->assertInstanceOf( 'IXR_Error', $result );
+		$this->assertIXRError( $result );
 		$this->assertEquals( 403, $result->code );
 	}
 
@@ -15,27 +15,27 @@ class Tests_XMLRPC_mt_getRecentPostTitles extends WP_XMLRPC_UnitTestCase {
 		$this->make_user_by_role( 'author' );
 
 		$result = $this->myxmlrpcserver->mt_getRecentPostTitles( array( 1, 'author', 'author' ) );
-		$this->assertInstanceOf( 'IXR_Error', $result );
+		$this->assertIXRError( $result );
 		$this->assertEquals( 500, $result->code );
 	}
 
 	function test_no_editable_posts() {
 		$this->make_user_by_role( 'author' );
 		$editor = $this->make_user_by_role( 'editor' );
-		$this->factory->post->create( array( 'post_author' => $editor ) );
+		self::factory()->post->create( array( 'post_author' => $editor ) );
 
 		$result = $this->myxmlrpcserver->mt_getRecentPostTitles( array( 1, 'author', 'author' ) );
-		$this->assertNotInstanceOf( 'IXR_Error', $result );
+		$this->assertNotIXRError( $result );
 		$this->assertEquals( 0, count( $result ) );
 	}
 
 	function test_date() {
 		$this->make_user_by_role( 'author' );
 
-		$this->factory->post->create();
+		self::factory()->post->create();
 
 		$results = $this->myxmlrpcserver->mt_getRecentPostTitles( array( 1, 'author', 'author' ) );
-		$this->assertNotInstanceOf( 'IXR_Error', $results );
+		$this->assertNotIXRError( $results );
 
 		foreach( $results as $result ) {
 			$post = get_post( $result['postid'] );

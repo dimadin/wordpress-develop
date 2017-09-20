@@ -1,16 +1,18 @@
+var View = wp.media.View,
+	$ = jQuery,
+	Attachments;
+
 /**
  * wp.media.view.Attachments
+ *
+ * @memberOf wp.media.view
  *
  * @class
  * @augments wp.media.View
  * @augments wp.Backbone.View
  * @augments Backbone.View
  */
-var View = wp.media.View,
-	$ = jQuery,
-	Attachments;
-
-Attachments = View.extend({
+Attachments = View.extend(/** @lends wp.media.view.Attachments.prototype */{
 	tagName:   'ul',
 	className: 'attachments',
 
@@ -156,7 +158,7 @@ Attachments = View.extend({
 	initSortable: function() {
 		var collection = this.collection;
 
-		if ( wp.media.isTouchDevice || ! this.options.sortable || ! $.fn.sortable ) {
+		if ( ! this.options.sortable || ! $.fn.sortable ) {
 			return;
 		}
 
@@ -215,7 +217,7 @@ Attachments = View.extend({
 	},
 
 	refreshSortable: function() {
-		if ( wp.media.isTouchDevice || ! this.options.sortable || ! $.fn.sortable ) {
+		if ( ! this.options.sortable || ! $.fn.sortable ) {
 			return;
 		}
 

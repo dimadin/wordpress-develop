@@ -2,7 +2,7 @@
 window._wpCustomizeNavMenusSettings = {
 	'nonce': 'yo',
 	'phpIntMax': '2147483647',
-	'menuItemTransport': 'postMessage',
+	'settingTransport': 'postMessage',
 	'allMenus': [{
 		'term_id': '2',
 		'name': 'Social Menu',
@@ -102,6 +102,10 @@ window._wpCustomizeNavMenusSettings = {
 		'taxonomyTermLabel': 'Taxonomy',
 		'unnamed': '(unnamed)',
 		'untitled': '(no label)'
+	},
+	'locationSlugMappedToName': {
+		'main-footer': 'Main Footer',
+		'main-header': 'Main Header'
 	}
 };
 window._wpCustomizeSettings.panels.nav_menus = {
@@ -374,7 +378,7 @@ window._wpCustomizeSettings.sections.add_menu = {
 	'panel': 'nav_menus',
 	'type': 'new_menu',
 	'title': 'Add a Menu',
-	'content': '<li id="accordion-section-add_menu" class="accordion-section-new-menu">\n\t\t\t<button type="button" class="button-secondary add-new-menu-item add-menu-toggle" aria-expanded="false">\n\t\t\t\tAdd a Menu\t\t\t<\/button>\n\t\t\t<ul class="new-menu-section-content"><\/ul>\n\t\t<\/li>',
+	'content': '<li id="accordion-section-add_menu" class="accordion-section-new-menu">\n\t\t\t<button type="button" class="button add-new-menu-item add-menu-toggle" aria-expanded="false">\n\t\t\t\tAdd a Menu\t\t\t<\/button>\n\t\t\t<ul class="new-menu-section-content"><\/ul>\n\t\t<\/li>',
 	'active': true,
 	'instanceNumber': 16,
 	'customizeAction': 'Customizing &#9656; Menus'
@@ -389,11 +393,6 @@ window._wpCustomizeSettings.controls.new_menu_name = {
 	'label': '',
 	'description': '',
 	'instanceNumber': 46
-};
-window._wpCustomizeSettings.settings.new_menu_name = {
-	'value': '',
-	'transport': 'postMessage',
-	'dirty': false
 };
 
 // From nav-menu.js

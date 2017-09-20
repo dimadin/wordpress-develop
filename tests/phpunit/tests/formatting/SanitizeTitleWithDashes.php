@@ -63,9 +63,24 @@ class Tests_Formatting_SanitizeTitleWithDashes extends WP_UnitTestCase {
 		$this->assertEquals("dont-break-the-space", sanitize_title_with_dashes("don't break the space", '', 'save'));
 	}
 
+	/**
+	 * @ticket 31790
+	 */
+	function test_replaces_nbsp_entities() {
+		$this->assertEquals("dont-break-the-space", sanitize_title_with_dashes("don't&nbsp;break&#160;the&nbsp;space", '', 'save'));
+	}
+
 	function test_replaces_ndash_mdash() {
 		$this->assertEquals("do-the-dash", sanitize_title_with_dashes("Do – the Dash", '', 'save'));
 		$this->assertEquals("do-the-dash", sanitize_title_with_dashes("Do the — Dash", '', 'save'));
+	}
+
+	/**
+	 * @ticket 31790
+	 */
+	function test_replaces_ndash_mdash_entities() {
+		$this->assertEquals("do-the-dash", sanitize_title_with_dashes("Do &ndash; the &#8211; Dash", '', 'save'));
+		$this->assertEquals("do-the-dash", sanitize_title_with_dashes("Do &mdash; the &#8212; Dash", '', 'save'));
 	}
 
 	function test_replaces_iexcel_iquest() {
@@ -91,6 +106,17 @@ class Tests_Formatting_SanitizeTitleWithDashes extends WP_UnitTestCase {
 		$this->assertEquals("just-a-slug", sanitize_title_with_dashes("® Just a Slug", '', 'save'));
 		$this->assertEquals("just-a-slug", sanitize_title_with_dashes("Just a ° Slug", '', 'save'));
 		$this->assertEquals("just-a-slug", sanitize_title_with_dashes("Just ™ a Slug", '', 'save'));
+	}
+
+	/**
+	 * @ticket 10792
+	 */
+	function test_replaces_forward_slash() {
+		$this->assertEquals("songs-by-lennon-mccartney", sanitize_title_with_dashes("songs by Lennon/McCartney", '', 'save'));
+		$this->assertEquals("songs-by-lennon-mccartney", sanitize_title_with_dashes("songs by Lennon//McCartney", '', 'save'));
+		$this->assertEquals("songs-by-lennon-mccartney", sanitize_title_with_dashes("songs by Lennon///McCartney", '', 'save'));
+		$this->assertEquals("songs-by-lennon-mccartney", sanitize_title_with_dashes("songs by Lennon/-McCartney", '', 'save'));
+		$this->assertEquals("songs-by-lennon-mccartney", sanitize_title_with_dashes("//songs by Lennon/McCartney", '', 'save'));
 	}
 
 	/**

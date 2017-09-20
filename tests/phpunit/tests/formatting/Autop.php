@@ -328,6 +328,7 @@ Paragraph two.';
 			'summary',
 		);
 
+		// Check whitespace normalization.
 		$content = array();
 
 		foreach ( $blocks as $block ) {
@@ -335,9 +336,37 @@ Paragraph two.';
 		}
 
 		$expected = join( "\n", $content );
-		$content = join( "\n\n", $content ); // WS difference
+		$input = join( "\n\n", $content ); // WS difference
 
-		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
+		$this->assertEquals( $expected, trim( wpautop( $input ) ) );
+
+		$input = join( "", $content ); // WS difference
+
+		$this->assertEquals( $expected, trim( wpautop( $input ) ) );
+
+		// Check whitespace addition.
+		$content = array();
+
+		foreach ( $blocks as $block ) {
+			$content[] = "<$block/>";
+		}
+
+		$expected = join( "\n", $content );
+		$input = join( "", $content );
+
+		$this->assertEquals( $expected, trim( wpautop( $input ) ) );
+
+		// Check whitespace addition with attributes.
+		$content = array();
+
+		foreach ( $blocks as $block ) {
+			$content[] = "<$block attr='value'>foo</$block>";
+		}
+
+		$expected = join( "\n", $content );
+		$input = join( "", $content );
+
+		$this->assertEquals( $expected, trim( wpautop( $input ) ) );
 	}
 
 	/**
@@ -420,6 +449,14 @@ Paragraph two.';
 				"Hello <!-- a\nhref='world' -->",
 				"<p>Hello <!-- a\nhref='world' --></p>\n",
 			),
+			array(
+				"Hello <!-- <object>\n<param>\n<param>\n<embed>\n</embed>\n</object>\n -->",
+				"<p>Hello <!-- <object>\n<param>\n<param>\n<embed>\n</embed>\n</object>\n --></p>\n",
+			),
+			array(
+				"Hello <!-- <object>\n<param/>\n<param/>\n<embed>\n</embed>\n</object>\n -->",
+				"<p>Hello <!-- <object>\n<param/>\n<param/>\n<embed>\n</embed>\n</object>\n --></p>\n",
+			),
 /* Block elements inside comments will fail this test in all versions, it's not a regression.
 			array(
 				"Hello <!-- <hr> a\nhref='world' -->",
@@ -485,6 +522,40 @@ line 2<br/>
 <p>line 2</p>';
 
 		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
+	}
+
+
+	/**
+	 * @ticket 4857
+	 */
+	function test_that_text_before_blocks_is_peed() {
+		$content = 'a<div>b</div>';
+		$expected = "<p>a</p>\n<div>b</div>";
+
+		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
+	}
+
+	/**
+	 * wpautop() should not add extra </p> before <figcaption>
+	 *
+	 * @covers ::wpautop
+	 * @uses trim
+	 *
+	 * @ticket 39307
+	 */
+	function test_that_wpautop_doses_not_add_extra_closing_p_in_figure() {
+		$content1 = $expected1 = '<figure><img src="example.jpg" /><figcaption>Caption</figcaption></figure>';
+
+		$content2 = '<figure>
+<img src="example.jpg" />
+<figcaption>Caption</figcaption>
+</figure>';
+
+		$expected2 = '<figure>
+<img src="example.jpg" /><figcaption>Caption</figcaption></figure>';
+
+		$this->assertEquals( $expected1, trim( wpautop( $content1 ) ) );
+		$this->assertEquals( $expected2, trim( wpautop( $content2 ) ) );
 	}
 
 }

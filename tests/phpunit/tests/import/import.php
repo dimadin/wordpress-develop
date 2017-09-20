@@ -18,7 +18,7 @@ class Tests_Import_Import extends WP_Import_UnitTestCase {
 		add_filter( 'import_allow_create_users', '__return_true' );
 
 		if ( ! file_exists( DIR_TESTDATA . '/plugins/wordpress-importer/wordpress-importer.php' ) ) {
-			$this->markTestSkipped( 'WordPress Importer plugin is not installed.' );
+			$this->fail( 'This test requires the WordPress Importer plugin to be installed in the test suite. See: https://make.wordpress.org/core/handbook/contribute/git/#unit-tests' );
 		}
 
 		require_once DIR_TESTDATA . '/plugins/wordpress-importer/wordpress-importer.php';
@@ -247,6 +247,25 @@ class Tests_Import_Import extends WP_Import_UnitTestCase {
 			'XYZ2' => array( 'XYZ2' ),
 		), get_importers() );
 		$wp_importers = $_wp_importers; // Restore global state
+	}
+
+	/**
+	 * @ticket 21007
+	 */
+	public function test_slashes_should_not_be_stripped() {
+		global $wpdb;
+
+		$authors = array( 'admin' => false );
+		$this->_import_wp( DIR_TESTDATA . '/export/slashes.xml', $authors );
+
+		$alpha = get_term_by( 'slug', 'alpha', 'category' );
+		$this->assertSame( 'a \"great\" category', $alpha->name );
+
+		$tag1 = get_term_by( 'slug', 'tag1', 'post_tag' );
+		$this->assertSame( "foo\'bar", $tag1->name );
+
+		$posts = get_posts( array( 'post_type' => 'any', 'post_status' => 'any' ) );
+		$this->assertSame( 'Slashes aren\\\'t \"cool\"', $posts[0]->post_content );
 	}
 
 	// function test_menu_import

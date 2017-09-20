@@ -10,13 +10,6 @@ require_once dirname( dirname( __FILE__ ) ) . '/canonical.php';
 class Tests_Canonical_NoRewrite extends WP_Canonical_UnitTestCase {
 
 	// These test cases are run against the test handler in WP_Canonical
-	public static function setUpBeforeClass() {
-		self::generate_shared_fixtures();
-	}
-
-	public static function tearDownAfterClass() {
-		self::delete_shared_fixtures();
-	}
 
 	public function setUp() {
 		global $wp_rewrite;
@@ -26,7 +19,6 @@ class Tests_Canonical_NoRewrite extends WP_Canonical_UnitTestCase {
 		$wp_rewrite->init();
 		$wp_rewrite->set_permalink_structure( '' );
 		$wp_rewrite->flush_rules();
-		$wp_rewrite->init();
 	}
 
 	/**

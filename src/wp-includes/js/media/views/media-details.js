@@ -1,7 +1,12 @@
 /* global MediaElementPlayer */
+var AttachmentDisplay = wp.media.view.Settings.AttachmentDisplay,
+	$ = jQuery,
+	MediaDetails;
 
 /**
  * wp.media.view.MediaDetails
+ *
+ * @memberOf wp.media.view
  *
  * @class
  * @augments wp.media.view.Settings.AttachmentDisplay
@@ -10,11 +15,7 @@
  * @augments wp.Backbone.View
  * @augments Backbone.View
  */
-var AttachmentDisplay = wp.media.view.Settings.AttachmentDisplay,
-	$ = jQuery,
-	MediaDetails;
-
-MediaDetails = AttachmentDisplay.extend({
+MediaDetails = AttachmentDisplay.extend(/** @lends wp.media.view.MediaDetails.prototype */{
 	initialize: function() {
 		_.bindAll(this, 'success');
 		this.players = [];
@@ -23,14 +24,17 @@ MediaDetails = AttachmentDisplay.extend({
 		this.on( 'media:setting:remove', wp.media.mixin.unsetPlayers, this );
 		this.on( 'media:setting:remove', this.render );
 		this.on( 'media:setting:remove', this.setPlayer );
-		this.events = _.extend( this.events, {
+
+		AttachmentDisplay.prototype.initialize.apply( this, arguments );
+	},
+
+	events: function(){
+		return _.extend( {
 			'click .remove-setting' : 'removeSetting',
 			'change .content-track' : 'setTracks',
 			'click .remove-track' : 'setTracks',
 			'click .add-media-source' : 'addSource'
-		} );
-
-		AttachmentDisplay.prototype.initialize.apply( this, arguments );
+		}, AttachmentDisplay.prototype.events );
 	},
 
 	prepare: function() {
@@ -83,19 +87,17 @@ MediaDetails = AttachmentDisplay.extend({
 		this.scriptXhr = false;
 	},
 
-	/**
-	 * @global MediaElementPlayer
-	 */
 	setPlayer : function() {
-		var baseSettings;
+		var src;
 
 		if ( this.players.length || ! this.media || this.scriptXhr ) {
 			return;
 		}
 
-		if ( this.model.get( 'src' ).indexOf( 'vimeo' ) > -1 && ! ( 'Froogaloop' in window ) ) {
-			baseSettings = wp.media.mixin.mejsSettings;
-			this.scriptXhr = $.getScript( baseSettings.pluginPath + 'froogaloop.min.js', _.bind( this.loadPlayer, this ) );
+		src = this.model.get( 'src' );
+
+		if ( src && src.indexOf( 'vimeo' ) > -1 && ! ( 'Vimeo' in window ) ) {
+			this.scriptXhr = $.getScript( 'https://player.vimeo.com/api/player.js', _.bind( this.loadPlayer, this ) );
 		} else {
 			this.loadPlayer();
 		}
@@ -140,7 +142,7 @@ MediaDetails = AttachmentDisplay.extend({
 	resetFocus: function() {
 		this.$( '.embed-media-settings' ).scrollTop( 0 );
 	}
-}, {
+},/** @lends wp.media.view.MediaDetails */{
 	instances : 0,
 	/**
 	 * When multiple players in the DOM contain the same src, things get weird.

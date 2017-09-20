@@ -4,50 +4,41 @@
  * @group xmlrpc
  */
 class Tests_XMLRPC_wp_getMediaItem extends WP_XMLRPC_UnitTestCase {
-	var $post_id;
+	protected static $post_id;
+
 	var $attachment_data;
 	var $attachment_id;
+
+	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
+		self::$post_id = $factory->post->create();
+	}
 
 	function setUp() {
 		parent::setUp();
 
 		add_theme_support( 'post-thumbnails' );
 
-		$this->post_id = wp_insert_post( array(
-			'post_title' => rand_str(),
-			'post_content' => rand_str(),
-			'post_status' => 'publish'
-		));
-
 		$filename = ( DIR_TESTDATA.'/images/waffles.jpg' );
 		$contents = file_get_contents( $filename );
 		$upload = wp_upload_bits(basename($filename), null, $contents);
-		$mime = wp_check_filetype( $filename );
-		$this->attachment_data = array(
-			'post_title' => basename( $upload['file'] ),
-			'post_content' => '',
-			'post_type' => 'attachment',
-			'post_parent' => $this->post_id,
-			'post_mime_type' => $mime['type'],
-			'guid' => $upload[ 'url' ]
-		);
 
-		$id = wp_insert_attachment( $this->attachment_data, $upload[ 'file' ], $this->post_id );
-		wp_update_attachment_metadata( $id, wp_generate_attachment_metadata( $id, $upload['file'] ) );
-		$this->attachment_id = $id;
+		$this->attachment_id = $this->_make_attachment( $upload, self::$post_id );
+		$this->attachment_data = get_post( $this->attachment_id, ARRAY_A );
 
-		set_post_thumbnail( $this->post_id, $this->attachment_id );
+		set_post_thumbnail( self::$post_id, $this->attachment_id );
 	}
 
 	function tearDown() {
 		remove_theme_support( 'post-thumbnails' );
+
+		$this->remove_added_uploads();
 
 		parent::tearDown();
 	}
 
 	function test_invalid_username_password() {
 		$result = $this->myxmlrpcserver->wp_getMediaItem( array( 1, 'username', 'password', 0 ) );
-		$this->assertInstanceOf( 'IXR_Error', $result );
+		$this->assertIXRError( $result );
 		$this->assertEquals( 403, $result->code );
 	}
 
@@ -56,7 +47,7 @@ class Tests_XMLRPC_wp_getMediaItem extends WP_XMLRPC_UnitTestCase {
 
 		$fields = array( 'post' );
 		$result = $this->myxmlrpcserver->wp_getMediaItem( array( 1, 'author', 'author', $this->attachment_id, $fields ) );
-		$this->assertNotInstanceOf( 'IXR_Error', $result );
+		$this->assertNotIXRError( $result );
 
 		// Check data types
 		$this->assertInternalType( 'string', $result['attachment_id'] );

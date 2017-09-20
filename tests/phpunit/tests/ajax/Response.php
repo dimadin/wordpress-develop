@@ -23,8 +23,7 @@ class Tests_Ajax_Response extends WP_UnitTestCase {
 		parent::setUp();
 
 		add_filter( 'wp_die_ajax_handler', array( $this, 'getDieHandler' ), 1, 1 );
-		if ( !defined( 'DOING_AJAX' ) )
-			define( 'DOING_AJAX', true );
+		add_filter( 'wp_doing_ajax', '__return_true' );
 
 		// Suppress warnings from "Cannot modify header information - headers already sent by"
 		$this->_error_level = error_reporting();
@@ -65,6 +64,7 @@ class Tests_Ajax_Response extends WP_UnitTestCase {
 	 * bootstrapper
 	 * @ticket 19448
 	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
 	 */
 	public function test_response_charset_in_header() {
 

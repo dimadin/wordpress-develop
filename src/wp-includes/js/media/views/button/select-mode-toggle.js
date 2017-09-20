@@ -1,5 +1,12 @@
+
+var Button = wp.media.view.Button,
+	l10n = wp.media.view.l10n,
+	SelectModeToggle;
+
 /**
  * wp.media.view.SelectModeToggleButton
+ *
+ * @memberOf wp.media.view
  *
  * @class
  * @augments wp.media.view.Button
@@ -7,19 +14,15 @@
  * @augments wp.Backbone.View
  * @augments Backbone.View
  */
-var Button = wp.media.view.Button,
-	l10n = wp.media.view.l10n,
-	SelectModeToggle;
-
-SelectModeToggle = Button.extend({
+SelectModeToggle = Button.extend(/** @lends wp.media.view.SelectModeToggle.prototype */{
 	initialize: function() {
 		_.defaults( this.options, {
 			size : ''
 		} );
 
 		Button.prototype.initialize.apply( this, arguments );
-		this.listenTo( this.controller, 'select:activate select:deactivate', this.toggleBulkEditHandler );
-		this.listenTo( this.controller, 'selection:action:done', this.back );
+		this.controller.on( 'select:activate select:deactivate', this.toggleBulkEditHandler, this );
+		this.controller.on( 'selection:action:done', this.back, this );
 	},
 
 	back: function () {

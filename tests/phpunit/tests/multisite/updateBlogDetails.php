@@ -25,13 +25,13 @@ class Tests_Multisite_Update_Blog_Details extends WP_UnitTestCase {
 	}
 
 	function test_update_blog_details() {
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		$result = update_blog_details( $blog_id, array( 'domain' => 'example.com', 'path' => 'my_path/' ) );
 
 		$this->assertTrue( $result );
 
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( 'example.com', $blog->domain );
 		$this->assertEquals( '/my_path/', $blog->path );
@@ -53,7 +53,7 @@ class Tests_Multisite_Update_Blog_Details extends WP_UnitTestCase {
 		global $test_action_counter;
 		$test_action_counter = 0;
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		// Set an initial value of '1' for the flag when '0' is the flag value being tested.
 		if ( '0' === $flag_value ) {
@@ -63,7 +63,7 @@ class Tests_Multisite_Update_Blog_Details extends WP_UnitTestCase {
 		add_action( $hook, array( $this, '_action_counter_cb' ), 10 );
 
 		update_blog_details( $blog_id, array( $flag => $flag_value ) );
-		$blog = get_blog_details( $blog_id );
+		$blog = get_site( $blog_id );
 
 		$this->assertEquals( $flag_value, $blog->{$flag} );
 
@@ -108,7 +108,7 @@ class Tests_Multisite_Update_Blog_Details extends WP_UnitTestCase {
 	 */
 	public function test_update_blog_details_single_directory_path( $path, $expected ) {
 		update_blog_details( 1, array( 'path' => $path ) );
-		$site = get_blog_details( 1 );
+		$site = get_site( 1 );
 
 		$this->assertEquals( $expected, $site->path );
 	}

@@ -8,7 +8,7 @@ class Tests_Meta extends WP_UnitTestCase {
 
 	function setUp() {
 		parent::setUp();
-		$this->author = new WP_User( $this->factory->user->create( array( 'role' => 'author' ) ) );
+		$this->author = new WP_User( self::factory()->user->create( array( 'role' => 'author' ) ) );
 		$this->meta_id = add_metadata( 'user', $this->author->ID, 'meta_key', 'meta_value' );
 		$this->delete_meta_id = add_metadata( 'user', $this->author->ID, 'delete_meta_key', 'delete_meta_value' );
 	}
@@ -161,7 +161,7 @@ class Tests_Meta extends WP_UnitTestCase {
 	}
 
 	function test_metadata_slashes() {
-		$key = rand_str();
+		$key = __FUNCTION__;
 		$value = 'Test\\singleslash';
 		$expected = 'Testsingleslash';
 		$value2 = 'Test\\\\doubleslash';
@@ -194,10 +194,10 @@ class Tests_Meta extends WP_UnitTestCase {
 	 * @ticket 16814
 	 */
 	function test_meta_type_cast() {
-		$post_id1 = $this->factory->post->create();
+		$post_id1 = self::factory()->post->create();
 		add_post_meta( $post_id1, 'num_as_longtext', 123 );
 		add_post_meta( $post_id1, 'num_as_longtext_desc', 10 );
-		$post_id2 = $this->factory->post->create();
+		$post_id2 = self::factory()->post->create();
 		add_post_meta( $post_id2, 'num_as_longtext', 99 );
 		add_post_meta( $post_id2, 'num_as_longtext_desc', 100 );
 
@@ -258,7 +258,7 @@ class Tests_Meta extends WP_UnitTestCase {
 	}
 
 	function test_meta_cache_order_asc() {
-		$post_id = $this->factory->post->create();
+		$post_id = self::factory()->post->create();
 		$colors = array( 'red', 'blue', 'yellow', 'green' );
 		foreach ( $colors as $color )
 			add_post_meta( $post_id, 'color', $color );
@@ -290,6 +290,44 @@ class Tests_Meta extends WP_UnitTestCase {
 		$this->assertFalse( get_metadata_by_mid( 'user', array( 1 ) ) );
 		$this->assertFalse( update_metadata_by_mid( 'user', array( 1 ), 'meta_new_value' ) );
 		$this->assertFalse( delete_metadata_by_mid( 'user', array( 1 ) ) );
+	}
+
+	/**
+	 * @ticket 37746
+	 */
+	function test_negative_meta_id() {
+		$negative_mid = $this->meta_id * -1;
+
+		$this->assertTrue( $negative_mid < 0 );
+		$this->assertFalse( get_metadata_by_mid( 'user', $negative_mid ) );
+		$this->assertFalse( update_metadata_by_mid( 'user', $negative_mid, 'meta_new_value' ) );
+		$this->assertFalse( delete_metadata_by_mid( 'user', $negative_mid ) );
+	}
+
+	/**
+	 * @ticket 37746
+	 */
+	function test_floating_meta_id() {
+		$floating_mid = $this->meta_id + 0.1337;
+
+		$this->assertTrue( floor( $floating_mid ) !== $floating_mid );
+		$this->assertFalse( get_metadata_by_mid( 'user', $floating_mid ) );
+		$this->assertFalse( update_metadata_by_mid( 'user', $floating_mid, 'meta_new_value' ) );
+		$this->assertFalse( delete_metadata_by_mid( 'user', $floating_mid ) );
+	}
+
+	/**
+	 * @ticket 37746
+	 */
+	function test_string_point_zero_meta_id() {
+		$meta_id = add_metadata( 'user', $this->author->ID, 'meta_key', 'meta_value_2' );
+
+		$string_mid = "{$meta_id}.0";
+
+		$this->assertTrue( floor( $string_mid ) == $string_mid );
+		$this->assertNotEquals( false, get_metadata_by_mid( 'user', $string_mid ) );
+		$this->assertNotEquals( false, update_metadata_by_mid( 'user', $string_mid, 'meta_new_value_2' ) );
+		$this->assertNotEquals( false, delete_metadata_by_mid( 'user', $string_mid ) );
 	}
 
 	/**

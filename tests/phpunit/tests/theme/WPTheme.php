@@ -139,4 +139,82 @@ class Tests_Theme_WPTheme extends WP_UnitTestCase {
 		$this->assertFalse( $theme->get( 'Tags' ) );
 		$this->assertFalse( $theme->display( 'Tags' ) );
 	}
+
+
+	/**
+	 * Enable a single theme on a network.
+	 *
+	 * @ticket 30594
+	 * @group ms-required
+	 */
+	function test_wp_theme_network_enable_single_theme() {
+		$theme = 'testtheme-1';
+		$current_allowed_themes = get_site_option( 'allowedthemes' );
+		WP_Theme::network_enable_theme( $theme );
+		$new_allowed_themes = get_site_option( 'allowedthemes' );
+		update_site_option( 'allowedthemes', $current_allowed_themes ); // reset previous value.
+		$current_allowed_themes['testtheme-1'] = true; // Add the new theme to the previous set.
+
+		$this->assertEqualSetsWithIndex( $current_allowed_themes, $new_allowed_themes );
+	}
+
+	/**
+	 * Enable multiple themes on a network.
+	 *
+	 * @ticket 30594
+	 * @group ms-required
+	 */
+	function test_wp_theme_network_enable_multiple_themes() {
+		$themes = array( 'testtheme-2', 'testtheme-3' );
+		$current_allowed_themes = get_site_option( 'allowedthemes' );
+		WP_Theme::network_enable_theme( $themes );
+		$new_allowed_themes = get_site_option( 'allowedthemes' );
+		update_site_option( 'allowedthemes', $current_allowed_themes ); // reset previous value.
+		$current_allowed_themes = array_merge( $current_allowed_themes, array( 'testtheme-2' => true, 'testtheme-3' => true ) );
+
+		$this->assertEqualSetsWithIndex( $current_allowed_themes, $new_allowed_themes );
+	}
+
+	/**
+	 * Disable a single theme on a network.
+	 *
+	 * @ticket 30594
+	 * @group ms-required
+	 */
+	function test_network_disable_single_theme() {
+		$current_allowed_themes = get_site_option( 'allowedthemes' );
+
+		$allowed_themes = array( 'existing-1' => true, 'existing-2' => true, 'existing-3' => true );
+		update_site_option( 'allowedthemes', $allowed_themes );
+
+		$disable_theme = 'existing-2';
+		WP_Theme::network_disable_theme( $disable_theme );
+		$new_allowed_themes = get_site_option( 'allowedthemes' );
+		update_site_option( 'allowedthemes', $current_allowed_themes ); // reset previous value.
+		unset( $allowed_themes[ $disable_theme ] ); // Remove deleted theme from initial set.
+
+		$this->assertEqualSetsWithIndex( $allowed_themes, $new_allowed_themes );
+	}
+
+	/**
+	 * Disable multiple themes on a network.
+	 *
+	 * @ticket 30594
+	 * @group ms-required
+	 */
+	function test_network_disable_multiple_themes() {
+		$current_allowed_themes = get_site_option( 'allowedthemes' );
+
+		$allowed_themes = array( 'existing-4' => true, 'existing-5' => true, 'existing-6' => true );
+		update_site_option( 'allowedthemes', $allowed_themes );
+
+		$disable_themes = array( 'existing-4', 'existing-5' );
+		WP_Theme::network_disable_theme( $disable_themes );
+		$new_allowed_themes = get_site_option( 'allowedthemes' );
+		update_site_option( 'allowedthemes', $current_allowed_themes ); // reset previous value.
+		unset( $allowed_themes['existing-4'] );
+		unset( $allowed_themes['existing-5'] );
+
+		$this->assertEqualSetsWithIndex( $allowed_themes, $new_allowed_themes );
+	}
 }

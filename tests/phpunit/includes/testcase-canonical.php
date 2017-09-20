@@ -15,19 +15,23 @@ class WP_Canonical_UnitTestCase extends WP_UnitTestCase {
 	 */
 	public $structure = '/%year%/%monthnum%/%day%/%postname%/';
 
-	public function setUp() {
-		global $wp_rewrite;
+	public static function wpSetUpBeforeClass( $factory ) {
+		self::generate_shared_fixtures( $factory );
+	}
 
+	public static function wpTearDownAfterClass() {
+		self::delete_shared_fixtures();
+	}
+
+	public function setUp() {
 		parent::setUp();
 
 		update_option( 'page_comments', true );
 		update_option( 'comments_per_page', 5 );
 		update_option( 'posts_per_page', 5 );
 
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( $this->structure );
+		$this->set_permalink_structure( $this->structure );
 		create_initial_taxonomies();
-		$wp_rewrite->flush_rules();
 	}
 
 	/**
@@ -37,11 +41,7 @@ class WP_Canonical_UnitTestCase extends WP_UnitTestCase {
 	 *
 	 * @since 4.1.0
 	 */
-	public static function generate_shared_fixtures() {
-		global $wp_rewrite;
-
-		$factory = new WP_UnitTest_Factory;
-
+	public static function generate_shared_fixtures( $factory ) {
 		self::$old_current_user = get_current_user_id();
 		self::$author_id = $factory->user->create( array( 'user_login' => 'canonical-author' ) );
 
@@ -52,7 +52,7 @@ class WP_Canonical_UnitTestCase extends WP_UnitTestCase {
 		wp_set_current_user( self::$author_id );
 
 		// Already created by install defaults:
-		// $this->factory->term->create( array( 'taxonomy' => 'category', 'name' => 'uncategorized' ) );
+		// self::factory()->term->create( array( 'taxonomy' => 'category', 'name' => 'uncategorized' ) );
 
 		self::$post_ids[] = $factory->post->create( array( 'import_id' => 587, 'post_title' => 'post-format-test-audio', 'post_date' => '2008-06-02 00:00:00' ) );
 		self::$post_ids[] = $post_id = $factory->post->create( array( 'post_title' => 'post-format-test-gallery', 'post_date' => '2008-06-10 00:00:00' ) );
@@ -129,8 +129,6 @@ class WP_Canonical_UnitTestCase extends WP_UnitTestCase {
 
 		$tag1 = $factory->term->create( array( 'name' => 'post-formats' ) );
 		self::$term_ids[ $tag1 ] = 'post_tag';
-
-		self::commit_transaction();
 	}
 
 	/**
@@ -139,33 +137,11 @@ class WP_Canonical_UnitTestCase extends WP_UnitTestCase {
 	 * @since 4.1.0
 	 */
 	public static function delete_shared_fixtures() {
-		global $wp_rewrite;
-
-		if ( is_multisite() ) {
-			wpmu_delete_user( self::$author_id );
-		} else {
-			wp_delete_user( self::$author_id );
-		}
-
-		foreach ( self::$post_ids as $pid ) {
-			wp_delete_post( $pid, true );
-		}
-
-		foreach ( self::$comment_ids as $cid ) {
-			wp_delete_comment( $cid, true );
-		}
-
-		foreach ( self::$term_ids as $tid => $tax ) {
-			wp_delete_term( $tid, $tax );
-		}
-
 		self::$author_id = null;
 		self::$post_ids = array();
 		self::$comment_ids = array();
 		self::$term_ids = array();
 		self::$terms = array();
-
-		self::commit_transaction();
 	}
 
 	/**
@@ -181,19 +157,15 @@ class WP_Canonical_UnitTestCase extends WP_UnitTestCase {
 	public function assertCanonical( $test_url, $expected, $ticket = 0, $expected_doing_it_wrong = array() ) {
 		$this->expected_doing_it_wrong = array_merge( $this->expected_doing_it_wrong, (array) $expected_doing_it_wrong );
 
-		if ( $ticket )
-			$this->knownWPBug( $ticket );
-
 		$ticket_ref = ($ticket > 0) ? 'Ticket #' . $ticket : null;
-global $wpdb;
-//print_r( $wpdb->get_results( "SELECT * FROM $wpdb->terms" ) );
+
 		if ( is_string($expected) )
 			$expected = array('url' => $expected);
 		elseif ( is_array($expected) && !isset($expected['url']) && !isset($expected['qv']) )
 			$expected = array( 'qv' => $expected );
 
 		if ( !isset($expected['url']) && !isset($expected['qv']) )
-			$this->markTestSkipped('No valid expected output was provided');
+			$this->fail( 'No valid expected output was provided' );
 
 		$this->go_to( home_url( $test_url ) );
 
@@ -206,6 +178,7 @@ global $wpdb;
 			$this->assertEquals( $expected['url'], $parsed_can_url['path'] . (!empty($parsed_can_url['query']) ? '?' . $parsed_can_url['query'] : ''), $ticket_ref );
 		}
 
+		// If the test data doesn't include expected query vars, then we're done here
 		if ( ! isset($expected['qv']) )
 			return;
 

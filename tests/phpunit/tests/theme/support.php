@@ -44,10 +44,32 @@ class Tests_Theme_Support extends WP_UnitTestCase {
 	}
 
 	public function test_post_thumbnails_flat_array_of_post_types() {
+		remove_theme_support( 'post-thumbnails' );
+
 		add_theme_support( 'post-thumbnails', array( 'post', 'page' ) );
-		$this->assertTrue( current_theme_supports( 'post-thumbnails' ) );
 		$this->assertTrue( current_theme_supports( 'post-thumbnails', 'post' ) );
 		$this->assertFalse( current_theme_supports( 'post-thumbnails', 'book' ) );
+		remove_theme_support( 'post-thumbnails' );
+		$this->assertFalse( current_theme_supports( 'post-thumbnails' ) );
+	}
+
+	/**
+	 * @ticket 22080
+	 */
+	public function test_post_thumbnails_mixed_args() {
+		add_theme_support( 'post-thumbnails', array( 'post', 'page' ) );
+		add_theme_support( 'post-thumbnails', array( 'page' ) );
+		$this->assertTrue( current_theme_supports( 'post-thumbnails', 'post' ) );
+		$this->assertFalse( current_theme_supports( 'post-thumbnails', 'book' ) );
+		$this->assertEquals(
+			array( 0 => array( 'post', 'page' ) ),
+			get_theme_support( 'post-thumbnails' )
+		);
+
+		add_theme_support( 'post-thumbnails' );
+		$this->assertTrue( current_theme_supports( 'post-thumbnails', 'book' ) );
+
+		// Reset post-thumbnails theme support.
 		remove_theme_support( 'post-thumbnails' );
 		$this->assertFalse( current_theme_supports( 'post-thumbnails' ) );
 	}
@@ -68,7 +90,7 @@ class Tests_Theme_Support extends WP_UnitTestCase {
 		remove_theme_support( 'html5' );
 		$this->assertFalse( current_theme_supports( 'html5' ) );
 		$this->assertFalse( current_theme_supports( 'html5', 'comment-form' ) );
-		$this->assertNotSame( false, add_theme_support( 'html5' ) );
+		$this->assertNotFalse( add_theme_support( 'html5' ) );
 		$this->assertTrue( current_theme_supports( 'html5' ) );
 		$this->assertTrue( current_theme_supports( 'html5', 'comment-form' ) );
 		$this->assertTrue( current_theme_supports( 'html5', 'comment-list' ) );
@@ -86,7 +108,7 @@ class Tests_Theme_Support extends WP_UnitTestCase {
 		$this->assertFalse( current_theme_supports( 'html5' ) );
 		$this->assertFalse( current_theme_supports( 'html5', 'comment-form' ) );
 		$this->assertFalse( add_theme_support( 'html5', 'comment-form' ) );
-		$this->assertNotSame( false, add_theme_support( 'html5', array( 'comment-form' ) ) );
+		$this->assertNotFalse( add_theme_support( 'html5', array( 'comment-form' ) ) );
 		$this->assertTrue( current_theme_supports( 'html5', 'comment-form' ) );
 
 		// This will return true, which might help a plugin author decide what markup to serve,
@@ -95,7 +117,7 @@ class Tests_Theme_Support extends WP_UnitTestCase {
 
 		// It appends, rather than replaces.
 		$this->assertFalse( current_theme_supports( 'html5', 'comment-list' ) );
-		$this->assertNotSame( false, add_theme_support( 'html5', array( 'comment-list' ) ) );
+		$this->assertNotFalse( add_theme_support( 'html5', array( 'comment-list' ) ) );
 		$this->assertTrue( current_theme_supports( 'html5', 'comment-form' ) );
 		$this->assertTrue( current_theme_supports( 'html5', 'comment-list' ) );
 		$this->assertFalse( current_theme_supports( 'html5', 'search-form' ) );

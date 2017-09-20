@@ -19,8 +19,6 @@ class Tests_Multisite_MS_Files_Rewriting extends WP_UnitTestCase {
 		parent::setUp();
 		$this->suppress = $wpdb->suppress_errors();
 
-		$_SERVER[ 'REMOTE_ADDR' ] = '';
-
 		update_site_option( 'ms_files_rewriting', 1 );
 		ms_upload_constants();
 	}
@@ -39,8 +37,8 @@ class Tests_Multisite_MS_Files_Rewriting extends WP_UnitTestCase {
 
 		$site = get_current_site();
 
-		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
-		$blog_id2 = $this->factory->blog->create( array( 'user_id' => $user_id ) );
+		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$blog_id2 = self::factory()->blog->create( array( 'user_id' => $user_id ) );
 		$info = wp_upload_dir();
 		$this->assertEquals( 'http://' . $site->domain . '/wp-content/uploads/' . gmstrftime('%Y/%m'), $info['url'] );
 		$this->assertEquals( ABSPATH . 'wp-content/uploads/' . gmstrftime('%Y/%m'), $info['path'] );
@@ -63,13 +61,13 @@ class Tests_Multisite_MS_Files_Rewriting extends WP_UnitTestCase {
 	 * should change with upload directories.
 	 */
 	function test_upload_directories_after_multiple_wpmu_delete_blog_with_ms_files() {
-		$filename = rand_str().'.jpg';
-		$contents = rand_str();
+		$filename = __FUNCTION__ . '.jpg';
+		$contents = __FUNCTION__ . '_contents';
 
 		// Upload a file to the main site on the network.
 		$file1 = wp_upload_bits( $filename, null, $contents );
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 
 		switch_to_blog( $blog_id );
 		$file2 = wp_upload_bits( $filename, null, $contents );
@@ -78,14 +76,14 @@ class Tests_Multisite_MS_Files_Rewriting extends WP_UnitTestCase {
 		wpmu_delete_blog( $blog_id, true );
 
 		// The file on the main site should still exist. The file on the deleted site should not.
-		$this->assertTrue( file_exists( $file1['file'] ) );
-		$this->assertFalse( file_exists( $file2['file'] ) );
+		$this->assertFileExists( $file1['file'] );
+		$this->assertFileNotExists( $file2['file'] );
 
 		wpmu_delete_blog( $blog_id, true );
 
 		// The file on the main site should still exist. The file on the deleted site should not.
-		$this->assertTrue( file_exists( $file1['file'] ) );
-		$this->assertFalse( file_exists( $file2['file'] ) );
+		$this->assertFileExists( $file1['file'] );
+		$this->assertFileNotExists( $file2['file'] );
 	}
 }
 

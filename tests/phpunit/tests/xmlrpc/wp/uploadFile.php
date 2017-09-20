@@ -5,6 +5,12 @@
  */
 class Tests_XMLRPC_wp_uploadFile extends WP_XMLRPC_UnitTestCase {
 
+	public function tearDown() {
+		$this->remove_added_uploads();
+
+		parent::tearDown();
+	}
+
 	function test_valid_attachment() {
 		$this->make_user_by_role( 'editor' );
 
@@ -19,7 +25,7 @@ class Tests_XMLRPC_wp_uploadFile extends WP_XMLRPC_UnitTestCase {
 
 
 		$result = $this->myxmlrpcserver->mw_newMediaObject( array( 0, 'editor', 'editor', $data ) );
-		$this->assertNotInstanceOf( 'IXR_Error', $result );
+		$this->assertNotIXRError( $result );
 
 		// check data types
 		$this->assertInternalType( 'string', $result['id'] );

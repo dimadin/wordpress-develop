@@ -4,7 +4,7 @@
  */
 class Tests_Shortcode extends WP_UnitTestCase {
 
-	protected $shortcodes = array( 'test-shortcode-tag', 'footag', 'bartag', 'baztag', 'dumptag', 'hyphen', 'hyphen-foo', 'hyphen-foo-bar' );
+	protected $shortcodes = array( 'test-shortcode-tag', 'footag', 'bartag', 'baztag', 'dumptag', 'hyphen', 'hyphen-foo', 'hyphen-foo-bar', 'url', 'img' );
 
 	function setUp() {
 		parent::setUp();
@@ -20,8 +20,9 @@ class Tests_Shortcode extends WP_UnitTestCase {
 
 	function tearDown() {
 		global $shortcode_tags;
-		foreach ( $this->shortcodes as $shortcode )
+		foreach ( $this->shortcodes as $shortcode ) {
 			unset( $shortcode_tags[ $shortcode ] );
+		}
 		parent::tearDown();
 	}
 
@@ -71,6 +72,20 @@ class Tests_Shortcode extends WP_UnitTestCase {
 
 	function _shortcode_hyphen_foo_bar() {
 		return __FUNCTION__;
+	}
+
+	function _shortcode_url() {
+		return 'http://www.wordpress.org/';
+	}
+
+	function _shortcode_img( $atts ) {
+		$out = '<img';
+		foreach ( $atts as $k => $v ) {
+			$out .= " $k=\"$v\"";
+		}
+		$out .= ' />';
+
+		return $out;
 	}
 
 	function test_noatts() {
@@ -193,16 +208,16 @@ class Tests_Shortcode extends WP_UnitTestCase {
 	}
 
 	function test_positional_atts_mixed() {
-		$out = do_shortcode('[test-shortcode-tag 123 http://wordpress.com/ 0 "foo" bar]');
+		$out = do_shortcode('[test-shortcode-tag 123 https://wordpress.org/ 0 "foo" bar]');
 		$this->assertEquals( '', $out );
-		$this->assertEquals( array(0=>'123', 1=>'http://wordpress.com/', 2=>'0', 3=>'foo', 4=>'bar'), $this->atts );
+		$this->assertEquals( array(0=>'123', 1=>'https://wordpress.org/', 2=>'0', 3=>'foo', 4=>'bar'), $this->atts );
 		$this->assertEquals( 'test-shortcode-tag', $this->tagname );
 	}
 
 	function test_positional_and_named_atts() {
-		$out = do_shortcode('[test-shortcode-tag 123 url=http://wordpress.com/ foo bar="baz"]');
+		$out = do_shortcode('[test-shortcode-tag 123 url=https://wordpress.org/ foo bar="baz"]');
 		$this->assertEquals( '', $out );
-		$this->assertEquals( array(0=>'123', 'url' => 'http://wordpress.com/', 1=>'foo', 'bar' => 'baz'), $this->atts );
+		$this->assertEquals( array(0=>'123', 'url' => 'https://wordpress.org/', 1=>'foo', 'bar' => 'baz'), $this->atts );
 		$this->assertEquals( 'test-shortcode-tag', $this->tagname );
 	}
 
@@ -218,8 +233,8 @@ class Tests_Shortcode extends WP_UnitTestCase {
 	}
 
 	function test_nested_tags() {
-		$out = do_shortcode('[baztag][dumptag abc="foo" def=123 http://wordpress.com/][/baztag]');
-		$expected = "content = abc = foo\ndef = 123\n0 = http://wordpress.com\n";
+		$out = do_shortcode('[baztag][dumptag abc="foo" def=123 https://wordpress.org/][/baztag]');
+		$expected = "content = abc = foo\ndef = 123\n0 = https://wordpress.org\n";
 		$this->assertEquals($expected, $out);
 	}
 
@@ -325,15 +340,45 @@ EOF;
 		$this->assertEquals( $test_string, shortcode_unautop( wpautop( $test_string ) ) );
 	}
 
-	/**
-	 * @ticket 10326
-	 */
-	function test_strip_shortcodes() {
-		$this->assertEquals('before', strip_shortcodes('before[gallery]'));
-		$this->assertEquals('after', strip_shortcodes('[gallery]after'));
-		$this->assertEquals('beforeafter', strip_shortcodes('before[gallery]after'));
+	function data_test_strip_shortcodes() {
+		return array(
+			array( 'before', 'before[gallery]' ),
+			array( 'after', '[gallery]after' ),
+			array( 'beforeafter', 'before[gallery]after' ),
+			array( 'before[after', 'before[after' ),
+			array( 'beforeafter', 'beforeafter' ),
+			array( 'beforeafter', 'before[gallery id="123" size="medium"]after' ),
+			array( 'before[unregistered_shortcode]after', 'before[unregistered_shortcode]after' ),
+			array( 'beforeafter', 'before[footag]after' ),
+			array( 'before  after', 'before [footag]content[/footag] after' ),
+			array( 'before  after', 'before [footag foo="123"]content[/footag] after' ),
+		);
 	}
 
+	/**
+	 * @ticket 10326
+	 *
+	 * @dataProvider data_test_strip_shortcodes
+	 *
+	 * @param string $expected  Expected output.
+	 * @param string $content   Content to run strip_shortcodes() on.
+	 */
+	function test_strip_shortcodes( $expected, $content ) {
+		$this->assertEquals( $expected, strip_shortcodes( $content ) );
+	}
+
+	/**
+	 * @ticket 37767
+	 */
+	function test_strip_shortcodes_filter() {
+		add_filter( 'strip_shortcodes_tagnames', array( $this, '_filter_strip_shortcodes_tagnames' ) );
+		$this->assertEquals( 'beforemiddle [footag]after', strip_shortcodes( 'before[gallery]middle [footag]after' ) );
+		remove_filter( 'strip_shortcodes_tagnames', array( $this, '_filter_strip_shortcodes_tagnames' ) );
+	}
+
+	function _filter_strip_shortcodes_tagnames() {
+		return array( 'gallery' );
+	}
 
 	// Store passed in shortcode_atts_{$shortcode} args
 	function _filter_atts( $out, $pairs, $atts ) {
@@ -454,6 +499,30 @@ EOF;
 				'[gallery]<div>Hello</div>[/gallery]',
 				'',
 			),
+			array(
+				'[url]',
+				'http://www.wordpress.org/',
+			),
+			array(
+				'<a href="[url]">',
+				'<a href="http://www.wordpress.org/">',
+			),
+			array(
+				'<a href=[url] >',
+				'<a href=http://www.wordpress.org/ >',
+			),
+			array(
+				'<a href="[url]plugins/">',
+				'<a href="http://www.wordpress.org/plugins/">',
+			),
+			array(
+				'<a href="bad[url]">',
+				'<a href="//www.wordpress.org/">',
+			),
+			array(
+				'<a onclick="bad[url]">',
+				'<a onclick="bad[url]">',
+			),
 		);
 	}
 
@@ -510,5 +579,295 @@ EOF;
 		$content_nested = 'This is a blob with [foo] [gallery] [/foo] in it';
 		$this->assertTrue( has_shortcode( $content_nested, 'gallery' ) );
 		remove_shortcode( 'foo' );
+	}
+
+	/**
+	 * Make sure invalid shortcode names are not allowed.
+	 *
+	 * @dataProvider data_registration_bad
+	 * @expectedIncorrectUsage add_shortcode
+	 */
+	function test_registration_bad( $input, $expected ) {
+		return $this->sub_registration( $input, $expected );
+	}
+
+	/**
+	 * Make sure valid shortcode names are allowed.
+	 *
+	 * @dataProvider data_registration_good
+	 */
+	function test_registration_good( $input, $expected ) {
+		return $this->sub_registration( $input, $expected );
+	}
+
+	function sub_registration( $input, $expected ) {
+		add_shortcode( $input, '' );
+		$actual = shortcode_exists( $input );
+		$test = $this->assertEquals( $expected, $actual );
+		if ( $actual ) remove_shortcode( $input );
+		return $test;
+	}
+
+	function data_registration_bad() {
+		return array(
+			array(
+				'<html>',
+				false,
+			),
+			array(
+				'[shortcode]',
+				false,
+			),
+			array(
+				'bad/',
+				false,
+			),
+			array(
+				'/bad',
+				false,
+			),
+			array(
+				'bad space',
+				false,
+			),
+			array(
+				'&amp;',
+				false,
+			),
+			array(
+				'',
+				false,
+			),
+		);
+	}
+
+	function data_registration_good() {
+		return array(
+			array(
+				'good!',
+				true,
+			),
+			array(
+				'plain',
+				true,
+			),
+			array(
+				'unreserved!#$%()*+,-.;?@^_{|}~chars',
+				true,
+			),
+		);
+	}
+
+	/**
+	 * Automated performance testing of the main regex.
+	 *
+	 * @dataProvider data_whole_posts
+	 */
+	function test_pcre_performance( $input ) {
+		$regex = '/' . get_shortcode_regex() . '/';
+		$result = benchmark_pcre_backtracking( $regex, $input, 'match_all' );
+		return $this->assertLessThan( 200, $result );
+	}
+
+	function data_whole_posts() {
+		require_once( DIR_TESTDATA . '/formatting/whole-posts.php' );
+		return data_whole_posts();
+	}
+
+	function test_php_and_js_shortcode_attribute_regexes_match() {
+
+		$file = file_get_contents( ABSPATH . WPINC . '/js/shortcode.js' );
+		$matched = preg_match( '|\s+pattern = (\/.+\/)g;|', $file, $matches );
+		$php = get_shortcode_atts_regex();
+
+		$this->assertSame( 1, $matched );
+
+		$js = str_replace( "\'", "'", $matches[1] );
+		$this->assertSame( $php, $js );
+
+	}
+
+	/**
+	 * @ticket 34939
+	 *
+	 * Test the (not recommended) [shortcode=XXX] format
+	 */
+	function test_unnamed_attribute() {
+		$out = do_shortcode('[dumptag=https://wordpress.org/]');
+		$expected = "0 = =https://wordpress.org\n";
+		$this->assertEquals($expected, $out);
+	}
+
+	/**
+	 * @ticket 36306
+	 */
+	function test_smilies_arent_converted() {
+		$out = apply_filters( 'the_content', '[img alt="Hello :-) World"]' );
+		$expected = "<img alt=\"Hello :-) World\" />\n";
+		$this->assertEquals( $expected, $out );
+	}
+
+	/**
+	 * @ticket 37906
+	 */
+	public function test_pre_do_shortcode_tag() {
+		// does nothing if no filters are set up
+		$str = 'pre_do_shortcode_tag';
+		add_shortcode( $str, array( $this, '_shortcode_pre_do_shortcode_tag' ) );
+		$result_nofilter = do_shortcode( "[{$str}]" );
+		$this->assertSame( 'foo', $result_nofilter );
+
+		// short-circuit with filter
+		add_filter( 'pre_do_shortcode_tag', array( $this, '_filter_pre_do_shortcode_tag_bar' ) );
+		$result_filter = do_shortcode( "[{$str}]" );
+		$this->assertSame( 'bar', $result_filter );
+
+		// respect priority
+		add_filter( 'pre_do_shortcode_tag', array( $this, '_filter_pre_do_shortcode_tag_p11' ), 11 );
+		$result_priority = do_shortcode( "[{$str}]" );
+		$this->assertSame( 'p11', $result_priority );
+
+		// pass arguments
+		$arr = array(
+			'return'	=> 'p11',
+			'key'			=> $str,
+			'atts' 		=> array( 'a'=>'b', 'c'=>'d' ),
+			'm'				=> array(
+				"[{$str} a='b' c='d']",
+				"",
+				$str,
+				" a='b' c='d'",
+				"",
+				"",
+				"",
+			),
+		);
+		add_filter( 'pre_do_shortcode_tag', array( $this, '_filter_pre_do_shortcode_tag_attr' ), 12, 4 );
+		$result_atts = do_shortcode( "[{$str} a='b' c='d']" );
+		$this->assertSame( wp_json_encode( $arr ), $result_atts );
+
+		remove_filter( 'pre_do_shortcode_tag', array( $this, '_filter_pre_do_shortcode_tag_attr' ), 12, 4 );
+		remove_filter( 'pre_do_shortcode_tag', array( $this, '_filter_pre_do_shortcode_tag_p11' ), 11 );
+		remove_filter( 'pre_do_shortcode_tag', array( $this, '_filter_pre_do_shortcode_tag_bar' ) );
+		remove_shortcode( $str );
+	}
+
+	public function _shortcode_pre_do_shortcode_tag( $atts = array(), $content = '' ) {
+		return 'foo';
+	}
+
+	public function _filter_pre_do_shortcode_tag_bar() {
+		return 'bar';
+	}
+
+	public function _filter_pre_do_shortcode_tag_p11() {
+		return 'p11';
+	}
+
+	public function _filter_pre_do_shortcode_tag_attr( $return, $key, $atts, $m ){
+		$arr = array(
+			'return' => $return,
+			'key'    => $key,
+			'atts'   => $atts,
+			'm'      => $m,
+		);
+		return wp_json_encode( $arr );
+	}
+
+	/**
+	 * @ticket 32790
+	 */
+	public function test_do_shortcode_tag_filter() {
+		// does nothing if no filters are set up
+		$str = 'do_shortcode_tag';
+		add_shortcode( $str, array( $this, '_shortcode_do_shortcode_tag' ) );
+		$result_nofilter = do_shortcode( "[{$str}]" );
+		$this->assertSame( 'foo', $result_nofilter );
+
+		// modify output with filter
+		add_filter( 'do_shortcode_tag', array( $this, '_filter_do_shortcode_tag_replace' ) );
+		$result_filter = do_shortcode( "[{$str}]" );
+		$this->assertSame( 'fee', $result_filter );
+
+		// respect priority
+		add_filter( 'do_shortcode_tag', array( $this, '_filter_do_shortcode_tag_generate' ), 11 );
+		$result_priority = do_shortcode( "[{$str}]" );
+		$this->assertSame( 'foobar', $result_priority );
+
+		// pass arguments
+		$arr = array(
+			'return' => 'foobar',
+			'key'    => $str,
+			'atts'   => array( 'a' => 'b', 'c' => 'd' ),
+			'm'      => array(
+				"[{$str} a='b' c='d']",
+				"",
+				$str,
+				" a='b' c='d'",
+				"",
+				"",
+				"",
+			),
+		);
+		add_filter( 'do_shortcode_tag', array( $this, '_filter_do_shortcode_tag_attr' ), 12, 4 );
+		$result_atts = do_shortcode( "[{$str} a='b' c='d']" );
+		$this->assertSame( wp_json_encode( $arr ), $result_atts );
+
+		remove_filter( 'do_shortcode_tag', array( $this, '_filter_do_shortcode_tag_attr' ), 12 );
+		remove_filter( 'do_shortcode_tag', array( $this, '_filter_do_shortcode_tag_generate' ), 11 );
+		remove_filter( 'do_shortcode_tag', array( $this, '_filter_do_shortcode_tag_replace' ) );
+		remove_shortcode( $str );
+	}
+
+	public function _shortcode_do_shortcode_tag( $atts = array(), $content = '' ) {
+		return 'foo';
+	}
+
+	public function _filter_do_shortcode_tag_replace( $return ) {
+		return str_replace( 'oo', 'ee', $return );
+	}
+
+	public function _filter_do_shortcode_tag_generate( $return ) {
+		return 'foobar';
+	}
+
+	public function _filter_do_shortcode_tag_attr( $return, $key, $atts, $m ){
+		$arr = array(
+			'return' => $return,
+			'key'    => $key,
+			'atts'   => $atts,
+			'm'      => $m,
+		);
+		return wp_json_encode( $arr );
+	}
+
+	/**
+	 * @ticket 37304
+	 *
+	 * Test 'value' syntax for empty attributes
+	 */
+	function test_empty_single_quote_attribute() {
+		$out = do_shortcode( '[test-shortcode-tag a="foo" b=\'bar\' c=baz foo \'bar\' "baz" ]test empty atts[/test-shortcode-tag]' );
+		$this->assertEquals( array( 'a' => 'foo', 'b' => 'bar', 'c' => 'baz', 0 => 'foo', 1 => 'bar', 2 => 'baz' ), $this->atts );
+	}
+
+	/**
+	 * @ticket 37304
+	 */
+	function test_positional_atts_single_quotes() {
+		$out = do_shortcode( "[test-shortcode-tag 'something in quotes' 'something else']" );
+		$this->assertEquals( '', $out );
+		$this->assertEquals( array( 0 => 'something in quotes', 1 => 'something else' ), $this->atts );
+		$this->assertEquals( 'test-shortcode-tag', $this->tagname );
+	}
+
+	/**
+	 * @ticket 37304
+	 */
+	function test_positional_atts_mixed_quotes() {
+		$out = do_shortcode( "[test-shortcode-tag 'something in quotes' \"something else\" 123 foo bar='baz' example=\"test\" ]" );
+		$this->assertEquals( '', $out );
+		$this->assertEquals( array( 0 => 'something in quotes', 1 => 'something else', 2 => '123', 3 => 'foo', 'bar' => 'baz', 'example' => 'test'), $this->atts );
+		$this->assertEquals( 'test-shortcode-tag', $this->tagname );
 	}
 }

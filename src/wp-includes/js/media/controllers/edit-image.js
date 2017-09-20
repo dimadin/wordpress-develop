@@ -1,7 +1,12 @@
+var l10n = wp.media.view.l10n,
+	EditImage;
+
 /**
  * wp.media.controller.EditImage
  *
  * A state for editing (cropping, etc.) an image.
+ *
+ * @memberOf wp.media.controller
  *
  * @class
  * @augments wp.media.controller.State
@@ -16,10 +21,7 @@
  * @param {string}                    [attributes.menu=false]         Initial mode for the menu region.
  * @param {string}                    [attributes.url]                Unused. @todo Consider removal.
  */
-var l10n = wp.media.view.l10n,
-	EditImage;
-
-EditImage = wp.media.controller.State.extend({
+EditImage = wp.media.controller.State.extend(/** @lends wp.media.controller.EditImage.prototype */{
 	defaults: {
 		id:      'edit-image',
 		title:   l10n.editImage,
@@ -33,14 +35,14 @@ EditImage = wp.media.controller.State.extend({
 	 * @since 3.9.0
 	 */
 	activate: function() {
-		this.listenTo( this.frame, 'toolbar:render:edit-image', this.toolbar );
+		this.frame.on( 'toolbar:render:edit-image', _.bind( this.toolbar, this ) );
 	},
 
 	/**
 	 * @since 3.9.0
 	 */
 	deactivate: function() {
-		this.stopListening( this.frame );
+		this.frame.off( 'toolbar:render:edit-image' );
 	},
 
 	/**

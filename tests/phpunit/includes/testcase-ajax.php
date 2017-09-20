@@ -18,15 +18,18 @@ abstract class WP_Ajax_UnitTestCase extends WP_UnitTestCase {
 
 	/**
 	 * Last AJAX response.  This is set via echo -or- wp_die.
-	 * @var type
+	 * @var string
 	 */
 	protected $_last_response = '';
 
 	/**
-	 * List of ajax actions called via POST
-	 * @var type
+	 * List of ajax actions called via GET
+	 * @var array
 	 */
-	protected $_core_actions_get = array( 'fetch-list', 'ajax-tag-search', 'wp-compression-test', 'imgedit-preview', 'oembed_cache' );
+	protected static $_core_actions_get = array(
+		'fetch-list', 'ajax-tag-search', 'wp-compression-test', 'imgedit-preview', 'oembed-cache',
+		'autocomplete-user', 'dashboard-widgets', 'logged-in',
+	);
 
 	/**
 	 * Saved error reporting level
@@ -35,10 +38,10 @@ abstract class WP_Ajax_UnitTestCase extends WP_UnitTestCase {
 	protected $_error_level = 0;
 
 	/**
-	 * List of ajax actions called via GET
-	 * @var type
+	 * List of ajax actions called via POST
+	 * @var array
 	 */
-	protected $_core_actions_post = array(
+	protected static $_core_actions_post = array(
 		'oembed_cache', 'image-editor', 'delete-comment', 'delete-tag', 'delete-link',
 		'delete-meta', 'delete-post', 'trash-post', 'untrash-post', 'delete-page', 'dim-comment',
 		'add-link-category', 'add-tag', 'get-tagcloud', 'get-comments', 'replyto-comment',
@@ -47,24 +50,40 @@ abstract class WP_Ajax_UnitTestCase extends WP_UnitTestCase {
 		'menu-locations-save', 'menu-quick-search', 'meta-box-order', 'get-permalink',
 		'sample-permalink', 'inline-save', 'inline-save-tax', 'find_posts', 'widgets-order',
 		'save-widget', 'set-post-thumbnail', 'date_format', 'time_format', 'wp-fullscreen-save-post',
-		'wp-remove-post-lock', 'dismiss-wp-pointer', 'heartbeat', 'nopriv_heartbeat',
+		'wp-remove-post-lock', 'dismiss-wp-pointer', 'send-attachment-to-editor', 'heartbeat', 'nopriv_heartbeat', 'get-revision-diffs',
+		'save-user-color-scheme', 'update-widget', 'query-themes', 'parse-embed', 'set-attachment-thumbnail',
+		'parse-media-shortcode', 'destroy-sessions', 'install-plugin', 'update-plugin', 'press-this-save-post',
+		'press-this-add-category', 'crop-image', 'generate-password', 'save-wporg-username', 'delete-plugin',
+		'search-plugins', 'search-install-plugins', 'activate-plugin', 'update-theme', 'delete-theme',
+		'install-theme', 'get-post-thumbnail-html',
 	);
+
+	public static function setUpBeforeClass() {
+		add_filter( 'wp_doing_ajax', '__return_true' );		
+
+		remove_action( 'admin_init', '_maybe_update_core' );
+		remove_action( 'admin_init', '_maybe_update_plugins' );
+		remove_action( 'admin_init', '_maybe_update_themes' );
+
+		// Register the core actions
+		foreach ( array_merge( self::$_core_actions_get, self::$_core_actions_post ) as $action ) {
+			if ( function_exists( 'wp_ajax_' . str_replace( '-', '_', $action ) ) ) {
+				add_action( 'wp_ajax_' . $action, 'wp_ajax_' . str_replace( '-', '_', $action ), 1 );
+			}
+		}
+
+		parent::setUpBeforeClass();
+	}
 
 	/**
 	 * Set up the test fixture.
-	 * Override wp_die(), pretend to be ajax, and suppres E_WARNINGs
+	 * Override wp_die(), pretend to be ajax, and suppress E_WARNINGs
 	 */
 	public function setUp() {
 		parent::setUp();
 
-		// Register the core actions
-		foreach ( array_merge( $this->_core_actions_get, $this->_core_actions_post ) as $action )
-			if ( function_exists( 'wp_ajax_' . str_replace( '-', '_', $action ) ) )
-				add_action( 'wp_ajax_' . $action, 'wp_ajax_' . str_replace( '-', '_', $action ), 1 );
-
 		add_filter( 'wp_die_ajax_handler', array( $this, 'getDieHandler' ), 1, 1 );
-		if ( !defined( 'DOING_AJAX' ) )
-			define( 'DOING_AJAX', true );
+
 		set_current_screen( 'ajax' );
 
 		// Clear logout cookies
@@ -75,7 +94,7 @@ abstract class WP_Ajax_UnitTestCase extends WP_UnitTestCase {
 		error_reporting( $this->_error_level & ~E_WARNING );
 
 		// Make some posts
-		$this->factory->post->create_many( 5 );
+		self::factory()->post->create_many( 5 );
 	}
 
 	/**
@@ -148,7 +167,7 @@ abstract class WP_Ajax_UnitTestCase extends WP_UnitTestCase {
 	 */
 	protected function _setRole( $role ) {
 		$post = $_POST;
-		$user_id = $this->factory->user->create( array( 'role' => $role ) );
+		$user_id = self::factory()->user->create( array( 'role' => $role ) );
 		wp_set_current_user( $user_id );
 		$_POST = array_merge($_POST, $post);
 	}
@@ -156,10 +175,10 @@ abstract class WP_Ajax_UnitTestCase extends WP_UnitTestCase {
 	/**
 	 * Mimic the ajax handling of admin-ajax.php
 	 * Capture the output via output buffering, and if there is any, store
-	 * it in $this->_last_message.
+	 * it in $this->_last_response.
 	 * @param string $action
 	 */
-	protected function _handleAjax($action) {
+	protected function _handleAjax( $action ) {
 
 		// Start output buffering
 		ini_set( 'implicit_flush', false );

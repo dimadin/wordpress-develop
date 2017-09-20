@@ -195,10 +195,10 @@ EOF;
 
 			switch ( $attack->name ) {
 				case 'XSS Locator':
-					$this->assertEquals('\';alert(String.fromCharCode(88,83,83))//\\\';alert(String.fromCharCode(88,83,83))//";alert(String.fromCharCode(88,83,83))//\\";alert(String.fromCharCode(88,83,83))//--&gt;"&gt;\'&gt;alert(String.fromCharCode(88,83,83))=', $result);
+					$this->assertEquals('\';alert(String.fromCharCode(88,83,83))//\\\';alert(String.fromCharCode(88,83,83))//";alert(String.fromCharCode(88,83,83))//\\";alert(String.fromCharCode(88,83,83))//--&gt;"&gt;\'&gt;alert(String.fromCharCode(88,83,83))=&amp;{}', $result);
 					break;
 				case 'XSS Quick Test':
-					$this->assertEquals('\'\';!--"=', $result);
+					$this->assertEquals('\'\';!--"=&amp;{()}', $result);
 					break;
 				case 'SCRIPT w/Alert()':
 					$this->assertEquals( "alert('XSS')", $result );
@@ -360,6 +360,20 @@ EOF;
 		$this->assertEquals( $allowedtags, wp_kses_allowed_html( 'data' ) );
 	}
 
+	function test_hyphenated_tag() {
+		$string = "<hyphenated-tag attribute=\"value\" otherattribute=\"value2\">Alot of hyphens.</hyphenated-tag>";
+		$custom_tags = array(
+			'hyphenated-tag' => array(
+				'attribute' => true,
+			),
+		);
+		$expect_stripped_string = 'Alot of hyphens.';
+
+		$expect_valid_string = "<hyphenated-tag attribute=\"value\">Alot of hyphens.</hyphenated-tag>";
+		$this->assertEquals( $expect_stripped_string, wp_kses_post( $string ) );
+		$this->assertEquals( $expect_valid_string, wp_kses( $string, $custom_tags ) );
+	}
+
 	/**
 	 * @ticket 26290
 	 */
@@ -374,7 +388,7 @@ EOF;
 		$this->assertEquals( '&frac34;', wp_kses_normalize_entities( '&frac34;' ) );
 		$this->assertEquals( '&there4;', wp_kses_normalize_entities( '&there4;' ) );
 	}
-	
+
 	/**
 	 * Test removal of invalid binary data for HTML.
 	 *
@@ -411,7 +425,7 @@ EOF;
 			),
 		);
 	}
-	
+
 	/**
 	 * Test removal of '\0' strings.
 	 *
@@ -423,7 +437,7 @@ EOF;
 
 		return $this->assertEquals( $output, wp_kses( $input, $allowedposttags ) );
 	}
-	
+
 	function data_slash_zero_removal() {
 		return array(
 			array(
@@ -641,5 +655,57 @@ EOF;
 				'title="&amp;garbage&quot;;"',
 			),
 		);
+	}
+
+	/**
+	 * @ticket 34063
+	 */
+	function test_bdo() {
+		global $allowedposttags;
+
+		$input = '<p>This is <bdo dir="rtl">a BDO tag</bdo>. Weird, <bdo dir="ltr">right?</bdo></p>';
+
+		$this->assertEquals( $input, wp_kses( $input, $allowedposttags ) );
+	}
+
+	/**
+	 * @ticket 35079
+	 */
+	function test_ol_reversed() {
+		global $allowedposttags;
+
+		$input = '<ol reversed="reversed"><li>Item 1</li><li>Item 2</li><li>Item 3</li></ol>';
+
+		$this->assertEquals( $input, wp_kses( $input, $allowedposttags ) );
+	}
+
+	/**
+	 * @ticket 40680
+	 */
+	function test_wp_kses_attr_no_attributes_allowed_with_empty_array() {
+		$element = 'foo';
+		$attribute = 'title="foo" class="bar"';
+
+		$this->assertEquals( "<{$element}>", wp_kses_attr( $element, $attribute, array( 'foo' => array() ), array() ) );
+	}
+
+	/**
+	 * @ticket 40680
+	 */
+	function test_wp_kses_attr_no_attributes_allowed_with_true() {
+		$element = 'foo';
+		$attribute = 'title="foo" class="bar"';
+
+		$this->assertEquals( "<{$element}>", wp_kses_attr( $element, $attribute, array( 'foo' => true ), array() ) );
+	}
+
+	/**
+	 * @ticket 40680
+	 */
+	function test_wp_kses_attr_single_attribute_is_allowed() {
+		$element = 'foo';
+		$attribute = 'title="foo" class="bar"';
+
+		$this->assertEquals( "<{$element} title=\"foo\">", wp_kses_attr( $element, $attribute, array( 'foo' => array( 'title' => true ) ), array() ) );
 	}
 }

@@ -1,3 +1,4 @@
+/** @namespace wp */
 window.wp = window.wp || {};
 
 ( function ( wp, $ ) {
@@ -5,7 +6,7 @@ window.wp = window.wp || {};
 
 	var $containerPolite,
 		$containerAssertive,
-		role;
+		previousMessage = '';
 
 	/**
 	 * Update the ARIA live notification area text node.
@@ -20,6 +21,20 @@ window.wp = window.wp || {};
 	function speak( message, ariaLive ) {
 		// Clear previous messages to allow repeated strings being read out.
 		clear();
+
+		// Ensure only text is sent to screen readers.
+		message = $( '<p>' ).html( message ).text();
+
+		/*
+		 * Safari 10+VoiceOver don't announce repeated, identical strings. We use
+		 * a `no-break space` to force them to think identical strings are different.
+		 * See ticket #36853.
+		 */
+		if ( previousMessage === message ) {
+			message = message + '\u00A0';
+		}
+
+		previousMessage = message;
 
 		if ( $containerAssertive && 'assertive' === ariaLive ) {
 			$containerAssertive.text( message );
@@ -39,11 +54,9 @@ window.wp = window.wp || {};
 	 */
 	function addContainer( ariaLive ) {
 		ariaLive = ariaLive || 'polite';
-		role = 'assertive' === ariaLive ? 'alert' : 'status';
 
 		var $container = $( '<div>', {
 			'id': 'wp-a11y-speak-' + ariaLive,
-			'role': role,
 			'aria-live': ariaLive,
 			'aria-relevant': 'additions text',
 			'aria-atomic': 'true',
@@ -82,6 +95,7 @@ window.wp = window.wp || {};
 		}
 	});
 
+	/** @namespace wp.a11y */
 	wp.a11y = wp.a11y || {};
 	wp.a11y.speak = speak;
 

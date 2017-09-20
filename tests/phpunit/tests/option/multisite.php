@@ -16,8 +16,6 @@ class Tests_Multisite_Option extends WP_UnitTestCase {
 		global $wpdb;
 		parent::setUp();
 		$this->suppress = $wpdb->suppress_errors();
-
-		$_SERVER['REMOTE_ADDR'] = null;
 	}
 
 	function tearDown() {
@@ -27,10 +25,10 @@ class Tests_Multisite_Option extends WP_UnitTestCase {
 	}
 
 	function test_from_same_site() {
-		$key = rand_str();
-		$key2 = rand_str();
-		$value = rand_str();
-		$value2 = rand_str();
+		$key    = __FUNCTION__ . '_1';
+		$key2   = __FUNCTION__ . '_2';
+		$value  = __FUNCTION__ . '_val1';
+		$value2 = __FUNCTION__ . '_val2';
 
 		$this->assertFalse( get_blog_option( 1, 'doesnotexist' ) );
 		$this->assertFalse( get_option( 'doesnotexist' ) ); // check get_option()
@@ -64,10 +62,10 @@ class Tests_Multisite_Option extends WP_UnitTestCase {
 	}
 
 	function test_from_same_site_with_null_blog_id() {
-		$key = rand_str();
-		$key2 = rand_str();
-		$value = rand_str();
-		$value2 = rand_str();
+		$key    = __FUNCTION__ . '_1';
+		$key2   = __FUNCTION__ . '_2';
+		$value  = __FUNCTION__ . '_val1';
+		$value2 = __FUNCTION__ . '_val2';
 
 		$this->assertFalse( get_blog_option( null, 'doesnotexist' ) );
 		$this->assertFalse( get_option( 'doesnotexist' ) ); // check get_option()
@@ -100,10 +98,10 @@ class Tests_Multisite_Option extends WP_UnitTestCase {
 	}
 
 	function test_with_another_site() {
-		$user_id = $this->factory->user->create();
+		$user_id = self::factory()->user->create();
 		$this->assertInternalType( 'integer', $user_id );
 
-		$blog_id = $this->factory->blog->create( array(
+		$blog_id = self::factory()->blog->create( array(
 			'user_id' => $user_id,
 			'meta'    => array(
 				'public' => 1,
@@ -111,10 +109,10 @@ class Tests_Multisite_Option extends WP_UnitTestCase {
 		) );
 		$this->assertInternalType( 'integer', $blog_id );
 
-		$key = rand_str();
-		$key2 = rand_str();
-		$value = rand_str();
-		$value2 = rand_str();
+		$key    = __FUNCTION__ . '_key1';
+		$key2   = __FUNCTION__ . '_key2';
+		$value  = __FUNCTION__ . '_val1';
+		$value2 = __FUNCTION__ . '_val2';
 
 		$this->assertFalse( get_blog_option( $blog_id, 'doesnotexist' ) );
 		//$this->assertFalse( get_option( 'doesnotexist' ) ); // check get_option()
@@ -150,8 +148,8 @@ class Tests_Multisite_Option extends WP_UnitTestCase {
 	 * @group multisite
 	 */
 	function test_site_notoptions() {
-		global $wpdb;
-		$notoptions_key = "{$wpdb->siteid}:notoptions";
+		$network_id = get_current_network_id();
+		$notoptions_key = "{$network_id}:notoptions";
 
 		$_notoptions = wp_cache_get( 'notoptions', 'site-options' );
 		$this->assertEmpty( $_notoptions );
