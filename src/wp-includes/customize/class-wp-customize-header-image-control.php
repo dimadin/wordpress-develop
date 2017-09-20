@@ -84,6 +84,7 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control {
 	}
 
 	/**
+	 * @todo This should go in the content_template() method.
 	 */
 	public function print_header_image_template() {
 		?>
@@ -157,7 +158,6 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control {
 	/**
 	 */
 	public function render_content() {
-		$this->print_header_image_template();
 		$visibility = $this->get_current_image_src() ? '' : ' style="display:none" ';
 		$width = absint( get_theme_support( 'custom-header', 'width' ) );
 		$height = absint( get_theme_support( 'custom-header', 'height' ) );

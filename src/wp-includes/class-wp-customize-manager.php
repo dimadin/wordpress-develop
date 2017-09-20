@@ -3204,6 +3204,11 @@ final class WP_Customize_Manager {
 		$control = new WP_Customize_Control( $this, 'temp', array( 'type' => 'default' ) );
 		$control->print_template();
 
+		$header_image_control = $this->get_control( 'header_image' );
+		if ( $header_image_control instanceof WP_Customize_Header_Image_Control ) {
+			$header_image_control->print_header_image_template();
+		}
+
 		?>
 		<script type="text/html" id="tmpl-customize-notification">
 			<li class="notice notice-{{ data.type || 'info' }} {{ data.alt ? 'notice-alt' : '' }} {{ data.dismissible ? 'is-dismissible' : '' }}" data-code="{{ data.code }}" data-type="{{ data.type }}">
