@@ -195,7 +195,10 @@ body {
 	height: auto;
 	z-index: 99999;
 	background: #f1f1f1;
-	transition: 0.5s;
+	-webkit-transition: 0.3s;
+	-moz-transition: 0.3s;
+	-o-transition: 0.3s;
+	transition: 0.3s;
 	-moz-transition-timing-function: cubic-bezier(1.2, 0.9, 0.8, 1.2);
 	-webkit-transition-timing-function: cubic-bezier(1.2, 0.9, 0.8, 1.2);
 	-o-transition-timing-function: cubic-bezier(1.2, 0.9, 0.8, 1.2);
