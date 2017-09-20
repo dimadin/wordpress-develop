@@ -25,11 +25,50 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public $type = 'date_time';
 
 	/**
+	 * Minimum Year.
+	 *
+	 * @since 4.9.0
+	 * @var integer
+	 */
+	public $min_year = 1000;
+
+	/**
+	 * Maximum Year.
+	 *
+	 * @since 4.9.0
+	 * @var integer
+	 */
+	public $max_year = 9999;
+
+	/**
+	 * Allow past date, if set to false, user can only select future date.
+	 *
+	 * @since 4.9.0
+	 * @var boolean
+	 */
+	public $allow_past_date = true;
+
+	/**
 	 * Don't render the control's content - it's rendered with a JS template.
 	 *
 	 * @since 4.9.0
 	 */
 	public function render_content() {}
+
+	/**
+	 * Export data to JS.
+	 *
+	 * @return array
+	 */
+	public function json() {
+		$data = parent::json();
+
+		$data['maxYear'] = intval( $this->max_year );
+		$data['minYear'] = intval( $this->min_year );
+		$data['allowPastDate'] = $this->allow_past_date ? true : false;
+
+		return $data;
+	}
 
 	/**
 	 * Renders a JS template for the content of date time control.
@@ -76,7 +115,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 					<span class="time-special-char date-time-separator">,</span>
 					<label class="year-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Year' ); ?></span>
-						<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="<?php echo esc_attr( date( 'Y' ) ); ?>" value="{{ data.year }}" max="9999" />
+						<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="{{ data.minYear }}" value="{{ data.year }}" max="{{ data.maxYear }}" />
 					</label>
 				</div>
 			</div>

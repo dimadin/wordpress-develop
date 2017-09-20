@@ -3767,7 +3767,6 @@
 
 		/**
 		 * Validate and updates input.
-		 * @todo Validation should happen only if indicated.
 		 *
 		 * @return {void}
 		 */
