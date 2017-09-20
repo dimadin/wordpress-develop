@@ -2089,8 +2089,7 @@
 		defaultActiveArguments: { duration: 'fast', completeCallback: $.noop },
 
 		initialize: function( id, options ) {
-			var control = this,
-				nodes, radios, settings;
+			var control = this, settings, linkNodes;
 
 			control.params = {};
 			$.extend( control, options || {} );
@@ -2112,30 +2111,39 @@
 
 			control.elements = [];
 
-			nodes  = control.container.find('[data-customize-setting-link]');
-			radios = {};
+			linkNodes = function() {
+				var nodes, radios;
+				nodes  = control.container.find( '[data-customize-setting-link]' );
+				radios = {};
 
-			nodes.each( function() {
-				var node = $( this ),
-					name;
+				nodes.each( function() {
+					var node = $( this ),
+						name;
 
-				if ( node.is( ':radio' ) ) {
-					name = node.prop( 'name' );
-					if ( radios[ name ] ) {
+					if ( node.data( 'customizeSettingLinkAdded' ) ) {
 						return;
 					}
 
-					radios[ name ] = true;
-					node = nodes.filter( '[name="' + name + '"]' );
-				}
+					if ( node.is( ':radio' ) ) {
+						name = node.prop( 'name' );
+						if ( radios[ name ] ) {
+							return;
+						}
 
-				api( node.data( 'customizeSettingLink' ), function( setting ) {
-					var element = new api.Element( node );
-					control.elements.push( element );
-					element.sync( setting );
-					element.set( setting() );
+						radios[ name ] = true;
+						node = nodes.filter( '[name="' + name + '"]' );
+					}
+
+					node.data( 'customizeSettingLinkAdded', true );
+					api( node.data( 'customizeSettingLink' ), function( setting ) {
+						var element = new api.Element( node );
+						control.elements.push( element );
+						element.sync( setting );
+						element.set( setting() );
+					});
 				});
-			});
+			};
+			linkNodes(); // Call early for back-compat in case no content template is being used.
 
 			control.active.bind( function ( active ) {
 				var args = control.activeArgumentsQueue.shift();
@@ -2198,6 +2206,8 @@
 
 			// After the control is embedded on the page, invoke the "ready" method.
 			control.deferred.embedded.done( function () {
+				linkNodes(); // Link nodes that were added via content template.
+
 				control.setupNotifications();
 				control.ready();
 			});
@@ -5655,22 +5665,25 @@
 
 		// Juggle the two controls that use header_textcolor
 		api.control( 'display_header_text', function( control ) {
-			var last = '';
+			control.deferred.embedded.done( function() { // @todo How to guarantee that control.elements will be populated?
+				var last = '';
 
-			control.elements[0].unsync( api( 'header_textcolor' ) );
+				control.elements[0].unsync( api( 'header_textcolor' ) );
 
-			control.element = new api.Element( control.container.find('input') );
-			control.element.set( 'blank' !== control.setting() );
+				control.element = new api.Element( control.container.find( 'input' ) );
+				control.element.set( 'blank' !== control.setting() );
 
-			control.element.bind( function( to ) {
-				if ( ! to )
-					last = api( 'header_textcolor' ).get();
+				control.element.bind( function( to ) {
+					if ( ! to ) {
+						last = api( 'header_textcolor' ).get();
+					}
 
-				control.setting.set( to ? last : 'blank' );
-			});
+					control.setting.set( to ? last : 'blank' );
+				});
 
-			control.setting.bind( function( to ) {
-				control.element.set( 'blank' !== to );
+				control.setting.bind( function( to ) {
+					control.element.set( 'blank' !== to );
+				});
 			});
 		});
 
