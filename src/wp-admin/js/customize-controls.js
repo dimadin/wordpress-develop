@@ -5664,26 +5664,26 @@
 			} );
 		} );
 
-		// Juggle the two controls that use header_textcolor
-		api.control( 'display_header_text', function( control ) {
-			control.deferred.embedded.done( function() { // @todo How to guarantee that control.elements will be populated?
-				var last = '';
+		// Set up display_header_text control checkbox to toggle whether header_textcolor is blank or not.
+		api( 'header_textcolor', function( headerTextColorSetting ) {
+			api.control( 'display_header_text', function( control ) {
+				control.deferred.embedded.done( function() {
+					var last = '';
 
-				control.elements[0].unsync( api( 'header_textcolor' ) );
+					control.element = new api.Element( control.container.find( 'input' ) );
+					control.element.set( 'blank' !== headerTextColorSetting() );
 
-				control.element = new api.Element( control.container.find( 'input' ) );
-				control.element.set( 'blank' !== control.setting() );
+					control.element.bind( function( to ) {
+						if ( ! to ) {
+							last = headerTextColorSetting();
+						}
 
-				control.element.bind( function( to ) {
-					if ( ! to ) {
-						last = api( 'header_textcolor' ).get();
-					}
+						headerTextColorSetting.set( to ? last : 'blank' );
+					});
 
-					control.setting.set( to ? last : 'blank' );
-				});
-
-				control.setting.bind( function( to ) {
-					control.element.set( 'blank' !== to );
+					headerTextColorSetting.bind( function( to ) {
+						control.element.set( 'blank' !== to );
+					});
 				});
 			});
 		});

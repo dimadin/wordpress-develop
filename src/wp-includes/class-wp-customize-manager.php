@@ -3893,7 +3893,7 @@ final class WP_Customize_Manager {
 			'priority'       => 40,
 		) );
 
-		$this->add_setting( 'header_textcolor', array(
+		$header_text_color_setting = $this->add_setting( 'header_textcolor', array(
 			'theme_supports' => array( 'custom-header', 'header-text' ),
 			'default'        => get_theme_support( 'custom-header', 'default-text-color' ),
 
@@ -3904,11 +3904,12 @@ final class WP_Customize_Manager {
 		// Input type: checkbox
 		// With custom value
 		$this->add_control( 'display_header_text', array(
-			'settings' => 'header_textcolor',
+			'settings' => array(), // Settingless-control.
 			'label'    => __( 'Display Site Title and Tagline' ),
 			'section'  => 'title_tagline',
 			'type'     => 'checkbox',
 			'priority' => 40,
+			'capability' => $header_text_color_setting->capability,
 		) );
 
 		$this->add_control( new WP_Customize_Color_Control( $this, 'header_textcolor', array(
