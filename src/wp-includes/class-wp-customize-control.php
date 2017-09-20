@@ -478,7 +478,7 @@ class WP_Customize_Control {
 	 */
 	protected function content_template() {
 	?>
-		<# switch ( $this->type ) {
+		<# switch ( data.type ) {
 			case 'checkbox': #>
 				<label>
 					<input type="checkbox" value="{{ data.value }}" {{{ data.link }}} <# if ( data.value ) { #> checked="checked" <# } #> />
@@ -522,8 +522,8 @@ class WP_Customize_Control {
 					<# } #>
 
 					<select {{{ data.link }}}>
-						for ( key in data.choices ) { #>
-							<option value="{{ key }}"  <# if ( data.choices[key] === data.value ) { #>selected="selected" <# } #>>{{ data.label }}</option>
+						<# for ( key in data.choices ) { #>
+							<option value="{{ key }}" <# if ( data.choices[key] === data.value ) { #>selected="selected" <# } #>>{{ data.label }}</option>
 						<# } #>
 					</select>
 				</label>
@@ -553,9 +553,7 @@ class WP_Customize_Control {
 
 					<input type="{{ data.type }}" {{{ data.inputAttrs }}} value="{{ data.value }}" {{{ data.link }}} />
 				</label>
-				<#
-				break;
-		} #>
+		<# } #>
 	<?php
 	}
 }

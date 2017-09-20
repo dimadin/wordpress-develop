@@ -1596,13 +1596,13 @@
 			if ( control.container.is( ':empty' ) ) {
 				return;
 			}
-
 			// Replace the container element's content with the control.
 			if ( 0 !== $( '#tmpl-' + control.templateSelector ).length ) {
 				template = wp.template( control.templateSelector );
 			} else {
 				template = wp.template( 'customize-control-default-content' );
 			}
+
 			if ( template && control.container ) {
 				control.container.html( template( control.params ) );
 			}
