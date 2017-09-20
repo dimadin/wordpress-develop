@@ -257,6 +257,10 @@ class WP_Customize_Control {
 		$this->json['label'] = $this->label;
 		$this->json['description'] = $this->description;
 		$this->json['instanceNumber'] = $this->instance_number;
+		$this->json['value'] = $this->value();
+		$this->json['link'] = $this->get_link();
+		$this->json['choices'] = $this->choices;
+		$this->json['inputAttrs'] = $this->get_input_attrs();
 	}
 
 	/**
@@ -386,9 +390,22 @@ class WP_Customize_Control {
 	 * @access public
 	 */
 	public function input_attrs() {
+		echo $this->get_input_attrs();
+	}
+
+	/**
+	 * Return html for the custom attributes for the control's input element.
+	 *
+	 * @since 4.3.0
+	 * @access public
+	 * @return string Input attributes html.
+	 */
+	public function get_input_attrs() {
+		$attrs = '';
 		foreach( $this->input_attrs as $attr => $value ) {
-			echo $attr . '="' . esc_attr( $value ) . '" ';
+			$attrs .= $attr . '="' . esc_attr( $value ) . '" ';
 		}
+		return $attrs;
 	}
 
 	/**
@@ -402,77 +419,10 @@ class WP_Customize_Control {
 	 * Control content can alternately be rendered in JS. See {@see WP_Customize_Control::print_template()}.
 	 *
 	 * @since 3.4.0
+	 * @since 4.3.0 Most core control types are rendered with a content template instead.
 	 */
 	protected function render_content() {
 		switch( $this->type ) {
-			case 'checkbox':
-				?>
-				<label>
-					<input type="checkbox" value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); checked( $this->value() ); ?> />
-					<?php echo esc_html( $this->label ); ?>
-					<?php if ( ! empty( $this->description ) ) : ?>
-						<span class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
-				</label>
-				<?php
-				break;
-			case 'radio':
-				if ( empty( $this->choices ) )
-					return;
-
-				$name = '_customize-radio-' . $this->id;
-
-				if ( ! empty( $this->label ) ) : ?>
-					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-				<?php endif;
-				if ( ! empty( $this->description ) ) : ?>
-					<span class="description customize-control-description"><?php echo $this->description ; ?></span>
-				<?php endif;
-
-				foreach ( $this->choices as $value => $label ) :
-					?>
-					<label>
-						<input type="radio" value="<?php echo esc_attr( $value ); ?>" name="<?php echo esc_attr( $name ); ?>" <?php $this->link(); checked( $this->value(), $value ); ?> />
-						<?php echo esc_html( $label ); ?><br/>
-					</label>
-					<?php
-				endforeach;
-				break;
-			case 'select':
-				if ( empty( $this->choices ) )
-					return;
-
-				?>
-				<label>
-					<?php if ( ! empty( $this->label ) ) : ?>
-						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<?php endif;
-					if ( ! empty( $this->description ) ) : ?>
-						<span class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
-
-					<select <?php $this->link(); ?>>
-						<?php
-						foreach ( $this->choices as $value => $label )
-							echo '<option value="' . esc_attr( $value ) . '"' . selected( $this->value(), $value, false ) . '>' . $label . '</option>';
-						?>
-					</select>
-				</label>
-				<?php
-				break;
-			case 'textarea':
-				?>
-				<label>
-					<?php if ( ! empty( $this->label ) ) : ?>
-						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<?php endif;
-					if ( ! empty( $this->description ) ) : ?>
-						<span class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
-					<textarea rows="5" <?php $this->link(); ?>><?php echo esc_textarea( $this->value() ); ?></textarea>
-				</label>
-				<?php
-				break;
 			case 'dropdown-pages':
 				$dropdown = wp_dropdown_pages(
 					array(
@@ -493,19 +443,6 @@ class WP_Customize_Control {
 					$dropdown
 				);
 				break;
-			default:
-				?>
-				<label>
-					<?php if ( ! empty( $this->label ) ) : ?>
-						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<?php endif;
-					if ( ! empty( $this->description ) ) : ?>
-						<span class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
-					<input type="<?php echo esc_attr( $this->type ); ?>" <?php $this->input_attrs(); ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
-				</label>
-				<?php
-				break;
 		}
 	}
 
@@ -516,7 +453,7 @@ class WP_Customize_Control {
 	 * {@see WP_Customize_Manager::register_control_type()}.
 	 *
 	 * In the future, this will also print the template for the control's container
-	 * element and be override-able.
+	 * element and be override-able. @link https://core.trac.wordpress.org/ticket/30741
 	 *
 	 * @since 4.1.0
 	 */
@@ -537,9 +474,90 @@ class WP_Customize_Control {
 	 * @see WP_Customize_Control::print_template()
 	 *
 	 * @since 4.1.0
+	 * @since 4.3.0 Core base control class uses JS templates by default.
 	 */
-	protected function content_template() {}
+	protected function content_template() {
+	?>
+		<# switch ( $this->type ) {
+			case 'checkbox': #>
+				<label>
+					<input type="checkbox" value="{{ data.value }}" {{{ data.link }}} <# if ( data.value ) { #> checked="checked" <# } #> />
+					{{ data.label }}
+					<# if ( data.description ) { #>
+						<span class="description customize-control-description">{{ data.description }}</span>
+					<# } #>
+				</label>
+				<#
+				break;
+			case 'radio':
+				if ( ! data.choices ) {
+					return;
+				}
 
+				var name = '_customize-radio-' + data.id;
+
+				if ( data.label ) { #>
+					<span class="customize-control-title">{{ data.label }}</span>
+				<# } if ( data.description ) { #>
+					<span class="description customize-control-description">{{{ data.description }}}</span>
+				<# }
+
+				for ( key in data.choices ) { #>
+					<label>
+						<input type="radio" value="{{ key }}" name="{{ name }}" {{{ data.link }}} <# if ( data.choices[key] === data.value ) { #> checked="checked" <# } #> />
+						{{ data.label }}<br/>
+					</label>
+				<# }
+				break;
+			case 'select':
+				if ( ! data.choices ) {
+					return;
+				}
+				#>
+				<label>
+					<# if ( data.label ) { #>
+						<span class="customize-control-title">{{ data.label }}</span>
+					<# } if ( data.description ) { #>
+						<span class="description customize-control-description">{{{ data.description }}}</span>
+					<# } #>
+
+					<select {{{ data.link }}}>
+						for ( key in data.choices ) { #>
+							<option value="{{ key }}"  <# if ( data.choices[key] === data.value ) { #>selected="selected" <# } #>>{{ data.label }}</option>
+						<# } #>
+					</select>
+				</label>
+				<#
+				break;
+			case 'textarea':
+				#>
+				<label>
+					<# if ( data.label ) { #>
+						<span class="customize-control-title">{{ data.label }}</span>
+					<# } if ( data.description ) { #>
+						<span class="description customize-control-description">{{{ data.description }}}</span>
+					<# } #>
+
+					<textarea rows="5" {{{ data.link }}}>{{ data.value }}</textarea>
+				</label>
+				<#
+				break;
+			default:
+				#>
+				<label>
+					<# if ( data.label ) { #>
+						<span class="customize-control-title">{{ data.label }}</span>
+					<# } if ( data.description ) { #>
+						<span class="description customize-control-description">{{{ data.description }}}</span>
+					<# } #>
+
+					<input type="{{ data.type }}" {{{ data.inputAttrs }}} value="{{ data.value }}" {{{ data.link }}} />
+				</label>
+				<#
+				break;
+		} #>
+	<?php
+	}
 }
 
 /**

@@ -1168,6 +1168,9 @@ final class WP_Customize_Manager {
 			$control = new $control_type( $this, 'temp', array() );
 			$control->print_template();
 		}
+		// Base control, for built-in & fallback types.
+		$control = new WP_Customize_Control( $this, 'temp', array( 'type' => 'default' ) );
+		$control->print_template();
 	}
 
 	/**
