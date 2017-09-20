@@ -3690,8 +3690,7 @@
 
 		dateInputs: {},
 		inputElements: {},
-		initialServerDate: '',
-		initialServerTimestamp: 0,
+		initialClientTimestamp: 0,
 		invalidDate: false,
 
 		/**
@@ -3705,6 +3704,7 @@
 
 			_.bindAll( control, 'populateSetting', 'updateDaysForMonth' );
 
+			control.initialClientTimestamp = Date.now();
 			control.dateInputs = control.container.find( '.date-input' );
 
 			if ( ! control.setting ) {
@@ -3802,9 +3802,13 @@
 					maxLength = parseInt( element.element.attr( 'maxlength' ), 10 );
 					value = parseInt( element(), 10 );
 					control.invalidDate = value > max || value < min || String( value ).length > maxLength || ! _.isEmpty( value );
-					control.toggleNotification( component );
+					control.toggleErrorNotification( component );
 				}
 			} );
+
+			if ( ! control.params.allowPastDate && ! control.invalidDate ) {
+				control.toggleFutureDateNotification( ! control.isFutureDate() );
+			}
 
 			return control.invalidDate;
 		},
@@ -3834,15 +3838,29 @@
 		/**
 		 * Populate setting value from the inputs.
 		 *
-		 * @returns {boolean} Whether the date inputs currently represent a valid date.
+		 * @returns {boolean} If setting updated.
 		 */
 		populateSetting: function populateSetting() {
-			var control = this, date = '', dateFormat, hourInTwentyFourHourFormat,
-				getElementValue, pad;
+			var control = this, date;
 
 			if ( control.validateInputs() ) {
 				return false;
 			}
+
+			date = control.convertInputDateToString( control.params.saveTwelveHourFormat );
+			control.setting.set( date );
+			return true;
+		},
+
+		/**
+		 * Converts date to string from input values.
+		 *
+		 * @param {boolean} twelveHourFormat If false twenty four hour format will be retuned.
+		 * @return {string} Date string.
+		 */
+		convertInputDateToString: function convertInputDateToString( twelveHourFormat ) {
+			var control = this, date = '', dateFormat, hourInTwentyFourHourFormat,
+				getElementValue, pad;
 
 			pad = function( number, padding ) {
 				var zeros;
@@ -3864,7 +3882,7 @@
 				return value;
 			};
 
-			if ( control.params.saveTwelveHourFormat ) {
+			if ( twelveHourFormat ) {
 				dateFormat = [ 'year', '-', 'month', '-', 'day', ' ', 'hour', ':', 'minute', 'ampm' ];
 			} else {
 				hourInTwentyFourHourFormat = control.convertHourToTwentyFourHourFormat( control.inputElements.hour(), control.inputElements.ampm() );
@@ -3875,7 +3893,84 @@
 				date += control.inputElements[ component ] ? getElementValue( component ) : component;
 			} );
 
-			control.setting.set( date );
+			return date;
+		},
+
+		/**
+		 * Get timestamp of input date.
+		 *
+		 * @return {int} timestamp.
+		 */
+		getInputDateTimestamp: function getInputDateTimestamp() {
+			var control = this, date, parsedDate, dateObject, inputDateString;
+
+			inputDateString = control.convertInputDateToString();
+			parsedDate = control.parseDateTime( inputDateString, true );
+
+			if ( ! parsedDate ) {
+				return false;
+			}
+
+			date = _.mapObject( parsedDate, function( value ) {
+				return parseInt( value, 10 );
+			} );
+
+			dateObject = new Date( date.year, date.month - 1, date.day, date.hour, date.minute, date.second );
+			return dateObject.getTime();
+		},
+
+		/**
+		 * Get current date/time in the site's timezone.
+		 *
+		 * Same functionality as the `current_time( 'mysql', false )` function in PHP.
+		 *
+		 * @returns {string} Current datetime string.
+		 */
+		getCurrentTimestamp: function getCurrentTimestamp() {
+			var control = this, currentDate, currentClientTimestamp, timestampDifferential;
+
+			currentClientTimestamp = Date.now();
+			currentDate = control.parseDate( api.settings.initialServerDate );
+			timestampDifferential = currentClientTimestamp - control.initialClientTimestamp;
+			timestampDifferential += control.initialClientTimestamp - api.settings.initialServerTimestamp;
+			currentDate.setTime( currentDate.valueOf() + timestampDifferential );
+			return currentDate.valueOf();
+		},
+
+		/**
+		 * Check if the date is in the future.
+		 *
+		 * @returns {boolean} True if future date.
+		 */
+		isFutureDate: function isFutureDate() {
+			var control = this, inputDateTimestamp, currentTimestamp,
+				millisecondsDivider = 1000, remainingTime;
+
+			inputDateTimestamp = control.getInputDateTimestamp();
+			currentTimestamp = control.getCurrentTimestamp();
+
+			if ( ! inputDateTimestamp ) {
+				return false;
+			}
+
+			remainingTime = inputDateTimestamp - currentTimestamp;
+			remainingTime = Math.ceil( remainingTime / millisecondsDivider );
+
+			return 0 < remainingTime;
+		},
+
+		/**
+		 * Parse date string in Y-m-d H:i:s format (local timezone).
+		 *
+		 * @param {string} date Post date string.
+		 * @returns {Date} Parsed date.
+		 */
+		parseDate: function parseDate( date ) {
+			var dateParts = _.map( date.split( /\D/ ), function( datePart ) {
+				return parseInt( datePart, 10 );
+			} );
+
+			return new Date( dateParts[0], dateParts[1] - 1, dateParts[2], dateParts[3], dateParts[4], dateParts[5] ); // eslint-disable-line no-magic-numbers
 		},
 
 		/**
@@ -3928,7 +4023,7 @@
 		 * @param {string} component Date component name.
 		 * @return {void}
 		 */
-		toggleNotification: function toggleNotification( component ) {
+		toggleErrorNotification: function toggleErrorNotification( component ) {
 			var control = this, notificationCode, notification;
 
 			notificationCode = 'invalid_scheduled_date';
@@ -3940,6 +4035,28 @@
 				} );
 				control.notifications.add( notificationCode, notification );
 				control.inputElements[ component ].element.focus();
+			} else {
+				control.notifications.remove( notificationCode );
+			}
+		},
+
+		/**
+		 * Toggle error notification for date control.
+		 *
+		 * @param {boolean} notify Add or remove the notification.
+		 * @return {void}
+		 */
+		toggleFutureDateNotification: function toggleErrorNotification( notify ) {
+			var control = this, notificationCode, notification;
+
+			notificationCode = 'is_not_future_date';
+
+			if ( notify ) {
+				notification = new api.Notification( notificationCode, {
+					type: 'error',
+					message: api.l10n.futureDateError
+				} );
+				control.notifications.add( notificationCode, notification );
 			} else {
 				control.notifications.remove( notificationCode );
 			}
