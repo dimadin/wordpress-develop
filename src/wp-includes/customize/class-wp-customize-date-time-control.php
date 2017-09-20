@@ -49,6 +49,14 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public $allow_past_date = true;
 
 	/**
+	 * If set to false, the output will be in Y-m-d H:i:s format.
+	 *
+	 * @since 4.9.0
+	 * @var boolean
+	 */
+	public $output_12_hour_format = true;
+
+	/**
 	 * Don't render the control's content - it's rendered with a JS template.
 	 *
 	 * @since 4.9.0
@@ -66,6 +74,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 		$data['maxYear'] = intval( $this->max_year );
 		$data['minYear'] = intval( $this->min_year );
 		$data['allowPastDate'] = $this->allow_past_date ? true : false;
+		$data['output12HourFormat'] = $this->output_12_hour_format ? true : false;
 
 		return $data;
 	}
@@ -124,7 +133,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 				<div class="time-fields clear">
 					<label class="hour-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Hour' ); ?></span>
-						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="0" max="11" value="{{ data.hour }}" />
+						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="1" max="12" value="{{ data.hour }}" />
 					</label>
 					<span class="time-special-char date-time-separator">:</span>
 					<label class="minute-field">

@@ -3772,6 +3772,7 @@ final class WP_Customize_Manager {
 			'type' => 'date_time',
 			'min_year' => date( 'Y' ),
 			'allow_past_date' => false,
+			'output_12_hour_format' => false,
 			'description' => __( 'Schedule your customization changes to publish ( "go live" ) at a future date.' ),
 			'capability' => 'customize',
 		) ) );

@@ -3692,6 +3692,7 @@
 		inputElements: {},
 		initialServerDate: '',
 		initialServerTimestamp: 0,
+		dateFormat: [ 'year', '-', 'month', '-', 'day', ' ', 'hour', ':', 'minute', 'ampm' ],
 
 		/**
 		 * Initialize behaviors.
@@ -3718,6 +3719,9 @@
 				control.inputElements[ component ] = element;
 				control.elements.push( element );
 			} );
+
+			_.bindAll( control, 'populateSetting' );
+			control.dateInputs.on( 'input', control.populateSetting );
 
 			control.validateInputs();
 			control.populateDateInputs();
@@ -3788,15 +3792,16 @@
 			} );
 
 			validateAndUpdateDay = function() {
-				var daysInMonth, year, month;
+				var daysInMonth, day, year, month;
 
-				year = control.inputElements.year();
-				month = control.inputElements.month();
+				day = parseInt( control.inputElements.day(), 10 );
+				year = parseInt( control.inputElements.year(), 10 );
+				month = parseInt( control.inputElements.month(), 10 );
 
 				if ( month && year ) {
-					daysInMonth = new Date( control.inputElements.year(), month, 0 ).getDate();
+					daysInMonth = new Date( year, month, 0 ).getDate();
 					control.inputElements.day.element.attr( 'max', daysInMonth );
-					if ( control.inputElements.day() > daysInMonth ) {
+					if ( day > daysInMonth ) {
 						control.inputElements.day( daysInMonth );
 					}
 				}
@@ -3808,23 +3813,56 @@
 		},
 
 		/**
-		 * Get date from inputs.
+		 * Populate setting value from the inputs.
 		 *
-		 * @returns {Date|null} Date created from inputs or null if invalid date.
+		 * @returns {boolean} Whether the date inputs currently represent a valid date.
 		 */
-		getDateFromInputs: function getDateFromInputs() {
-			var control = this, date;
-			date = new Date(
-				parseInt( control.inputElements.year.get(), 10 ),
-				parseInt( control.inputElements.month.get(), 10 ) - 1,
-				parseInt( control.inputElements.day.get(), 10 ),
-				parseInt( control.inputElements.hour.get(), 10 ),
-				parseInt( control.inputElements.minute.get(), 10 )
-			);
-			if ( isNaN( date.valueOf() ) ) {
-				return null;
+		populateSetting: function populateSetting() {
+			var control = this, date = '', hourIn12HourFormat,
+				hourIn24HourFormat, ampm, getElementValue, pad;
+
+			pad = function( number, padding ) {
+				var zeros;
+				if ( String( number ).length < padding ) {
+					zeros = padding - String( number ).length;
+					number = Math.pow( 10, zeros ).toString().substr( 1 ) + String( number );
+				}
+				return number;
+			};
+
+			getElementValue = function( component ) {
+				var value = control.inputElements[ component ].get();
+
+				if ( _.contains( [ 'day', 'hour', 'minute' ], component ) ) {
+					value = pad( value, 2 );
+				} else if ( 'year' === component ) {
+					value = pad( value, 4 );
+				}
+
+				return value;
+			};
+
+			if ( ! control.params.output12HourFormat ) {
+				ampm = control.inputElements.ampm();
+				hourIn12HourFormat = parseInt( control.inputElements.hour(), 10  );
+
+				if ( 'pm' === ampm && hourIn12HourFormat < 12 ) {
+					hourIn24HourFormat = hourIn12HourFormat + 12;
+				} else if ( 'am' === ampm && 12 === hourIn12HourFormat ) {
+					hourIn24HourFormat = hourIn12HourFormat - 12;
+				} else {
+					hourIn24HourFormat = hourIn12HourFormat;
+				}
+
+				control.dateFormat = [ 'year', '-', 'month', '-', 'day', ' ', pad( hourIn24HourFormat, 2 ), ':', 'minute', ':', '00' ];
 			}
-			return date;
+
+			_.each( control.dateFormat, function( component ) {
+				date += control.inputElements[ component ] ? getElementValue( component ) : component;
+			} );
+
+			control.setting.set( date );
+			console.info( date );
 		},
 
 		/**
