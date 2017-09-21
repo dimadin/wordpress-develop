@@ -3746,19 +3746,15 @@
 		/**
 		 * Parse datetime string.
 		 *
-		 * @param {string} datetime Date/Time string. Can accept datetime in Y-m-d H:i:s or Y-m-d H:ia format.
-		 * @param {boolean} twentyFourHourFormat If twenty four hour format array is required.
+		 * @param {string} datetime Date/Time string. Accepts Y-m-d H:i:s format.
+		 * @param {boolean} twelveHourFormat If twelve hour format array is required.
 		 * @returns {object|null} Returns object containing date components or null if parse error.
 		 */
-		parseDateTime: function parseDateTime( datetime, twentyFourHourFormat ) {
-			var control = this, matches, date, matchedTwelveHour, midDayHour = 12;
+		parseDateTime: function parseDateTime( datetime, twelveHourFormat ) {
+			var matches, date, midDayHour = 12;
 
 			if ( datetime ) {
 				matches = datetime.match( /^(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)$/ );
-				if ( ! matches ) {
-					matches = datetime.match( /^(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d)([aApP][mM])$/ );
-					matchedTwelveHour = matches;
-				}
 			}
 
 			if ( ! matches ) {
@@ -3776,17 +3772,7 @@
 				second: matches.shift()
 			};
 
-			if ( matchedTwelveHour ) {
-				if ( ! twentyFourHourFormat ) {
-					date.ampm = date.second;
-					delete date.second;
-				} else {
-					date.hour = control.convertHourToTwentyFourHourFormat( date.hour, date.second );
-					date.second = '00';
-				}
-			}
-
-			if ( ! twentyFourHourFormat && ! matchedTwelveHour ) {
+			if ( twelveHourFormat ) {
 				date.hour = parseInt( date.hour, 10 );
 				date.ampm = date.hour >= midDayHour ? 'pm' : 'am';
 				date.hour = date.hour % midDayHour ? String( date.hour % midDayHour ) : String( midDayHour );
@@ -3816,7 +3802,7 @@
 					min = parseInt( element.element.attr( 'min' ), 10 );
 					maxLength = parseInt( element.element.attr( 'maxlength' ), 10 );
 					value = parseInt( element(), 10 );
-					control.invalidDate = value > max || value < min || String( value ).length > maxLength || ! _.isEmpty( value );
+					control.invalidDate = value > max || value < min || String( value ).length > maxLength;
 
 					if ( control.invalidDate ) {
 						el.setCustomValidity( api.l10n.invalid + ' ' + component );
@@ -3870,18 +3856,17 @@
 				return false;
 			}
 
-			date = control.convertInputDateToString( control.params.saveTwelveHourFormat );
+			date = control.convertInputDateToString();
 			control.setting.set( date );
 			return true;
 		},
 
 		/**
-		 * Converts date to string from input values.
+		 * Converts input values to string in Y-m-d H:i:s format.
 		 *
-		 * @param {boolean} twelveHourFormat If false twenty four hour format will be retuned.
 		 * @return {string} Date string.
 		 */
-		convertInputDateToString: function convertInputDateToString( twelveHourFormat ) {
+		convertInputDateToString: function convertInputDateToString() {
 			var control = this, date = '', dateFormat, hourInTwentyFourHourFormat,
 				getElementValue, pad;
 
@@ -3905,12 +3890,8 @@
 				return value;
 			};
 
-			if ( twelveHourFormat ) {
-				dateFormat = [ 'year', '-', 'month', '-', 'day', ' ', 'hour', ':', 'minute', 'ampm' ];
-			} else {
-				hourInTwentyFourHourFormat = control.convertHourToTwentyFourHourFormat( control.inputElements.hour(), control.inputElements.ampm() );
-				dateFormat = [ 'year', '-', 'month', '-', 'day', ' ', pad( hourInTwentyFourHourFormat, 2 ), ':', 'minute', ':', '00' ];
-			}
+			hourInTwentyFourHourFormat = control.inputElements.ampm ? control.convertHourToTwentyFourHourFormat( control.inputElements.hour(), control.inputElements.ampm() ) : control.inputElements.hour();
+			dateFormat = [ 'year', '-', 'month', '-', 'day', ' ', pad( hourInTwentyFourHourFormat, 2 ), ':', 'minute', ':', '00' ];
 
 			_.each( dateFormat, function( component ) {
 				date += control.inputElements[ component ] ? getElementValue( component ) : component;
@@ -3928,7 +3909,7 @@
 			var control = this, date, parsedDate, dateObject, inputDateString;
 
 			inputDateString = control.convertInputDateToString();
-			parsedDate = control.parseDateTime( inputDateString, true );
+			parsedDate = control.parseDateTime( inputDateString );
 
 			if ( ! parsedDate ) {
 				return false;
@@ -4027,7 +4008,7 @@
 		populateDateInputs: function populateDateInputs() {
 			var control = this, parsed;
 
-			parsed = control.parseDateTime( control.setting.get() );
+			parsed = control.parseDateTime( control.setting.get(), control.params.twelveHourFormat );
 
 			if ( ! parsed ) {
 				return false;

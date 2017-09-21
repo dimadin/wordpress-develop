@@ -50,7 +50,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 
 	/**
 	 * If set to false the control will appear in 24 hour format,
-	 * however value will be saved in Y-m-d H:i:s format in both cases.
+	 * the value will still be saved in Y-m-d H:i:s format.
 	 *
 	 * @since 4.9.0
 	 * @var boolean
