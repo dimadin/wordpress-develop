@@ -4049,7 +4049,7 @@
 		toggleFutureDateNotification: function toggleErrorNotification( notify ) {
 			var control = this, notificationCode, notification;
 
-			notificationCode = 'is_not_future_date';
+			notificationCode = 'not_future_date';
 
 			if ( notify ) {
 				notification = new api.Notification( notificationCode, {

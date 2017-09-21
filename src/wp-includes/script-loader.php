@@ -559,7 +559,7 @@ function wp_default_scripts( &$scripts ) {
 		'schedule'           => __( 'Schedule' ),
 		'scheduled'          => __( 'Scheduled' ),
 		'invalid'            => __( 'Invalid' ),
-		'futureDateError'    => __( 'Please select a future date' ),
+		'futureDateError'    => __( 'You must supply a future date to schedule.' ),
 		'saveAlert'          => __( 'The changes you made will be lost if you navigate away from this page.' ),
 		'saved'              => __( 'Saved' ),
 		'cancel'             => __( 'Cancel' ),
