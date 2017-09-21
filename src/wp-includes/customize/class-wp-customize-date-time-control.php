@@ -49,12 +49,13 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public $allow_past_date = true;
 
 	/**
-	 * If set to false, value will be in Y-m-d H:i:s format.
+	 * If set to false the control will appear in 24 hour format,
+	 * however value will be saved in Y-m-d H:i:s format in both cases.
 	 *
 	 * @since 4.9.0
 	 * @var boolean
 	 */
-	public $save_twelve_hour_format = true;
+	public $twelve_hour_format = true;
 
 	/**
 	 * Default date/time to be displayed in the control.
@@ -83,7 +84,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 		$data['maxYear'] = intval( $this->max_year );
 		$data['minYear'] = intval( $this->min_year );
 		$data['allowPastDate'] = $this->allow_past_date ? true : false;
-		$data['saveTwelveHourFormat'] = $this->save_twelve_hour_format ? true : false;
+		$data['twelveHourFormat'] = $this->twelve_hour_format ? true : false;
 		$data['defaultValue'] = $this->default_value;
 
 		return $data;
@@ -144,13 +145,15 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 				<div class="time-fields clear">
 					<label class="hour-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Hour' ); ?></span>
-						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="1" max="12" value="{{ data.hour }}" />
+						<# data.maxHour = data.twelveHourFormat ? 12 : 24; #>
+						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="1" max="{{ data.maxHour }}" value="{{ data.hour }}" />
 					</label>
 					<span class="time-special-char date-time-separator">:</span>
 					<label class="minute-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Minute' ); ?></span>
 						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" value="{{ data.minute }}" />
 					</label>
+					<# if ( data.twelveHourFormat ) { #>
 					<label class="am-pm-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'AM / PM' ); ?></span>
 						<select class="date-input" data-component="ampm">
@@ -158,6 +161,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 							<option value="pm"><?php esc_html_e( 'PM' ); ?></option>
 						</select>
 					</label>
+					<# } #>
 					<span class="date-timezone" aria-label="<?php esc_attr_e( 'Timezone' ); ?>" title="<?php echo esc_attr( $timezone_info['description'] ); ?>"><?php echo esc_html( $timezone_info['abbr'] ); ?></span>
 				</div>
 			</div>

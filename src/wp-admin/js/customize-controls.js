@@ -3821,6 +3821,8 @@
 					if ( control.invalidDate ) {
 						el.setCustomValidity( api.l10n.invalid + ' ' + component );
 						_.result( el, 'reportValidity' );
+					} else {
+						el.setCustomValidity( '' );
 					}
 				}
 			} );
