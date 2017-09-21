@@ -5298,6 +5298,7 @@
 					});
 
 					request.fail( function ( response ) {
+						var control, notification;
 
 						if ( '0' === response ) {
 							response = 'not_logged_in';
@@ -5315,13 +5316,21 @@
 								previewer.preview.iframe.show();
 							} );
 						} else if ( response.code ) {
-							api.notifications.add( response.code, new api.Notification( response.code, {
+							notification = new api.Notification( response.code, {
 								message: response.message,
 								type: 'error',
 								dismissible: true,
 								fromServer: true,
 								saveFailure: true
-							} ) );
+							} );
+							if ( 'not_future_date' === response.code && api.section.has( 'publish_settings' ) && api.section( 'publish_settings' ).active.get() && api.control.has( 'changeset_scheduled_date' ) ) {
+								control = api.control( 'changeset_scheduled_date' );
+								control.focus();
+								notification.dismissible = false; // Will be dismissed once date is corrected.
+								control.notifications.add( response.code, notification );
+							} else {
+								api.notifications.add( response.code, notification );
+							}
 						} else {
 							api.notifications.add( 'unknown_error', new api.Notification( 'unknown_error', {
 								message: api.l10n.serverSaveError,
