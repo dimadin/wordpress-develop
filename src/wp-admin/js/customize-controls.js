@@ -6627,13 +6627,6 @@
 
 					toggleDateControl( element.get() );
 					element.bind( toggleDateControl );
-
-					// Focus on the date control when the save request failed due to a non-future date being provided.
-					api.bind( 'error', function( response ) {
-						if ( response && 'not_future_date' === response.code ) {
-							dateControl.focus();
-						}
-					} );
 				} );
 			} );
 		} );
