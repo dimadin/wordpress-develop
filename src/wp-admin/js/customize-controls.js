@@ -5046,13 +5046,14 @@
 
 		saveBtn.show();
 		api.section( 'publish_settings', function( section ) {
-			var backgroundEls, animationDuration = 500, updateArgumentsQueue, updateButtonsState;
+			var backgroundEls, animationDuration = 500, updateButtonsState;
 
-			updateArgumentsQueue = function() {
-				section.expandedArgumentsQueue = [ {
+			section.onChangeExpanded = function( expanded, args ) {
+				var overriddenArgs = _.extend( {}, args, {
 					unchanged: true,
 					allowMultiple: true
-				} ];
+				} );
+				return api.Section.prototype.onChangeExpanded.call( this, expanded, overriddenArgs );
 			};
 
 			// Make sure publish settings are not available until the theme has been activated.
@@ -5069,14 +5070,12 @@
 			updateButtonsState();
 			section.active.bind( updateButtonsState );
 
-			updateArgumentsQueue();
 			section.contentContainer.find( '.customize-action' ).text( api.l10n.updating );
 			section.contentContainer.find( '.customize-section-back' ).removeAttr( 'tabindex' );
 			publishSettingsBtn.prop( 'disabled', false );
 
 			publishSettingsBtn.on( 'click', function( event ) {
 				event.preventDefault();
-				updateArgumentsQueue();
 				section.expanded.set( ! section.expanded.get() );
 			} );
 
@@ -5084,7 +5083,6 @@
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
 				backgroundEls = $( '.customize-pane-child, .customize-info, .customize-pane-parent' ).not( section.contentContainer );
 
-				updateArgumentsQueue();
 				publishSettingsBtn.toggleClass( 'active', isExpanded );
 				section.container.toggleClass( 'publish-settings-open', isExpanded );
 
