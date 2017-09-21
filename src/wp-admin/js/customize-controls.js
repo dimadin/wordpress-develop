@@ -3717,7 +3717,7 @@
 
 			_.bindAll( control, 'populateSetting', 'updateDaysForMonth' );
 
-			control.initialClientTimestamp = Date.now();
+			control.initialClientTimestamp = _.now();
 			control.dateInputs = control.container.find( '.date-input' );
 
 			// @todo This needs https://core.trac.wordpress.org/ticket/37964
@@ -3778,10 +3778,10 @@
 
 			if ( matchedTwelveHour ) {
 				if ( ! twentyFourHourFormat ) {
-					date.ampm = _.clone( date.second );
+					date.ampm = date.second;
 					delete date.second;
 				} else {
-					date.hour = control.convertHourToTwentyFourHourFormat( date.hour, _.clone( date.second ) );
+					date.hour = control.convertHourToTwentyFourHourFormat( date.hour, date.second );
 					date.second = '00';
 				}
 			}
@@ -3802,26 +3802,33 @@
 		 * @return {boolean} If date input fields has error.
 		 */
 		validateInputs: function validateInputs() {
-			var control = this;
+			var control = this, delay = 1000;
 
 			control.invalidDate = false;
 
 			_.each( [ 'day', 'hour', 'year', 'minute' ], function( component ) {
-				var element, max, min, maxLength, value;
+				var element, el, max, min, maxLength, value;
 
 				if ( ! control.invalidDate ) {
 					element = control.inputElements[ component ];
+					el = element.element.get( 0 );
 					max = parseInt( element.element.attr( 'max' ), 10 );
 					min = parseInt( element.element.attr( 'min' ), 10 );
 					maxLength = parseInt( element.element.attr( 'maxlength' ), 10 );
 					value = parseInt( element(), 10 );
 					control.invalidDate = value > max || value < min || String( value ).length > maxLength || ! _.isEmpty( value );
-					control.toggleErrorNotification( component );
+
+					if ( control.invalidDate ) {
+						el.setCustomValidity( api.l10n.invalid + ' ' + component );
+						_.result( el, 'reportValidity' );
+					}
 				}
 			} );
 
 			if ( ! control.params.allowPastDate && ! control.invalidDate ) {
-				control.toggleFutureDateNotification( ! control.isFutureDate() );
+				( _.debounce( function() {
+					control.toggleFutureDateNotification( ! control.isFutureDate() );
+				}, delay ) )();
 			}
 
 			return control.invalidDate;
@@ -3943,7 +3950,7 @@
 		getCurrentTimestamp: function getCurrentTimestamp() {
 			var control = this, currentDate, currentClientTimestamp, timestampDifferential;
 
-			currentClientTimestamp = Date.now();
+			currentClientTimestamp = _.now();
 			currentDate = control.parseDate( api.settings.initialServerDate );
 			timestampDifferential = currentClientTimestamp - control.initialClientTimestamp;
 			timestampDifferential += control.initialClientTimestamp - api.settings.initialServerTimestamp;
@@ -4032,35 +4039,12 @@
 		},
 
 		/**
-		 * Toggle error notification for date control.
-		 *
-		 * @param {string} component Date component name.
-		 * @return {void}
-		 */
-		toggleErrorNotification: function toggleErrorNotification( component ) {
-			var control = this, notificationCode, notification;
-
-			notificationCode = 'invalid_scheduled_date';
-
-			if ( control.invalidDate ) {
-				notification = new api.Notification( notificationCode, {
-					type: 'error',
-					message: api.l10n.invalid + ' ' + component
-				} );
-				control.notifications.add( notificationCode, notification );
-				control.inputElements[ component ].element.focus();
-			} else {
-				control.notifications.remove( notificationCode );
-			}
-		},
-
-		/**
-		 * Toggle error notification for date control.
+		 * Toggle future date notification for date control.
 		 *
 		 * @param {boolean} notify Add or remove the notification.
-		 * @return {void}
+		 * @return {wp.customize.DateTimeControl}
 		 */
-		toggleFutureDateNotification: function toggleErrorNotification( notify ) {
+		toggleFutureDateNotification: function toggleFutureDateNotification( notify ) {
 			var control = this, notificationCode, notification;
 
 			notificationCode = 'not_future_date';
@@ -4074,6 +4058,8 @@
 			} else {
 				control.notifications.remove( notificationCode );
 			}
+
+			return control;
 		}
 	});
 
@@ -5320,7 +5306,7 @@
 					});
 
 					request.fail( function ( response ) {
-						var control, notification;
+						var notification;
 
 						if ( '0' === response ) {
 							response = 'not_logged_in';
@@ -5346,10 +5332,7 @@
 								saveFailure: true
 							} );
 							if ( 'not_future_date' === response.code && api.section.has( 'publish_settings' ) && api.section( 'publish_settings' ).active.get() && api.control.has( 'changeset_scheduled_date' ) ) {
-								control = api.control( 'changeset_scheduled_date' );
-								control.focus();
-								notification.dismissible = false; // Will be dismissed once date is corrected.
-								control.notifications.add( response.code, notification );
+								api.control( 'changeset_scheduled_date' ).toggleFutureDateNotification( true ).focus();
 							} else {
 								api.notifications.add( response.code, notification );
 							}

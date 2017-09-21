@@ -87,6 +87,10 @@ body {
 	padding-right: 12px;
 }
 
+#customize-controls .date-input:invalid {
+	border-color: red;
+}
+
 .date-time-fields .month-field {
 	width: 79px;
 }
