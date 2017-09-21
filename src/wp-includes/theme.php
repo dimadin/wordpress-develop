@@ -679,6 +679,20 @@ function locale_stylesheet() {
 function switch_theme( $stylesheet ) {
 	global $wp_theme_directories, $wp_customize, $sidebars_widgets;
 
+	$_sidebars_widgets = null;
+	if ( 'wp_ajax_customize_save' === current_action() ) {
+		$old_sidebars_widgets_data_setting = $wp_customize->get_setting( 'old_sidebars_widgets_data' );
+		if ( $old_sidebars_widgets_data_setting ) {
+			$_sidebars_widgets = $wp_customize->post_value( $old_sidebars_widgets_data_setting );
+		}
+	} elseif ( is_array( $sidebars_widgets ) ) {
+		$_sidebars_widgets = $sidebars_widgets;
+	}
+
+	if ( is_array( $_sidebars_widgets ) ) {
+		set_theme_mod( 'sidebars_widgets', $_sidebars_widgets );
+	}
+
 	$nav_menu_locations = get_theme_mod( 'nav_menu_locations' );
 	add_option( 'theme_switch_menu_locations', $nav_menu_locations );
 
@@ -704,23 +718,6 @@ function switch_theme( $stylesheet ) {
 	$new_name  = $new_theme->get('Name');
 
 	update_option( 'current_theme', $new_name );
-
-	$_sidebars_widgets = null;
-	if ( 'wp_ajax_customize_save' === current_action() ) {
-		$old_sidebars_widgets_data_setting = $wp_customize->get_setting( 'old_sidebars_widgets_data' );
-		if ( $old_sidebars_widgets_data_setting ) {
-			$_sidebars_widgets = $wp_customize->post_value( $old_sidebars_widgets_data_setting );
-		}
-	} elseif ( is_array( $sidebars_widgets ) ) {
-		$_sidebars_widgets = $sidebars_widgets;
-	}
-
-	if ( is_array( $_sidebars_widgets ) ) {
-		set_theme_mod( 'sidebars_widgets', array(
-			'time' => time(),
-			'data' => $_sidebars_widgets,
-		) );
-	}
 
 	// Migrate from the old mods_{name} option to theme_mods_{slug}.
 	if ( is_admin() && false === get_option( 'theme_mods_' . $stylesheet ) ) {

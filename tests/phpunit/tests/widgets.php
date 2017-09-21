@@ -698,22 +698,25 @@ class Tests_Widgets extends WP_UnitTestCase {
 		global $sidebars_widgets, $_wp_sidebars_widgets;
 
 		wp_widgets_init();
-		$this->register_sidebars( array( 'sidebar-1', 'sidebar-2','sidebar-3', 'wp_inactive_widgets' ) );
+		$this->register_sidebars( array( 'sidebar-1', 'sidebar-2', 'sidebar-3', 'wp_inactive_widgets' ) );
 
+		// Test restoring sidebars widgets when previously activated.
 		set_theme_mod( 'sidebars_widgets', array(
-			'time' => time(),
-			'data' => array(
-				'sidebar-1' => array( 'tag_cloud-1' ),
-				'sidebar-2' => array( 'text-1' ),
-				'sidebar-3' => array( 'unregistered_widget-1' ),
-				'fantasy'   => array( 'archives-2' ),
-				'wp_inactive_widgets' => array(),
-			),
+			'sidebar-1' => array( 'tag_cloud-1' ),
+			'sidebar-2' => array(),
+			'sidebar-3' => array( 'unregistered_widget-1', 'text-1', 'media_image-1' ),
+			'orphaned_widgets_1' => array( 'media_video-2' ),
 		) );
+
+		$sidebars_widgets = array(
+			'sidebar-1' => array( 'tag_cloud-1' ),
+			'sidebar-2' => array( 'text-1' ),
+			'fantasy'   => array( 'archives-2' ),
+			'wp_inactive_widgets' => array(),
+		);
 
 		$result = retrieve_widgets( true );
 
-		$_wp_sidebars_widgets = array();
 		$this->assertInternalType( 'array', $result );
 		$this->assertEquals( $result, $sidebars_widgets );
 
@@ -723,21 +726,21 @@ class Tests_Widgets extends WP_UnitTestCase {
 
 		$this->assertContains( 'tag_cloud-1', $sidebars_widgets['sidebar-1'] );
 		$this->assertContains( 'text-1', $sidebars_widgets['sidebar-2'] );
-		$this->assertContains( 'archives-2', $sidebars_widgets['orphaned_widgets_1'] );
+		$this->assertContains( 'media_image-1', $sidebars_widgets['sidebar-3'] );
+		$this->assertArrayNotHasKey( 'orphaned_widgets_1', $sidebars_widgets );
 
 		// Unregistered widget should be filtered out.
-		$this->assertEmpty( $sidebars_widgets['sidebar-3'] );
+		$this->assertNotContains( 'unregistered_widget-1', $sidebars_widgets['sidebar-3'] );
 
-		// 6 default widgets - 1 active text widget = 5.
-		$this->assertCount( 5, $sidebars_widgets['wp_inactive_widgets'] );
+		// 6 default widgets - 1 active text widget + 1 orphaned widget = 6.
+		$this->assertCount( 6, $sidebars_widgets['wp_inactive_widgets'] );
+
 		$this->assertContains( 'meta-2',            $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'search-2',          $sidebars_widgets['wp_inactive_widgets'] );
+		$this->assertContains( 'archives-2',        $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'categories-2',      $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'recent-posts-2',    $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'recent-comments-2', $sidebars_widgets['wp_inactive_widgets'] );
-
-		// Theme mode with previous widgets was removed.
-		$this->assertFalse( get_theme_mod( 'sidebars_widgets' ) );
 
 		// Sidebar_widgets option was updated.
 		$this->assertEquals( $sidebars_widgets, wp_get_sidebars_widgets() );
@@ -857,16 +860,16 @@ class Tests_Widgets extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'fantasy', $sidebars_widgets );
 		$this->assertArrayHasKey( 'sidebar-3', $sidebars_widgets );
 
-		// archives-2 ends up as an orphan because of the above behavior.
-		$this->assertContains( 'archives-2', $sidebars_widgets['orphaned_widgets_1'] );
 		$this->assertContains( 'tag_cloud-1', $sidebars_widgets['sidebar-1'] );
 		$this->assertContains( 'text-1', $sidebars_widgets['sidebar-2'] );
 
 		// 6 default widgets - 1 active text widget = 5.
-		$this->assertCount( 5, $sidebars_widgets['wp_inactive_widgets'] );
+		$this->assertCount( 6, $sidebars_widgets['wp_inactive_widgets'] );
 
 		$this->assertContains( 'meta-2',            $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'search-2',          $sidebars_widgets['wp_inactive_widgets'] );
+		// archives-2 ends up as inactive because fantasy sidebar doesn't exist.
+		$this->assertContains( 'archives-2',        $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'categories-2',      $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'recent-posts-2',    $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'recent-comments-2', $sidebars_widgets['wp_inactive_widgets'] );
@@ -887,14 +890,11 @@ class Tests_Widgets extends WP_UnitTestCase {
 		$this->register_sidebars( array( 'sidebar-1', 'sidebar-2','sidebar-3', 'wp_inactive_widgets' ) );
 
 		$old_sidebars_widgets = array(
-			'time' => time(),
-			'data' => array(
-				'sidebar-1' => array( 'tag_cloud-1' ),
-				'sidebar-2' => array( 'text-1' ),
-				'sidebar-3' => array( 'unregistered_widget-1' ),
-				'fantasy'   => array( 'archives-2' ),
-				'wp_inactive_widgets' => array(),
-			),
+			'sidebar-1' => array( 'tag_cloud-1' ),
+			'sidebar-2' => array( 'text-1' ),
+			'sidebar-3' => array( 'unregistered_widget-1' ),
+			'fantasy'   => array( 'archives-2' ),
+			'wp_inactive_widgets' => array(),
 		);
 		set_theme_mod( 'sidebars_widgets', $old_sidebars_widgets );
 
@@ -910,13 +910,13 @@ class Tests_Widgets extends WP_UnitTestCase {
 
 		$this->assertContains( 'tag_cloud-1', $sidebars_widgets['sidebar-1'] );
 		$this->assertContains( 'text-1', $sidebars_widgets['sidebar-2'] );
-		$this->assertContains( 'archives-2', $sidebars_widgets['orphaned_widgets_1'] );
 		$this->assertArrayHasKey( 'sidebar-3', $sidebars_widgets );
 		$this->assertEmpty( $sidebars_widgets['sidebar-3'] );
-		$this->assertCount( 5, $sidebars_widgets['wp_inactive_widgets'] );
+		$this->assertCount( 6, $sidebars_widgets['wp_inactive_widgets'] );
 
 		$this->assertContains( 'meta-2',            $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'search-2',          $sidebars_widgets['wp_inactive_widgets'] );
+		$this->assertContains( 'archives-2',        $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'categories-2',      $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'recent-posts-2',    $sidebars_widgets['wp_inactive_widgets'] );
 		$this->assertContains( 'recent-comments-2', $sidebars_widgets['wp_inactive_widgets'] );
@@ -926,6 +926,28 @@ class Tests_Widgets extends WP_UnitTestCase {
 
 		// Sidebar_widgets option was not updated.
 		$this->assertNotEquals( $sidebars_widgets, wp_get_sidebars_widgets() );
+	}
+
+	function test_retreive_widgets_with_single_widget() {
+		global $sidebars_widgets;
+
+		wp_widgets_init();
+
+		// Register single-dimension widget.
+		wp_register_sidebar_widget( 'single', 'Single', '__return_false', array(), array() );
+		wp_register_widget_control( 'single', 'Single', '__return_false', array(), array() );
+
+		$this->register_sidebars( array( 'sidebar-1', 'sidebar-2', 'wp_inactive_widgets' ) );
+
+		$sidebars_widgets = array(
+			'sidebar-1' => array( 'tag_cloud-1' ),
+			'wp_inactive_widgets' => array(),
+		);
+
+		// Theme changed.
+		$result = retrieve_widgets( true );
+
+		$this->assertContains( 'single', $result['wp_inactive_widgets'] );
 	}
 
 	/**
@@ -955,7 +977,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 	}
 
 	/**
-	 * _wp_map_sidebars Tests.
+	 * wp_map_sidebars_widgets Tests.
 	 */
 
 	/**
@@ -973,6 +995,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 
 		$expected_sidebars = array(
 			'primary' => 1,
+			'wp_inactive_widgets' => array(),
 		);
 		$this->assertEquals( $expected_sidebars, $new_next_theme_sidebars );
 	}
@@ -987,6 +1010,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 		$prev_theme_sidebars = array(
 			'primary' => 1,
 			'secondary' => 2,
+			'wp_inactive_widgets' => array(),
 		);
 
 		$new_next_theme_sidebars = wp_map_sidebars_widgets( $prev_theme_sidebars );
@@ -1012,6 +1036,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 		$expected_sidebars = array(
 			'primary' => array(),
 			'secondary' => array(),
+			'wp_inactive_widgets' => array(),
 		);
 		$this->assertEquals( $expected_sidebars, $new_next_theme_sidebars );
 	}
@@ -1032,6 +1057,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 
 		$expected_sidebars = array(
 			'main' => array(),
+			'wp_inactive_widgets' => array(),
 		);
 		$this->assertEqualSets( $expected_sidebars, $new_next_theme_sidebars );
 	}
@@ -1054,6 +1080,7 @@ class Tests_Widgets extends WP_UnitTestCase {
 		$expected_sidebars = array(
 			'main' => array(),
 			'primary' => array(),
+			'wp_inactive_widgets' => array(),
 		);
 		$this->assertEquals( $expected_sidebars, $new_next_theme_sidebars );
 	}
