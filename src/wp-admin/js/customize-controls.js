@@ -3715,7 +3715,7 @@
 		ready: function ready() {
 			var control = this;
 
-			_.bindAll( control, 'populateSetting', 'updateDaysForMonth' );
+			_.bindAll( control, 'populateSetting', 'updateDaysForMonth', 'updateMinutesForHour' );
 
 			control.initialClientTimestamp = _.now();
 			control.dateInputs = control.container.find( '.date-input' );
@@ -3740,6 +3740,7 @@
 			control.dateInputs.on( 'input', control.populateSetting );
 			control.inputElements.month.bind( control.updateDaysForMonth );
 			control.inputElements.year.bind( control.updateDaysForMonth );
+			control.inputElements.hour.bind( control.updateMinutesForHour );
 			control.populateDateInputs();
 		},
 
@@ -3845,6 +3846,32 @@
 		},
 
 		/**
+		 * Updates number of minutes according to the hour selected.
+		 *
+		 * @return {void}
+		 */
+		updateMinutesForHour: function updateMinutesForHour() {
+			var control = this, maxHours = 24, minuteEl, hour;
+
+			if ( control.inputElements.ampm ) {
+				return;
+			}
+
+			hour = parseInt( control.inputElements.hour(), 10 );
+			minuteEl = control.inputElements.minute.element;
+
+			if ( maxHours === hour ) {
+				control.inputElements.minute( 0 );
+				minuteEl.data( 'default-max', minuteEl.attr( 'max' ) );
+				minuteEl.data( 'default-maxlength', minuteEl.attr( 'maxlength' ) );
+				minuteEl.attr( 'max', '0' );
+			} else if ( minuteEl.data( 'default-max' ) ) {
+				minuteEl.attr( 'max', minuteEl.data( 'default-max' ) );
+				minuteEl.attr( 'maxlength', minuteEl.data( 'maxlength' ) );
+			}
+		},
+
+		/**
 		 * Populate setting value from the inputs.
 		 *
 		 * @returns {boolean} If setting updated.
@@ -3906,20 +3933,10 @@
 		 * @return {int} timestamp.
 		 */
 		getInputDateTimestamp: function getInputDateTimestamp() {
-			var control = this, date, parsedDate, dateObject, inputDateString;
+			var control = this, dateObject, inputDateString;
 
 			inputDateString = control.convertInputDateToString();
-			parsedDate = control.parseDateTime( inputDateString );
-
-			if ( ! parsedDate ) {
-				return false;
-			}
-
-			date = _.mapObject( parsedDate, function( value ) {
-				return parseInt( value, 10 );
-			} );
-
-			dateObject = new Date( date.year, date.month - 1, date.day, date.hour, date.minute, date.second );
+			dateObject = new Date( inputDateString.replace( /-/g, '/' ) );
 			return dateObject.getTime();
 		},
 
@@ -3928,17 +3945,17 @@
 		 *
 		 * Same functionality as the `current_time( 'mysql', false )` function in PHP.
 		 *
-		 * @returns {string} Current datetime string.
+		 * @returns {int} Current datetime string.
 		 */
 		getCurrentTimestamp: function getCurrentTimestamp() {
 			var control = this, currentDate, currentClientTimestamp, timestampDifferential;
 
 			currentClientTimestamp = _.now();
-			currentDate = control.parseDate( api.settings.initialServerDate );
+			currentDate = new Date( api.settings.initialServerDate.replace( /-/g, '/' ) );
 			timestampDifferential = currentClientTimestamp - control.initialClientTimestamp;
 			timestampDifferential += control.initialClientTimestamp - api.settings.initialServerTimestamp;
-			currentDate.setTime( currentDate.valueOf() + timestampDifferential );
-			return currentDate.valueOf();
+			currentDate.setTime( currentDate.getTime() + timestampDifferential );
+			return currentDate.getTime();
 		},
 
 		/**
@@ -3947,34 +3964,12 @@
 		 * @returns {boolean} True if future date.
 		 */
 		isFutureDate: function isFutureDate() {
-			var control = this, inputDateTimestamp, currentTimestamp,
-				millisecondsDivider = 1000, remainingTime;
+			var control = this, millisecondsDivider = 1000, remainingTime;
 
-			inputDateTimestamp = control.getInputDateTimestamp();
-			currentTimestamp = control.getCurrentTimestamp();
-
-			if ( ! inputDateTimestamp ) {
-				return false;
-			}
-
-			remainingTime = inputDateTimestamp - currentTimestamp;
+			remainingTime = control.getInputDateTimestamp() - control.getCurrentTimestamp();
 			remainingTime = Math.ceil( remainingTime / millisecondsDivider );
 
 			return 0 < remainingTime;
-		},
-
-		/**
-		 * Parse date string in Y-m-d H:i:s format (local timezone).
-		 *
-		 * @param {string} date Post date string.
-		 * @returns {Date} Parsed date.
-		 */
-		parseDate: function parseDate( date ) {
-			var dateParts = _.map( date.split( /\D/ ), function( datePart ) {
-				return parseInt( datePart, 10 );
-			} );
-
-			return new Date( dateParts[0], dateParts[1] - 1, dateParts[2], dateParts[3], dateParts[4], dateParts[5] ); // eslint-disable-line no-magic-numbers
 		},
 
 		/**
