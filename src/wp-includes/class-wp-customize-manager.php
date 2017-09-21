@@ -3764,14 +3764,25 @@ final class WP_Customize_Manager {
 		}
 
 		// Prepare Customizer settings to pass to JavaScript.
+		$changeset_post = null;
+		$missed_schedule = false;
+		if ( $this->changeset_post_id() ) {
+			$changeset_post = get_post( $this->changeset_post_id() );
+			$missed_schedule = (
+				'future' === $changeset_post->post_status &&
+				get_post_time( 'G', true, $changeset_post ) < time()
+			);
+		}
+
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
 				'autosaved' => $this->autosaved, // @todo This will need to be kept synced with the autosaved state in the Customizer app via postMessage, like status is.
 				'hasAutosaveRevision' => ! empty( $autosave_revision_post ),
 				'latestAutoDraftUuid' => $autosave_autodraft_post ? $autosave_autodraft_post->post_name : null,
-				'status' => $this->changeset_post_id() ? get_post_status( $this->changeset_post_id() ) : '',
-				'publishDate' => $this->changeset_post_id() ? get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() ) : '', // @todo Only if future status? Rename to just date?
+				'status' => $changeset_post ? $changeset_post->post_status : '',
+				'missedSchedule' => $missed_schedule,
+				'publishDate' => $changeset_post ? $changeset_post->post_date : '', // @todo Only if future status? Rename to just date?
 			),
 			'initialServerDate' => current_time( 'mysql', false ),
 			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),

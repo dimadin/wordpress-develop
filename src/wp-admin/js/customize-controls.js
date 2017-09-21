@@ -5699,9 +5699,19 @@
 			} );
 		}( api.state ) );
 
-		// Set up autosave prompt.
+		// Set up initial notifications.
 		(function() {
-			var urlParser, queryParams, code = 'autosave_available';
+			var urlParser, queryParams, missedScheduleCode = 'missed_schedule', autosaveAvailableCode = 'autosave_available';
+
+			// Show notification when the changeset missed its schedule.
+			if ( api.settings.changeset.missedSchedule ) {
+				api.notifications.add( missedScheduleCode, new api.Notification( missedScheduleCode, {
+					message: api.l10n.missedScheduleError,
+					type: 'error',
+					dismissible: true,
+					saveFailure: true // So it will get auto-dismissed when attempting next save.
+				} ) );
+			}
 
 			if ( api.settings.changeset.autosaved ) {
 
@@ -5715,7 +5725,7 @@
 			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
 
 				// Since there is an autosave revision and the user hasn't loaded with autosaved, add notification to prompt to load autosaved version.
-				api.notifications.add( code, new api.Notification( code, {
+				api.notifications.add( autosaveAvailableCode, new api.Notification( autosaveAvailableCode, {
 					message: api.l10n.autosaveNotice,
 					type: 'warning',
 					dismissible: true,
@@ -5751,7 +5761,7 @@
 				// Remove the notification once the user starts making changes.
 				api.state( 'saved' ).bind( function( saved ) {
 					if ( ! saved ) {
-						api.notifications.remove( code );
+						api.notifications.remove( autosaveAvailableCode );
 					}
 				} );
 			}
