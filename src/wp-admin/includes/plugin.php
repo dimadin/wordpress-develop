@@ -557,7 +557,28 @@ function activate_plugin( $plugin, $redirect = '', $network_wide = false, $silen
 		ob_start();
 		wp_register_plugin_realpath( WP_PLUGIN_DIR . '/' . $plugin );
 		$_wp_plugin_file = $plugin;
+
+		if ( ! defined( 'WP_ADMIN' ) ) {
+			define( 'WP_ADMIN', true );
+		}
+
+		$tested_actions = array(
+			'plugins_loaded' => array(),
+			'setup_theme' => array(),
+			'after_setup_theme' => array(),
+			'init' => array(),
+			'wp_loaded' => array(),
+			'admin_init' => array(),
+		);
+		array_map( 'remove_all_actions', array_keys( $tested_actions ) );
+
 		include_once( WP_PLUGIN_DIR . '/' . $plugin );
+
+		// Trigger key actions that are done on the plugin editor to cause the relevant plugin hooks to fire and potentially cause errors.
+		foreach ( $tested_actions as $action => $args ) {
+			do_action_ref_array( $action, $args );
+		}
+
 		$plugin = $_wp_plugin_file; // Avoid stomping of the $plugin variable in a plugin.
 
 		if ( ! $silent ) {
