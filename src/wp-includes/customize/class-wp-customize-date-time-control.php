@@ -57,6 +57,14 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public $save_twelve_hour_format = true;
 
 	/**
+	 * Default date/time to be displayed in the control.
+	 *
+	 * @since 4.9.0
+	 * @var string
+	 */
+	public $default_value;
+
+	/**
 	 * Don't render the control's content - it's rendered with a JS template.
 	 *
 	 * @since 4.9.0
@@ -76,6 +84,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 		$data['minYear'] = intval( $this->min_year );
 		$data['allowPastDate'] = $this->allow_past_date ? true : false;
 		$data['saveTwelveHourFormat'] = $this->save_twelve_hour_format ? true : false;
+		$data['defaultValue'] = $this->default_value;
 
 		return $data;
 	}

@@ -3707,12 +3707,13 @@
 			control.initialClientTimestamp = Date.now();
 			control.dateInputs = control.container.find( '.date-input' );
 
+			// @todo This needs https://core.trac.wordpress.org/ticket/37964
 			if ( ! control.setting ) {
 				control.setting = new api.Value();
 			}
 
-			if ( ! control.setting.get() ) {
-				control.setting.set( api.settings.initialServerDate );
+			if ( ! control.setting.get() && control.params.defaultValue ) {
+				control.setting.set( control.params.defaultValue );
 			}
 
 			control.dateInputs.each( function() {

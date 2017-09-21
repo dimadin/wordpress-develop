@@ -3588,7 +3588,7 @@ final class WP_Customize_Manager {
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
 				'status' => $this->changeset_post_id() ? get_post_status( $this->changeset_post_id() ) : '',
-				'publishDate' => $this->changeset_post_id() ? get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() ) : '',
+				'publishDate' => $this->changeset_post_id() ? get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() ) : '', // @todo Only if future status? Rename to just date?
 			),
 			'initialServerDate' => current_time( 'mysql', false ),
 			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
@@ -3766,6 +3766,11 @@ final class WP_Customize_Manager {
 			'capability' => 'customize',
 		) );
 
+		if ( $this->changeset_post_id() && 'future' === get_post_status( $this->changeset_post_id() ) ) {
+			$initial_date = get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() );
+		} else {
+			$initial_date = current_time( 'mysql', false );
+		}
 		$this->add_control( new WP_Customize_Date_Time_Control( $this, 'changeset_scheduled_date', array(
 			'section' => 'publish_settings',
 			'settings' => array(),
@@ -3775,6 +3780,7 @@ final class WP_Customize_Manager {
 			'save_twelve_hour_format' => false,
 			'description' => __( 'Schedule your customization changes to publish ( "go live" ) at a future date.' ),
 			'capability' => 'customize',
+			'default_value' => $initial_date,
 		) ) );
 
 		$this->add_control( 'changeset_preview_link', array(
