@@ -176,7 +176,6 @@ final class WP_Customize_Manager {
 	/**
 	 * Whether the autosave revision of the changeset should should be loaded.
 	 *
-	 * @todo Change this to $revision and let it be set to 'autosave' or another specific revision?
 	 * @since 4.9.0
 	 * @var bool
 	 */
