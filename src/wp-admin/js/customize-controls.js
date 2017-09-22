@@ -1115,7 +1115,7 @@
 
 			// @todo This is temporary, remove after experiment.
 			if ( 'publish_settings' === section.id ) {
-				container = $( '#customize-outer-controls-wrapper' );
+				container = $( '#customize-outer-section-pane' );
 			}
 
 			// Watch for changes to the panel state
@@ -5324,6 +5324,7 @@
 			section.expanded.bind( function( isExpanded ) {
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
 
+				$( 'body' ).toggleClass( 'customize-outer-section-open', isExpanded );
 				publishSettingsBtn.toggleClass( 'active', isExpanded );
 				section.container.toggleClass( 'publish-settings-open', isExpanded );
 			} );

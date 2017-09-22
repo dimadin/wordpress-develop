@@ -44,26 +44,6 @@ body {
 	padding-top: 12px;
 }
 
-#customize-outer-controls-wrapper {
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	/*left: -301px;*/
-	/*visibility: hidden;*/
-	overflow-x: hidden;
-	overflow-y: auto;
-	width: 300px;
-	margin: 0;
-	z-index: 4;
-	background: #eee;
-	transition: left .18s;
-	border-right: 1px solid #ddd;
-}
-
-#customize-outer-theme-controls .accordion-section-content {
-	display: block;
-}
-
 #publish-settings {
 	text-indent: 0;
 	border-radius: 0 3px 3px 0;
@@ -78,9 +58,54 @@ body {
 
 #customize-outer-theme-controls .trash-settings {
 	z-index: 5;
+	position: relative;
+	left: 225px;
+	top: -5px;
+	display: none;
+}
+
+#customize-outer-controls-wrapper {
 	position: absolute;
-	left: 229px;
-	top: 8px;
+	top: 0;
+	bottom: 0;
+	left: -301px;
+	visibility: hidden;
+	overflow-x: hidden;
+	overflow-y: auto;
+	width: 300px;
+	margin: 0;
+	z-index: 4;
+	background: #eee;
+	transition: left .18s;
+	border-right: 1px solid #ddd;
+}
+
+#customize-outer-theme-controls .accordion-section-content {
+	display: block;
+}
+
+.customize-outer-section-open .wp-full-overlay.expanded {
+	margin-left: 300px;
+}
+
+.customize-outer-section-open #customize-outer-controls-wrapper {
+	visibility: visible;
+	left: 0;
+	transition: left .18s;
+}
+
+.customize-outer-section-open #customize-preview {
+	opacity: 0.4;
+}
+
+body.customize-outer-section-open .wp-full-overlay-main {
+	left: 300px;
+}
+
+.customize-outer-section-open #customize-outer-theme-controls .trash-settings {
+	display: inline-block;
+	margin-top: 13px;
+	margin-left: 5px;
 }
 
 .trash-settings span {
@@ -232,13 +257,18 @@ body {
 }
 
 #customize-outer-theme-controls .customize-pane-child {
-	padding: 57px 10px 10px 10px;
+	padding: 0 12px 12px 12px;
 	background: #eee;
 	border-bottom: none;
 }
 
+.customize-outer-header-actions {
+	height: 45px;
+}
+
 #customize-outer-theme-controls .customize-section-title {
 	border-top: 1px solid #ddd;
+	margin-top: 0;
 }
 
 #customize-theme-controls .accordion-section-content#sub-accordion-section-publish_settings {
@@ -261,6 +291,12 @@ body {
 	transform: translate( 0, 0 );
 	transition-duration: 0.3s;
 	transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+}
+
+#customize-outer-section-pane .notice {
+	padding: 10px;
+	margin-left: 0;
+	margin-bottom: 12px;
 }
 
 #customize-controls .customize-info.section-meta {
