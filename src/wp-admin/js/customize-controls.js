@@ -5903,7 +5903,7 @@
 					api.each( function( setting ) {
 						setting._dirty = false;
 					});
-					$( window ).off( 'blur.wp-customize-changeset-update' );
+					$( document ).off( 'visibilitychange.wp-customize-changeset-update' );
 					$( window ).off( 'beforeunload.wp-customize-changeset-update' );
 
 					// @todo Replace X with spinner? Don't wait too long for request to finish?
@@ -6280,8 +6280,10 @@
 			scheduleChangesetUpdate();
 
 			// Save changeset when focus removed from window.
-			$( window ).on( 'blur.wp-customize-changeset-update', function() {
-				updateChangesetWithReschedule();
+			$( document ).on( 'visibilitychange.wp-customize-changeset-update', function() {
+				if ( document.hidden ) {
+					updateChangesetWithReschedule();
+				}
 			} );
 
 			// Save changeset before unloading window.
