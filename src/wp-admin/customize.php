@@ -203,6 +203,10 @@ do_action( 'customize_controls_print_scripts' );
 		</div>
 	</form>
 	<div id="customize-preview" class="wp-full-overlay-main"></div>
+	<div id="customize-outer-theme-controls">
+		<button class="button button-secondary trash-settings">Reset</button>
+		<div id="customize-outer-controls-wrapper"></div>
+	</div>
 	<?php
 
 	/**

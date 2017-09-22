@@ -1113,6 +1113,11 @@
 				section = this,
 				container = $( '#customize-theme-controls' );
 
+			// @todo This is temporary, remove after experiment.
+			if ( 'publish_settings' === section.id ) {
+				container = $( '#customize-outer-controls-wrapper' );
+			}
+
 			// Watch for changes to the panel state
 			inject = function ( panelId ) {
 				var parentContainer;
@@ -1134,6 +1139,11 @@
 				} else {
 					// There is no panel, so embed the section in the root of the customizer
 					parentContainer = $( '.customize-pane-parent' ); // @todo This should be defined elsewhere, and to be configurable
+
+					// @todo This is temporary, remove after experiment.
+					if ( 'publish_settings' === section.id ) {
+						parentContainer = $( '.customize-outer-pane-parent' );
+					}
 					if ( ! section.headContainer.parent().is( parentContainer ) ) {
 						parentContainer.append( section.headContainer );
 					}
@@ -5313,18 +5323,9 @@
 
 			section.expanded.bind( function( isExpanded ) {
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
-				backgroundEls = $( '.customize-pane-child, .customize-info, .customize-pane-parent' ).not( section.contentContainer );
 
 				publishSettingsBtn.toggleClass( 'active', isExpanded );
 				section.container.toggleClass( 'publish-settings-open', isExpanded );
-
-				if ( isExpanded ) {
-					_.delay( function() {
-						backgroundEls.toggleClass( 'hidden', section.expanded.get() );
-					}, animationDuration );
-				} else {
-					backgroundEls.removeClass( 'hidden' );
-				}
 			} );
 		} );
 
