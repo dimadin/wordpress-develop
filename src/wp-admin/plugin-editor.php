@@ -56,7 +56,7 @@ if ( empty( $plugin ) ) {
 			}
 		}
 
-		// Fallback to the file as the plugins.
+		// Fallback to the file as the plugin.
 		if ( empty( $plugin ) ) {
 			$plugin = $file;
 		}
