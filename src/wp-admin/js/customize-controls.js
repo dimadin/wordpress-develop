@@ -5206,7 +5206,7 @@
 			 * @returns {void}
 			 */
 			function addAutosaveRestoreNotification() {
-				var code = 'autosave_available', onSaved;
+				var code = 'autosave_available', onStateChange;
 
 				// Since there is an autosave revision and the user hasn't loaded with autosaved, add notification to prompt to load autosaved version.
 				api.notifications.add( code, new api.Notification( code, {
@@ -5239,13 +5239,15 @@
 				} ) );
 
 				// Remove the notification once the user starts making changes.
-				onSaved = function( saved ) {
-					if ( ! saved ) {
-						api.notifications.remove( code );
-						api.state( 'saved' ).unbind( onSaved );
-					}
+				onStateChange = function() {
+					api.notifications.remove( code );
+					api.state( 'saved' ).unbind( onStateChange );
+					api.state( 'saving' ).unbind( onStateChange );
+					api.state( 'changesetStatus' ).unbind( onStateChange );
 				};
-				api.state( 'saved' ).bind( onSaved );
+				api.state( 'saved' ).bind( onStateChange );
+				api.state( 'saving' ).bind( onStateChange );
+				api.state( 'changesetStatus' ).bind( onStateChange );
 			}
 
 			if ( api.settings.changeset.autosaved ) {
