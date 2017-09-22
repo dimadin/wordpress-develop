@@ -5156,18 +5156,57 @@
 
 		// Set up autosave prompt.
 		(function() {
-			var urlParser, queryParams, code = 'autosave_available';
 
-			if ( api.settings.changeset.autosaved ) {
-
-				// Remove parameter from the URL.
+			/**
+			 * Obtain the URL to restore the autosave.
+			 *
+			 * @returns {string} Customizer URL.
+			 */
+			function getAutosaveRestorationUrl() {
+				var urlParser, queryParams;
 				urlParser = document.createElement( 'a' );
 				urlParser.href = location.href;
 				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
-				delete queryParams.customize_autosaved;
+				if ( api.settings.changeset.latestAutoDraftUuid ) {
+					queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
+				} else {
+					queryParams.customize_autosaved = 'on';
+				}
+				urlParser.search = $.param( queryParams );
+				return urlParser.href;
+			}
+
+			/**
+			 * Remove parameter from the URL.
+			 *
+			 * @param {Array} params - Parameter names to remove.
+			 * @returns {void}
+			 */
+			function stripParamsFromLocation( params ) {
+				var urlParser = document.createElement( 'a' ), queryParams, strippedParams = 0;
+				urlParser.href = location.href;
+				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
+				_.each( params, function( param ) {
+					if ( 'undefined' !== typeof queryParams[ param ] ) {
+						strippedParams += 1;
+						delete queryParams[ param ];
+					}
+				} );
+				if ( 0 === strippedParams ) {
+					return;
+				}
+
 				urlParser.search = $.param( queryParams );
 				history.replaceState( {}, document.title, urlParser.href );
-			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
+			}
+
+			/**
+			 * Add notification regarding the availability of an autosave to restore.
+			 *
+			 * @returns {void}
+			 */
+			function addAutosaveRestoreNotification() {
+				var code = 'autosave_available', onSaved;
 
 				// Since there is an autosave revision and the user hasn't loaded with autosaved, add notification to prompt to load autosaved version.
 				api.notifications.add( code, new api.Notification( code, {
@@ -5175,27 +5214,23 @@
 					type: 'warning',
 					dismissible: true,
 					render: function() {
-						var li = api.Notification.prototype.render.call( this );
+						var li = api.Notification.prototype.render.call( this ), link;
 
-						// Populate the "View the autosave" link's URL.
-						urlParser = document.createElement( 'a' );
-						urlParser.href = location.href;
-						queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
-						if ( api.settings.changeset.latestAutoDraftUuid ) {
-							queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
-						} else {
-							queryParams.customize_autosaved = 'on';
-						}
-						urlParser.search = $.param( queryParams );
-						li.find( 'a' ).prop( 'href', urlParser.href );
+						// Handle clicking on restoration link.
+						link = li.find( 'a' );
+						link.prop( 'href', getAutosaveRestorationUrl() );
+						link.on( 'click', function( event ) {
+							event.preventDefault();
+							location.replace( getAutosaveRestorationUrl() );
+						} );
 
 						// Handle dismissal of notice.
 						li.find( '.notice-dismiss' ).on( 'click', function() {
-							wp.ajax.post( 'delete_customize_changeset_autosave', {
+							wp.ajax.post( 'dismiss_customize_changeset_autosave', {
 								wp_customize: 'on',
 								customize_theme: api.settings.theme.stylesheet,
 								customize_changeset_uuid: api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.uuid,
-								nonce: api.settings.nonce.delete_autosave
+								nonce: api.settings.nonce.dismiss_autosave
 							} );
 						} );
 
@@ -5204,11 +5239,19 @@
 				} ) );
 
 				// Remove the notification once the user starts making changes.
-				api.state( 'saved' ).bind( function( saved ) {
+				onSaved = function( saved ) {
 					if ( ! saved ) {
 						api.notifications.remove( code );
+						api.state( 'saved' ).unbind( onSaved );
 					}
-				} );
+				};
+				api.state( 'saved' ).bind( onSaved );
+			}
+
+			if ( api.settings.changeset.autosaved ) {
+				stripParamsFromLocation( [ 'customize_autosaved' ] );
+			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
+				addAutosaveRestoreNotification();
 			}
 		})();
 
@@ -5617,11 +5660,11 @@
 					$( window ).off( 'beforeunload.wp-customize-changeset-update' );
 
 					// @todo Replace X with spinner? Don't wait too long for request to finish?
-					wp.ajax.post( 'delete_customize_changeset_autosave', {
+					wp.ajax.post( 'dismiss_customize_changeset_autosave', {
 						wp_customize: 'on',
 						customize_theme: api.settings.theme.stylesheet,
 						customize_changeset_uuid: api.settings.changeset.uuid,
-						nonce: api.settings.nonce.delete_autosave
+						nonce: api.settings.nonce.dismiss_autosave
 					} ).always( function() {
 						clearedToClose.resolve();
 					} );
