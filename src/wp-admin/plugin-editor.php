@@ -85,7 +85,7 @@ if ( isset( $_REQUEST['action'] ) && 'update' === $_REQUEST['action'] ) {
 		fwrite($f, $newcontent);
 		fclose($f);
 
-		if ( function_exists( 'opcache_invalidate' ) ) {
+		if ( preg_match( '/\.php$/', $real_file ) && function_exists( 'opcache_invalidate' ) ) {
 			opcache_invalidate( $real_file, true );
 		}
 
