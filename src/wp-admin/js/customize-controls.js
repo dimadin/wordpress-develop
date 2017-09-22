@@ -3994,13 +3994,13 @@
 				control.elements.push( element );
 			} );
 
-			if ( ! control.params.allowPastDate ) {
-				api.state( 'saving', function( isSaving ) {
-					if ( isSaving ) {
-						control.toggleFutureDateNotification( ! control.isFutureDate() );
-					}
-				} );
-			}
+			// if ( ! control.params.allowPastDate ) {
+			// 	api.state( 'saving', function( isSaving ) {
+			// 		if ( isSaving ) {
+			// 			control.toggleFutureDateNotification( ! control.isFutureDate() );
+			// 		}
+			// 	} );
+			// }
 
 			control.dateInputs.on( 'input', control.populateSetting );
 			control.inputElements.month.bind( control.updateDaysForMonth );
