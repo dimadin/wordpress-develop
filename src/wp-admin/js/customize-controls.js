@@ -5930,11 +5930,13 @@
 
 		// Set up initial notifications.
 		(function() {
-			var urlParser, queryParams, missedScheduleCode = 'missed_schedule', autosaveAvailableCode = 'autosave_available';
 
-			// Show notification when the changeset missed its schedule.
-			if ( api.settings.changeset.missedSchedule ) {
-				api.notifications.add( missedScheduleCode, new api.Notification( missedScheduleCode, {
+			/**
+			 * Show notification when the changeset missed its schedule.
+			 */
+			function showMissedScheduleNotification() {
+				var code = 'missed_schedule';
+				api.notifications.add( code, new api.Notification( code, {
 					message: api.l10n.missedScheduleError,
 					type: 'error',
 					dismissible: true,
@@ -5942,44 +5944,80 @@
 				} ) );
 			}
 
-			if ( api.settings.changeset.autosaved ) {
-
-				// Remove parameter from the URL.
+			/**
+			 * Obtain the URL to restore the autosave.
+			 *
+			 * @returns {string} Customizer URL.
+			 */
+			function getAutosaveRestorationUrl() {
+				var urlParser, queryParams;
 				urlParser = document.createElement( 'a' );
 				urlParser.href = location.href;
 				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
-				delete queryParams.customize_autosaved;
+				if ( api.settings.changeset.latestAutoDraftUuid ) {
+					queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
+				} else {
+					queryParams.customize_autosaved = 'on';
+				}
+				urlParser.search = $.param( queryParams );
+				return urlParser.href;
+			}
+
+			/**
+			 * Remove parameter from the URL.
+			 *
+			 * @param {Array} params - Parameter names to remove.
+			 * @returns {void}
+			 */
+			function stripParamsFromLocation( params ) {
+				var urlParser = document.createElement( 'a' ), queryParams, strippedParams = 0;
+				urlParser.href = location.href;
+				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
+				_.each( params, function( param ) {
+					if ( 'undefined' !== typeof queryParams[ param ] ) {
+						strippedParams += 1;
+						delete queryParams[ param ];
+					}
+				} );
+				if ( 0 === strippedParams ) {
+					return;
+				}
+
 				urlParser.search = $.param( queryParams );
 				history.replaceState( {}, document.title, urlParser.href );
-			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
+			}
+
+			/**
+			 * Add notification regarding the availability of an autosave to restore.
+			 *
+			 * @returns {void}
+			 */
+			function addAutosaveRestoreNotification() {
+				var code = 'autosave_available', onStateChange;
 
 				// Since there is an autosave revision and the user hasn't loaded with autosaved, add notification to prompt to load autosaved version.
-				api.notifications.add( autosaveAvailableCode, new api.Notification( autosaveAvailableCode, {
+				api.notifications.add( code, new api.Notification( code, {
 					message: api.l10n.autosaveNotice,
 					type: 'warning',
 					dismissible: true,
 					render: function() {
-						var li = api.Notification.prototype.render.call( this );
+						var li = api.Notification.prototype.render.call( this ), link;
 
-						// Populate the "View the autosave" link's URL.
-						urlParser = document.createElement( 'a' );
-						urlParser.href = location.href;
-						queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
-						if ( api.settings.changeset.latestAutoDraftUuid ) {
-							queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
-						} else {
-							queryParams.customize_autosaved = 'on';
-						}
-						urlParser.search = $.param( queryParams );
-						li.find( 'a' ).prop( 'href', urlParser.href );
+						// Handle clicking on restoration link.
+						link = li.find( 'a' );
+						link.prop( 'href', getAutosaveRestorationUrl() );
+						link.on( 'click', function( event ) {
+							event.preventDefault();
+							location.replace( getAutosaveRestorationUrl() );
+						} );
 
 						// Handle dismissal of notice.
 						li.find( '.notice-dismiss' ).on( 'click', function() {
-							wp.ajax.post( 'delete_customize_changeset_autosave', {
+							wp.ajax.post( 'dismiss_customize_changeset_autosave', {
 								wp_customize: 'on',
 								customize_theme: api.settings.theme.stylesheet,
 								customize_changeset_uuid: api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.uuid,
-								nonce: api.settings.nonce.delete_autosave
+								nonce: api.settings.nonce.dismiss_autosave
 							} );
 						} );
 
@@ -5988,11 +6026,24 @@
 				} ) );
 
 				// Remove the notification once the user starts making changes.
-				api.state( 'saved' ).bind( function( saved ) {
-					if ( ! saved ) {
-						api.notifications.remove( autosaveAvailableCode );
-					}
-				} );
+				onStateChange = function() {
+					api.notifications.remove( code );
+					api.state( 'saved' ).unbind( onStateChange );
+					api.state( 'saving' ).unbind( onStateChange );
+					api.state( 'changesetStatus' ).unbind( onStateChange );
+				};
+				api.state( 'saved' ).bind( onStateChange );
+				api.state( 'saving' ).bind( onStateChange );
+				api.state( 'changesetStatus' ).bind( onStateChange );
+			}
+
+			if ( api.settings.changeset.autosaved ) {
+				stripParamsFromLocation( [ 'customize_autosaved' ] );
+			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
+				addAutosaveRestoreNotification();
+			}
+			if ( api.settings.changeset.missedSchedule ) {
+				showMissedScheduleNotification();
 			}
 		})();
 
@@ -6401,15 +6452,15 @@
 					api.each( function( setting ) {
 						setting._dirty = false;
 					});
-					$( window ).off( 'blur.wp-customize-changeset-update' );
+					$( document ).off( 'visibilitychange.wp-customize-changeset-update' );
 					$( window ).off( 'beforeunload.wp-customize-changeset-update' );
 
 					// @todo Replace X with spinner? Don't wait too long for request to finish?
-					wp.ajax.post( 'delete_customize_changeset_autosave', {
+					wp.ajax.post( 'dismiss_customize_changeset_autosave', {
 						wp_customize: 'on',
 						customize_theme: api.settings.theme.stylesheet,
 						customize_changeset_uuid: api.settings.changeset.uuid,
-						nonce: api.settings.nonce.delete_autosave
+						nonce: api.settings.nonce.dismiss_autosave
 					} ).always( function() {
 						clearedToClose.resolve();
 					} );
@@ -6817,8 +6868,10 @@
 			scheduleChangesetUpdate();
 
 			// Save changeset when focus removed from window.
-			$( window ).on( 'blur.wp-customize-changeset-update', function() {
-				updateChangesetWithReschedule();
+			$( document ).on( 'visibilitychange.wp-customize-changeset-update', function() {
+				if ( document.hidden ) {
+					updateChangesetWithReschedule();
+				}
 			} );
 
 			// Save changeset before unloading window.

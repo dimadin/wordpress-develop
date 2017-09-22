@@ -176,7 +176,6 @@ final class WP_Customize_Manager {
 	/**
 	 * Whether the autosave revision of the changeset should should be loaded.
 	 *
-	 * @todo Change this to $revision and let it be set to 'autosave' or another specific revision?
 	 * @since 4.9.0
 	 * @var bool
 	 */
@@ -353,7 +352,7 @@ final class WP_Customize_Manager {
 
 		add_action( 'wp_ajax_customize_save',           array( $this, 'save' ) );
 		add_action( 'wp_ajax_customize_refresh_nonces', array( $this, 'refresh_nonces' ) );
-		add_action( 'wp_ajax_delete_customize_changeset_autosave', array( $this, 'handle_delete_changeset_autosave_request' ) );
+		add_action( 'wp_ajax_dismiss_customize_changeset_autosave', array( $this, 'handle_dismiss_changeset_autosave_request' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
@@ -833,6 +832,50 @@ final class WP_Customize_Manager {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Get auto-draft changeset posts.
+	 *
+	 * @param array $args {
+	 *     Args to pass into `get_posts()` to query changesets.
+	 *
+	 *     @type int  $posts_per_page             Number of posts to return. Defaults to -1 (all posts).
+	 *     @type int  $author                     Post author. Defaults to current user.
+	 *     @type bool $exclude_restore_dismissed  Whether to exclude changeset auto-drafts that have been dismissed. Defaults to true.
+	 * }
+	 * @return WP_Post[] Auto-draft changesets.
+	 */
+	protected function get_autodraft_changesets( $args = array() ) {
+		$default_args = array(
+			'exclude_restore_dismissed' => true,
+			'posts_per_page' => -1,
+			'post_type' => 'customize_changeset',
+			'post_status' => 'auto-draft',
+			'order' => 'DESC',
+			'orderby' => 'date',
+			'no_found_rows' => true,
+			'cache_results' => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'lazy_load_term_meta' => false,
+		);
+		if ( get_current_user_id() ) {
+			$default_args['author'] = get_current_user_id();
+		}
+		$args = array_merge( $default_args, $args );
+
+		if ( ! empty( $args['exclude_restore_dismissed'] ) ) {
+			unset( $args['exclude_restore_dismissed'] );
+			$args['meta_query'] = array(
+				array(
+					'key' => '_customize_restore_dismissed',
+					'compare' => 'NOT EXISTS',
+				),
+			);
+		}
+
+		return get_posts( $args );
 	}
 
 	/**
@@ -2591,21 +2634,9 @@ final class WP_Customize_Manager {
 
 				// @todo Limit this to linear mode?
 				// Delete all other auto-draft changeset posts for this user (they serve like autosave revisions), as there should only be one.
-				$autosave_autodraft_posts = get_posts( array(
-					'post_type' => 'customize_changeset',
-					'post_status' => 'auto-draft',
-					'author' => get_current_user_id(),
-					'fields' => 'ids',
-					'posts_per_page' => -1,
-					'no_found_rows' => true,
-					'cache_results' => true,
-					'update_post_meta_cache' => false,
-					'update_post_term_cache' => false,
-					'lazy_load_term_meta' => false,
-				) );
-				foreach ( $autosave_autodraft_posts as $autosave_autodraft_post ) {
-					if ( $autosave_autodraft_post !== $this->_changeset_post_id ) {
-						wp_delete_post( $autosave_autodraft_post, true );
+				foreach ( $this->get_autodraft_changesets() as $autosave_autodraft_post ) {
+					if ( $autosave_autodraft_post->ID !== $this->_changeset_post_id ) {
+						update_post_meta( $autosave_autodraft_post->ID, '_customize_restore_dismissed', true );
 					}
 				}
 			}
@@ -2902,12 +2933,12 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.9.0
 	 */
-	public function handle_delete_changeset_autosave_request() {
+	public function handle_dismiss_changeset_autosave_request() {
 		if ( ! $this->is_preview() ) {
 			wp_send_json_error( 'not_preview', 400 );
 		}
 
-		if ( ! check_ajax_referer( 'delete_customize_changeset_autosave', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'dismiss_customize_changeset_autosave', 'nonce', false ) ) {
 			wp_send_json_error( 'invalid_nonce', 403 );
 		}
 
@@ -2921,7 +2952,7 @@ final class WP_Customize_Manager {
 		}
 
 		if ( 'auto-draft' === get_post_status( $changeset_post_id ) ) {
-			if ( ! wp_delete_post( $changeset_post_id, true ) ) {
+			if ( ! update_post_meta( $changeset_post_id, '_customize_restore_dismissed', true ) ) {
 				wp_send_json_error( 'auto_draft_deletion_failure', 500 );
 			} else {
 				wp_send_json_success( 'auto_draft_deleted' );
@@ -3683,7 +3714,7 @@ final class WP_Customize_Manager {
 		$nonces = array(
 			'save' => wp_create_nonce( 'save-customize_' . $this->get_stylesheet() ),
 			'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() ),
-			'delete_autosave' => wp_create_nonce( 'delete_customize_changeset_autosave' ),
+			'dismiss_autosave' => wp_create_nonce( 'dismiss_customize_changeset_autosave' ),
 		);
 
 		/**
@@ -3722,21 +3753,12 @@ final class WP_Customize_Manager {
 
 		$autosave_revision_post = null;
 		$autosave_autodraft_post = null;
-		if ( $this->changeset_post_id() ) {
-			$autosave_revision_post = wp_get_post_autosave( $this->changeset_post_id() );
+		$changeset_post_id = $this->changeset_post_id();
+		if ( $changeset_post_id ) {
+			$autosave_revision_post = wp_get_post_autosave( $changeset_post_id );
 		} else {
-			$autosave_autodraft_posts = get_posts( array(
-				'post_type' => 'customize_changeset',
-				'post_status' => 'auto-draft',
-				'author' => get_current_user_id(),
+			$autosave_autodraft_posts = $this->get_autodraft_changesets( array(
 				'posts_per_page' => 1,
-				'order' => 'DESC',
-				'orderby' => 'date',
-				'no_found_rows' => true,
-				'cache_results' => true,
-				'update_post_meta_cache' => false,
-				'update_post_term_cache' => false,
-				'lazy_load_term_meta' => false,
 			) );
 			if ( ! empty( $autosave_autodraft_posts ) ) {
 				$autosave_autodraft_post = array_shift( $autosave_autodraft_posts );
