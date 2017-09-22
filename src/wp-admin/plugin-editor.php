@@ -332,7 +332,9 @@ foreach ( $plugin_files as $plugin_file ) :
 		<?php endif; ?>
 <?php if ( is_writeable($real_file) ) : ?>
 	<?php if ( in_array( $plugin, (array) get_option( 'active_plugins', array() ) ) ) { ?>
-		<p><?php _e('<strong>Warning:</strong> Making changes to active plugins is not recommended. If your changes cause a fatal error, the plugin will be automatically deactivated.'); ?></p>
+		<div class="notice notice-warning inline active-plugin-edit-warning">
+			<p><?php _e('<strong>Warning:</strong> Making changes to active plugins is not recommended. If your changes cause a fatal error, the plugin will be automatically deactivated.'); ?></p>
+		</div>
 	<?php } ?>
 	<p class="submit">
 	<?php
