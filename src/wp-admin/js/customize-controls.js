@@ -3984,13 +3984,11 @@
 				control.elements.push( element );
 			} );
 
-			if ( ! control.params.allowPastDate ) {
-				api.state( 'saving', function( isSaving ) {
-					if ( isSaving ) {
-						control.toggleFutureDateNotification( ! control.isFutureDate() );
-					}
-				} );
-			}
+			api.state( 'saving' ).bind( function( isSaving ) {
+				if ( isSaving && ! control.params.allowPastDate ) {
+					control.toggleFutureDateNotification( ! control.isFutureDate() );
+				}
+			} );
 
 			control.dateInputs.on( 'input', control.populateSetting );
 			control.inputElements.month.bind( control.updateDaysForMonth );
@@ -4044,7 +4042,7 @@
 		 * @return {boolean} If date input fields has error.
 		 */
 		validateInputs: function validateInputs() {
-			var control = this;
+			var control = this, errorMessage;
 
 			control.invalidDate = false;
 
@@ -4059,13 +4057,10 @@
 					maxLength = parseInt( element.element.attr( 'maxlength' ), 10 );
 					value = element();
 					control.invalidDate = value > max || value < min || String( value ).length > maxLength;
+					errorMessage = control.invalidDate ? api.l10n.invalid + ' ' + component : '';
 
-					if ( control.invalidDate ) {
-						el.setCustomValidity( api.l10n.invalid + ' ' + component );
-						_.result( el, 'reportValidity' );
-					} else {
-						el.setCustomValidity( '' );
-					}
+					el.setCustomValidity( errorMessage );
+					_.result( el, 'reportValidity' );
 				}
 			} );
 
@@ -4127,7 +4122,7 @@
 		populateSetting: function populateSetting() {
 			var control = this, date;
 
-			if ( control.validateInputs() ) {
+			if ( control.validateInputs() || ! control.params.allowPastDate && ! control.isFutureDate() ) {
 				return false;
 			}
 
@@ -5239,6 +5234,7 @@
 		'expandedPanel',
 		'expandedSection',
 		'changesetStatus',
+		'changesetDate',
 		'selectedChangesetStatus',
 		'previewerAlive',
 		'editShortcutVisibility'
@@ -5423,6 +5419,7 @@
 				var previewer = this,
 					deferred = $.Deferred(),
 					changesetStatus = api.state( 'selectedChangesetStatus' ).get(),
+					changesetDate = api.state( 'changesetDate' ).get(),
 					processing = api.state( 'processing' ),
 					submitWhenDoneProcessing,
 					submit,
@@ -5484,6 +5481,7 @@
 
 					invalidControls = _.union( invalidSettingLessControls, _.values( api.findControlsForSettings( invalidSettings ) ) );
 
+					console.info( invalidControls );
 					if ( ! _.isEmpty( invalidControls ) ) {
 
 						invalidControls[0][0].focus();
@@ -5513,9 +5511,13 @@
 						nonce: previewer.nonce.save,
 						customize_changeset_status: changesetStatus
 					} );
+
 					if ( args && args.date ) {
 						query.customize_changeset_date = args.date;
+					} else if ( 'future' === changesetStatus && changesetDate ) {
+						query.customize_changeset_date = changesetDate;
 					}
+
 					if ( args && args.title ) {
 						query.customize_changeset_title = args.title;
 					}
@@ -5801,6 +5803,7 @@
 				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
 
+			// @todo Enable schedule button when state( 'changesetDate' ) is changed.
 			state.bind( 'change', function() {
 				var canSave;
 
@@ -6733,12 +6736,10 @@
 					var toggleDateControl;
 
 					dateControl.notifications.alt = true;
-
-					// @todo Remove once implemented.
-					dateControl.notifications.add( 'not_implemented', new api.Notification( 'not_implemented', {
-						type: 'warning',
-						message: 'This is not implemented yet.'
-					} ) );
+					dateControl.deferred.embedded.done( function() {
+						api.state( 'changesetDate' ).sync( dateControl.setting );
+					    api.state( 'changesetDate' ).set( dateControl.setting() );
+					} );
 
 					dateControl.active.validate = function() {
 						return 'future' ===  element.get();
