@@ -5234,7 +5234,7 @@
 		'expandedPanel',
 		'expandedSection',
 		'changesetStatus',
-		'changesetDate',
+		'selectedChangesetDate',
 		'selectedChangesetStatus',
 		'previewerAlive',
 		'editShortcutVisibility'
@@ -5419,7 +5419,7 @@
 				var previewer = this,
 					deferred = $.Deferred(),
 					changesetStatus = api.state( 'selectedChangesetStatus' ).get(),
-					changesetDate = api.state( 'changesetDate' ).get(),
+					selectedChangesetDate = api.state( 'selectedChangesetDate' ).get(),
 					processing = api.state( 'processing' ),
 					submitWhenDoneProcessing,
 					submit,
@@ -5514,8 +5514,8 @@
 
 					if ( args && args.date ) {
 						query.customize_changeset_date = args.date;
-					} else if ( 'future' === changesetStatus && changesetDate ) {
-						query.customize_changeset_date = changesetDate;
+					} else if ( 'future' === changesetStatus && selectedChangesetDate ) {
+						query.customize_changeset_date = selectedChangesetDate;
 					}
 
 					if ( args && args.title ) {
@@ -5803,7 +5803,7 @@
 				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
 
-			// @todo Enable schedule button when state( 'changesetDate' ) is changed.
+			// @todo Enable schedule button when state( 'selectedChangesetDate' ) is changed.
 			state.bind( 'change', function() {
 				var canSave;
 
@@ -6737,8 +6737,8 @@
 
 					dateControl.notifications.alt = true;
 					dateControl.deferred.embedded.done( function() {
-						api.state( 'changesetDate' ).sync( dateControl.setting );
-					    api.state( 'changesetDate' ).set( dateControl.setting() );
+						api.state( 'selectedChangesetDate' ).sync( dateControl.setting );
+					    api.state( 'selectedChangesetDate' ).set( dateControl.setting() );
 					} );
 
 					dateControl.active.validate = function() {
