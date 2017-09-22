@@ -3733,6 +3733,9 @@
 			    var input = $( this ), component, element;
 			    component = input.data( 'component' );
 				element = new api.Element( input );
+				element.validate = function( value ) {
+				    return _.contains( [ 'am', 'pm' ], value ) ? value : parseInt( value, 10 );
+				};
 				control.inputElements[ component ] = element;
 				control.elements.push( element );
 			} );
@@ -3802,7 +3805,7 @@
 					max = parseInt( element.element.attr( 'max' ), 10 );
 					min = parseInt( element.element.attr( 'min' ), 10 );
 					maxLength = parseInt( element.element.attr( 'maxlength' ), 10 );
-					value = parseInt( element(), 10 );
+					value = element();
 					control.invalidDate = value > max || value < min || String( value ).length > maxLength;
 
 					if ( control.invalidDate ) {
@@ -3833,7 +3836,7 @@
 
 			month = control.inputElements.month();
 			year = control.inputElements.year();
-			day = parseInt( control.inputElements.day(), 10 );
+			day = control.inputElements.day();
 
 			if ( month && year ) {
 				daysInMonth = new Date( year, month, 0 ).getDate();
@@ -3851,16 +3854,15 @@
 		 * @return {void}
 		 */
 		updateMinutesForHour: function updateMinutesForHour() {
-			var control = this, maxHours = 24, minuteEl, hour;
+			var control = this, maxHours = 24, minuteEl;
 
 			if ( control.inputElements.ampm ) {
 				return;
 			}
 
-			hour = parseInt( control.inputElements.hour(), 10 );
 			minuteEl = control.inputElements.minute.element;
 
-			if ( maxHours === hour ) {
+			if ( maxHours === control.inputElements.hour() ) {
 				control.inputElements.minute( 0 );
 				minuteEl.data( 'default-max', minuteEl.attr( 'max' ) );
 				minuteEl.data( 'default-maxlength', minuteEl.attr( 'maxlength' ) );
@@ -3909,7 +3911,7 @@
 			getElementValue = function( component ) {
 				var value = control.inputElements[ component ].get();
 
-				if ( _.contains( [ 'day', 'hour', 'minute' ], component ) ) {
+				if ( _.contains( [ 'month', 'day', 'hour', 'minute' ], component ) ) {
 					value = pad( value, 2 );
 				} else if ( 'year' === component ) {
 					value = pad( value, 4 );

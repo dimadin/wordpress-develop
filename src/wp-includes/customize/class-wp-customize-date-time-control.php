@@ -183,12 +183,11 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 		global $wp_locale;
 		$months = array();
 		for ( $i = 1; $i < 13; $i++ ) {
-			$month_number = zeroise( $i, 2 );
 			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
 
 			/* translators: 1: month number (01, 02, etc.), 2: month abbreviation */
-			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s' ), $month_number, $month_text );
-			$months[ $i ]['value'] = $month_number;
+			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s' ), $i, $month_text );
+			$months[ $i ]['value'] = $i;
 		}
 		return array(
 			'month_choices' => $months,
