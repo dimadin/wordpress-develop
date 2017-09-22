@@ -3740,6 +3740,14 @@
 				control.elements.push( element );
 			} );
 
+			if ( ! control.params.allowPastDate ) {
+				api.state( 'saving', function( isSaving ) {
+					if ( isSaving ) {
+						control.toggleFutureDateNotification( ! control.isFutureDate() );
+					}
+				} );
+			}
+
 			control.dateInputs.on( 'input', control.populateSetting );
 			control.inputElements.month.bind( control.updateDaysForMonth );
 			control.inputElements.year.bind( control.updateDaysForMonth );
@@ -3792,7 +3800,7 @@
 		 * @return {boolean} If date input fields has error.
 		 */
 		validateInputs: function validateInputs() {
-			var control = this, delay = 1000;
+			var control = this;
 
 			control.invalidDate = false;
 
@@ -3816,12 +3824,6 @@
 					}
 				}
 			} );
-
-			if ( ! control.params.allowPastDate && ! control.invalidDate ) {
-				( _.debounce( function() {
-					control.toggleFutureDateNotification( ! control.isFutureDate() );
-				}, delay ) )();
-			}
 
 			return control.invalidDate;
 		},
@@ -5181,7 +5183,8 @@
 					submit,
 					modifiedWhileSaving = {},
 					invalidSettings = [],
-					invalidControls;
+					invalidControls = [],
+					invalidSettingLessControls = [];
 
 				if ( args && args.status ) {
 					changesetStatus = args.status;
@@ -5220,17 +5223,35 @@
 							}
 						} );
 					} );
-					invalidControls = api.findControlsForSettings( invalidSettings );
+
+					/**
+					 * Find all invalid setting less controls with notification type error.
+					 */
+					api.control.each( function( control ) {
+						if ( ! control.setting || ! control.setting.id && control.active.get() ) {
+							control.notifications.each( function( notification ) {
+							    if ( 'error' === notification.type ) {
+								    invalidSettingLessControls.push( [ control ] );
+							    }
+							} );
+						}
+					} );
+
+					invalidControls = _.union( invalidSettingLessControls, _.values( api.findControlsForSettings( invalidSettings ) ) );
+
 					if ( ! _.isEmpty( invalidControls ) ) {
-						_.values( invalidControls )[0][0].focus();
+
+						invalidControls[0][0].focus();
 						api.unbind( 'change', captureSettingModifiedDuringSave );
 
-						api.notifications.add( errorCode, new api.Notification( errorCode, {
-							message: ( 1 === invalidSettings.length ? api.l10n.saveBlockedError.singular : api.l10n.saveBlockedError.plural ).replace( /%s/g, String( invalidSettings.length ) ),
-							type: 'error',
-							dismissible: true,
-							saveFailure: true
-						} ) );
+						if ( invalidSettings.length ) {
+							api.notifications.add( errorCode, new api.Notification( errorCode, {
+								message: ( 1 === invalidSettings.length ? api.l10n.saveBlockedError.singular : api.l10n.saveBlockedError.plural ).replace( /%s/g, String( invalidSettings.length ) ),
+								type: 'error',
+								dismissible: true,
+								saveFailure: true
+							} ) );
+						}
 
 						deferred.rejectWith( previewer, [
 							{ setting_invalidities: settingInvalidities }
