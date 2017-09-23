@@ -3816,11 +3816,6 @@
 
 			control.editor = wp.codeEditor.initialize( $textarea, settings );
 
-			// Refresh when receiving focus.
-			control.editor.codemirror.on( 'focus', function( codemirror ) {
-				codemirror.refresh();
-			});
-
 			/*
 			 * When the CodeMirror instance changes, mirror to the textarea,
 			 * where we have our "true" change event handler bound.
