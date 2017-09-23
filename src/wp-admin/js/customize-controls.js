@@ -5354,6 +5354,15 @@
 				}
 			});
 
+			// Populate changeset UUID param when state becomes dirty.
+			if ( api.settings.changeset.branching ) {
+				saved.bind( function( isSaved ) {
+					if ( ! isSaved ) {
+						populateChangesetUuidParam( true );
+					}
+				});
+			}
+
 			saving.bind( function( isSaving ) {
 				body.toggleClass( 'saving', isSaving );
 			} );
@@ -5363,7 +5372,6 @@
 				if ( 'publish' === response.changeset_status ) {
 					state( 'activated' ).set( true );
 				}
-				populateChangesetUuidParam( 'auto-draft' !== response.changeset_status );
 			});
 
 			activated.bind( function( to ) {
@@ -5407,9 +5415,12 @@
 				history.replaceState( {}, document.title, urlParser.href );
 			};
 
-			changesetStatus.bind( function( newStatus ) {
-				populateChangesetUuidParam( '' !== newStatus && 'auto-draft' !== newStatus && 'publish' !== newStatus );
-			} );
+			// @todo Should this be included with linear, but exclude auto-draft in condition?
+			if ( api.settings.changeset.branching ) {
+				changesetStatus.bind( function( newStatus ) {
+					populateChangesetUuidParam( '' !== newStatus && 'publish' !== newStatus );
+				} );
+			}
 
 			// Expose states to the API.
 			api.state = state;
@@ -5429,7 +5440,7 @@
 				urlParser.href = location.href;
 				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
 				if ( api.settings.changeset.latestAutoDraftUuid ) {
-					queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
+					queryParams.changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
 				} else {
 					queryParams.customize_autosaved = 'on';
 				}
@@ -5512,7 +5523,9 @@
 			}
 
 			if ( api.settings.changeset.autosaved ) {
-				stripParamsFromLocation( [ 'customize_autosaved' ] );
+				stripParamsFromLocation( [ 'customize_autosaved' ] ); // Remove param when restoring autosave revision.
+			} else if ( ! api.settings.changeset.branching && 'auto-draft' === api.settings.changeset.status ) {
+				stripParamsFromLocation( [ 'changeset_uuid' ] ); // Remove UUID when restoring autosave auto-draft.
 			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
 				addAutosaveRestoreNotification();
 			}
