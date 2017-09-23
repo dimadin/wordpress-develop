@@ -355,14 +355,23 @@
 	 * @since 4.7.0
 	 * @access public
 	 *
-	 * @param {object} [changes] Mapping of setting IDs to setting params each normally including a value property, or mapping to null.
-	 *                           If not provided, then the changes will still be obtained from unsaved dirty settings.
-	 * @param {boolean} [autosave=false] Whether changes will be stored in autosave revision.
+	 * @param {object}  [changes] - Mapping of setting IDs to setting params each normally including a value property, or mapping to null.
+	 *                             If not provided, then the changes will still be obtained from unsaved dirty settings.
+	 * @param {object}  [args] - Additional options for the save request.
+	 * @param {boolean} [args.autosave=false] - Whether changes will be stored in autosave revision if the changeset has been promoted from an auto-draft.
+	 * @param {string}  [args.title] - Title to update in the changeset. Optional.
+	 * @param {string}  [args.date] - Date to update in the changeset. Optional.
 	 * @returns {jQuery.Promise} Promise resolving with the response data.
 	 */
-	api.requestChangesetUpdate = function requestChangesetUpdate( changes, autosave ) {
-		var deferred, request, submittedChanges = {}, data;
+	api.requestChangesetUpdate = function requestChangesetUpdate( changes, args ) {
+		var deferred, request, submittedChanges = {}, data, submittedArgs;
 		deferred = new $.Deferred();
+
+		submittedArgs = _.extend( {
+			title: null,
+			date: null,
+			autosave: false
+		}, args );
 
 		if ( changes ) {
 			_.extend( submittedChanges, changes );
@@ -380,9 +389,22 @@
 		} );
 
 		// Short-circuit when there are no pending changes.
-		if ( _.isEmpty( submittedChanges ) ) {
+		if ( _.isEmpty( submittedChanges ) && null === submittedArgs.title && null === submittedArgs.date ) {
 			deferred.resolve( {} );
 			return deferred.promise();
+		}
+
+		// Allow plugins to attach additional params to the settings.
+		api.trigger( 'changeset-save', submittedChanges, submittedArgs );
+
+		// A status would cause a revision to be made, and for this wp.customize.previewer.save() should be used. Status is also disallowed for revisions regardless.
+		if ( submittedArgs.status ) {
+			return deferred.reject( { code: 'illegal_status_in_changeset_update' } ).promise();
+		}
+
+		// Dates not beung allowed for revisions are is a technical limitation of post revisions.
+		if ( submittedArgs.date && submittedArgs.autosave ) {
+			return deferred.reject( { code: 'illegal_autosave_with_date_gmt' } ).promise();
 		}
 
 		// Make sure that publishing a changeset waits for all changeset update requests to complete.
@@ -390,9 +412,6 @@
 		deferred.always( function() {
 			api.state( 'processing' ).set( api.state( 'processing' ).get() - 1 );
 		} );
-
-		// Allow plugins to attach additional params to the settings.
-		api.trigger( 'changeset-save', submittedChanges );
 
 		// Ensure that if any plugins add data to save requests by extending query() that they get included here.
 		data = api.previewer.query( { excludeCustomizedSaved: true } );
@@ -402,8 +421,14 @@
 			customize_theme: api.settings.theme.stylesheet,
 			customize_changeset_data: JSON.stringify( submittedChanges )
 		} );
-		if ( autosave ) {
-			data.autosave = 'true';
+		if ( null !== submittedArgs.title ) {
+			data.customize_changeset_title = submittedArgs.title;
+		}
+		if ( null !== submittedArgs.date ) {
+			data.customize_changeset_date = submittedArgs.date;
+		}
+		if ( false !== submittedArgs.autosave ) {
+			data.customize_changeset_autosave = 'true';
 		}
 
 		request = wp.ajax.post( 'customize_save', data );
@@ -426,10 +451,7 @@
 				} );
 			}
 
-			if ( autosave ) {
-				api.state( 'autosaved' ).set( true );
-			}
-			api.previewer.send( 'changeset-saved', _.extend( {}, data, { saved_changeset_values: savedChangesetValues, autosaved: Boolean( autosave ) } ) );
+			api.previewer.send( 'changeset-saved', _.extend( {}, data, { saved_changeset_values: savedChangesetValues } ) );
 		} );
 		request.fail( function requestChangesetUpdateFail( data ) {
 			deferred.reject( data );
@@ -1714,12 +1736,12 @@
 
 				api.state( 'processing' ).unbind( onceProcessingComplete );
 
-				request = api.requestChangesetUpdate( {}, true /* Autosave. */ );
+				request = api.requestChangesetUpdate( {}, { autosave: true } );
 				request.done( function() {
 					$( window ).off( 'beforeunload.customize-confirm' );
 
 					// Include autosaved param to load autosave revision without prompting user to restore it.
-					if ( api.state( 'autosaved' ).get() ) {
+					if ( ! api.state( 'saved' ).get() ) {
 						urlParser.search += '&customize_autosaved=on';
 					}
 
@@ -4443,7 +4465,7 @@
 					customize_messenger_channel: previewFrame.query.customize_messenger_channel
 				}
 			);
-			if ( api.state( 'autosaved' ).get() ) {
+			if ( ! api.state( 'saved' ).get() ) {
 				params.customize_autosaved = 'on';
 			}
 
@@ -5382,7 +5404,7 @@
 					nonce: this.nonce.preview,
 					customize_changeset_uuid: api.settings.changeset.uuid
 				};
-				if ( api.state( 'autosaved' ).get() ) {
+				if ( ! api.state( 'saved' ).get() ) {
 					queryVars.customize_autosaved = 'on';
 				}
 
@@ -5643,8 +5665,6 @@
 						// Restore the global dirty state if any settings were modified during save.
 						if ( ! _.isEmpty( modifiedWhileSaving ) ) {
 							api.state( 'saved' ).set( false );
-						} else {
-							api.state( 'autosaved' ).set( false ); // Autosave revision just got deleted after a successful 'full' save of a changeset.
 						}
 					} );
 				};
@@ -5790,7 +5810,6 @@
 		// Save and activated states
 		(function( state ) {
 			var saved = state.instance( 'saved' ),
-				autosaved = state.instance( 'autosaved' ),
 				saving = state.instance( 'saving' ),
 				activated = state.instance( 'activated' ),
 				processing = state.instance( 'processing' ),
@@ -5850,7 +5869,6 @@
 			selectedChangesetStatus( '' === api.settings.changeset.status || 'auto-draft' === api.settings.changeset.status ? 'publish' : api.settings.changeset.status );
 			selectedChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
-			autosaved( api.settings.changeset.autosaved );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
 				api.each( function( setting ) {
 					if ( setting._dirty ) {
@@ -6422,7 +6440,7 @@
 			var isInsideIframe = false;
 
 			function isCleanState() {
-				return api.state( 'saved' ).get() && ! api.state( 'autosaved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
+				return api.state( 'saved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
 			}
 
 			/*
@@ -6836,6 +6854,13 @@
 		( function() {
 			var timeoutId, updateChangesetWithReschedule, scheduleChangesetUpdate, updatePending = false;
 
+			api.state( 'saved' ).bind( function( isSaved ) {
+				if ( ! isSaved && ! api.settings.changeset.autosaved ) {
+					api.settings.changeset.autosaved = true; // Once a change is made then autosaving kicks in.
+					api.previewer.send( 'autosaving' );
+				}
+			} );
+
 			/**
 			 * Request changeset update and then re-schedule the next changeset update time.
 			 *
@@ -6845,7 +6870,7 @@
 			updateChangesetWithReschedule = function() {
 				if ( ! updatePending ) {
 					updatePending = true;
-					api.requestChangesetUpdate( {}, true /* Autosave. */ ).always( function() {
+					api.requestChangesetUpdate( {}, { autosave: true } ).always( function() {
 						updatePending = false;
 					} );
 				}
