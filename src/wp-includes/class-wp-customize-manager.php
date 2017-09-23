@@ -2625,6 +2625,7 @@ final class WP_Customize_Manager {
 				// See _wp_translate_postdata() for why this is required as it will use the edit_post meta capability.
 				add_filter( 'map_meta_cap', array( $this, 'grant_edit_post_capability_for_changeset' ), 10, 4 );
 				$post_array['post_ID'] = $post_array['ID'];
+				$post_array['post_type'] = 'customize_changeset';
 				$r = wp_create_post_autosave( wp_slash( $post_array ) );
 				remove_filter( 'map_meta_cap', array( $this, 'grant_edit_post_capability_for_changeset' ), 10 );
 			} else {
