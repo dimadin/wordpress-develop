@@ -138,7 +138,7 @@ do_action( 'customize_controls_print_scripts' );
 			?>
 			<div id="customize-save-button-wrapper" class="customize-save-button-wrapper <?php echo $capability ? '' : 'hidden'; ?>" >
 				<?php submit_button( $save_text, 'primary save', 'save', false ); ?>
-				<button id="publish-settings" class="publish-settings button-primary button dashicons dashicons-admin-generic" aria-label="<?php esc_attr_e( 'Publish Settings' ); ?>" aria-expanded="false" disabled></button>
+				<button id="publish-settings" class="publish-settings button-primary" aria-label="<?php esc_attr_e( 'Publish Settings' ); ?>" aria-expanded="false" disabled><span class="dashicons dashicons-admin-generic"></span></button>
 			</div>
 			<span class="spinner"></span>
 			<button type="button" class="customize-controls-preview-toggle">
@@ -205,9 +205,6 @@ do_action( 'customize_controls_print_scripts' );
 	<div id="customize-preview" class="wp-full-overlay-main"></div>
 	<div id="customize-outer-theme-controls">
 		<div id="customize-outer-controls-wrapper">
-			<div class="customize-outer-header-actions">
-				<button class="button button-secondary trash-settings">Reset</button>
-			</div>
 			<div id="customize-outer-section-pane">
 			</div>
 		</div>

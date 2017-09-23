@@ -27,13 +27,12 @@ body {
 #customize-save-button-wrapper {
 	float: right;
 	margin-top: 9px;
-	overflow: hidden;
 }
 
 #customize-save-button-wrapper .save {
 	float: left;
 	border-radius: 3px;
-	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button. */
+	box-shadow: none;
 	display: none; /* Shown when ready. */
 }
 #customize-save-button-wrapper .save.has-next-sibling {
@@ -49,19 +48,19 @@ body {
 	border-radius: 0 3px 3px 0;
 	padding-left: 0;
 	padding-right: 0;
-	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button. */
-	font-size: 14px;
+	box-shadow: none;
 	width: 30px;
 	float: left;
 	display: none; /* Shown when ready. */
+	-webkit-transform: none;
+	transform: none;
 }
 
-#customize-outer-theme-controls .trash-settings {
-	z-index: 5;
-	position: relative;
-	left: 225px;
-	top: -5px;
-	display: none;
+#publish-settings span{
+	font-size: 14px;
+	margin-top: 6px;
+	width: auto;
+	height: auto;
 }
 
 #customize-outer-controls-wrapper {
@@ -78,6 +77,10 @@ body {
 	background: #eee;
 	transition: left .18s;
 	border-right: 1px solid #ddd;
+}
+
+#customize-outer-theme-controls .customize-section-description-container {
+	display: none;
 }
 
 #customize-outer-theme-controls .accordion-section-content {
@@ -100,18 +103,6 @@ body {
 
 body.customize-outer-section-open .wp-full-overlay-main {
 	left: 300px;
-}
-
-.customize-outer-section-open #customize-outer-theme-controls .trash-settings {
-	display: inline-block;
-	margin-top: 13px;
-	margin-left: 5px;
-}
-
-.trash-settings span {
-	font-size: 15px;
-	line-height: 1.7;
-	width: auto;
 }
 
 #customize-header-actions .spinner {
@@ -257,7 +248,7 @@ body.customize-outer-section-open .wp-full-overlay-main {
 }
 
 #customize-outer-theme-controls .customize-pane-child {
-	padding: 0 12px 12px 12px;
+	padding: 12px;
 	background: #eee;
 	border-bottom: none;
 }
@@ -328,7 +319,7 @@ body.customize-outer-section-open .wp-full-overlay-main {
 }
 
 #customize-control-changeset_preview_link {
-	margin-top: 12px;
+	margin-top: 20px;
 }
 
 #customize-control-changeset_status {
