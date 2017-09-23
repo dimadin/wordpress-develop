@@ -4315,54 +4315,107 @@
 	 */
 	api.PreviewLinkControl = api.Control.extend({
 
+		previewElements: {},
+
 		/**
 		 * Initialize behaviors.
 		 *
 		 * @since 4.9.0
 		 * @returns {void}
 		 */
-		ready: function() {
-			var control = this, copyButton, inputNode, element, getLink;
+		ready: function ready() {
+			var control = this, element, component, node, link, input, button;
 
-			copyButton = control.container.find( '.customize-copy-preview-link' );
-			inputNode = control.container.find( 'input' );
-			element = new api.Element( inputNode );
-			control.elements.push( element );
+			_.bindAll( control, 'updatePreviewLink' );
 
-			// @todo Work pending, getting link temporarily.
-			getLink = function() {
-				var a = document.createElement( 'a' ), params = {};
+			if ( ! control.setting ) {
+			    control.setting = new api.Value();
+			}
 
-				params.customize_changeset_uuid = api.settings.changeset.uuid;
-				a.href = api.previewer.previewUrl.get();
+			control.container.find( '.preview-control-element' ).each( function() {
+				node = $( this );
+				component = node.data( 'component' );
+				element = new api.Element( node );
+				control.previewElements[ component ] = element;
+				control.elements.push( element );
+			} );
 
-				if ( ! api.settings.theme.active ) {
-					params.theme = api.settings.theme.stylesheet;
-				}
+			link = control.previewElements.link;
+			input = control.previewElements.input;
+			button = control.previewElements.button;
 
-				a.search = $.param( params );
+			input.link( control.setting );
+			link.link( control.setting );
 
-				return a.href;
-			};
+			link.bind( function( value ) {
+				link.element.attr( 'href', value );
+				link.element.attr( 'target', api.settings.changeset.uuid );
+			} );
 
-			element.set( getLink() );
+			api.bind( 'ready', control.updatePreviewLink );
+			api.bind( 'change', control.updatePreviewLink );
+			api.state( 'saved' ).bind( control.updatePreviewLink );
 
-			copyButton.on( 'click', function( event ) {
+			button.element.on( 'click', function( event ) {
 				event.preventDefault();
-
-				if ( element.get() ) {
-					inputNode.select();
+				if ( control.setting() ) {
+					input.element.select();
 					document.execCommand( 'copy' );
-					copyButton.text( copyButton.data( 'copied-text' ) );
+					button( button.element.data( 'copied-text' ) );
 				}
 			} );
 
-			copyButton.on( 'mouseenter', function() {
-				if ( element.get() ) {
-					copyButton.focus();
-					copyButton.text( copyButton.data( 'copy-text' ) );
+			link.element.on( 'click', function( event ) {
+				if ( link.element.hasClass( 'disabled' ) ) {
+					event.preventDefault();
 				}
 			} );
+
+			button.element.on( 'mouseenter', function() {
+				if ( control.setting() ) {
+					button( button.element.data( 'copy-text' ) );
+				}
+			} );
+		},
+
+		/**
+		 * Updates Preview Link
+		 *
+		 * @return {void}
+		 */
+		updatePreviewLink: function updatePreviewLink() {
+			var control = this, unsavedDirtyValues;
+
+			unsavedDirtyValues = ! _.isEmpty( api.dirtyValues( {
+				unsaved: true
+			} ) );
+
+			control.toggleSaveNotification( unsavedDirtyValues );
+			control.previewElements.link.element.toggleClass( 'disabled', unsavedDirtyValues );
+			control.previewElements.button.element.prop( 'disabled', unsavedDirtyValues );
+			control.setting.set( api.previewer.getFrontendPreviewUrl() );
+		},
+
+		/**
+		 * Toggles save notification.
+		 *
+		 * @param {boolean} notify Add or remove notification.
+		 * @return {void}
+		 */
+		toggleSaveNotification: function toggleSaveNotification( notify ) {
+			var control = this, notificationCode, notification;
+
+			notificationCode = 'changes_not_saved';
+
+			if ( notify ) {
+				notification = new api.Notification( notificationCode, {
+					type: 'info',
+					message: api.l10n.saveBeforeShare
+				} );
+				control.notifications.add( notificationCode, notification );
+			} else {
+				control.notifications.remove( notificationCode );
+			}
 		}
 	});
 
@@ -5502,8 +5555,6 @@
 					} );
 
 					invalidControls = _.union( invalidSettingLessControls, _.values( api.findControlsForSettings( invalidSettings ) ) );
-
-					console.info( invalidControls );
 					if ( ! _.isEmpty( invalidControls ) ) {
 
 						invalidControls[0][0].focus();
@@ -5682,6 +5733,30 @@
 				}
 
 				return deferred.promise();
+			},
+
+			/**
+			 * Builds the front preview url with the current state of customizer.
+			 *
+			 * @since 4.9
+			 *
+			 * @return {string} Preview url.
+			 */
+			getFrontendPreviewUrl: function() {
+				var previewer = this,
+					a = document.createElement( 'a' ),
+					params = {};
+
+				params.customize_changeset_uuid = api.settings.changeset.uuid;
+
+				if ( ! api.state( 'activated' ).get() ) {
+					params.customize_theme = api.settings.theme.stylesheet;
+				}
+
+				a.href = previewer.previewUrl();
+				a.search = $.param( params );
+
+				return a.href;
 			}
 		});
 

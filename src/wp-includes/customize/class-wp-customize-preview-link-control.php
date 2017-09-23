@@ -43,14 +43,15 @@ class WP_Customize_Preview_Link_Control extends WP_Customize_Control {
 		<span class="customize-control-title">
 			<label>{{ data.label }}</label>
 		</span>
-		<div class="customize-control-notifications-container"></div>
 		<span class="description customize-control-description">{{ data.description }}</span>
+		<div class="customize-control-notifications-container"></div>
 		<div class="preview-link-wrapper">
 			<label>
 				<span class="screen-reader-text"><?php esc_html_e( 'Preview Link' ); ?></span>
-				<input readonly value="" >
+				<a class="preview-control-element" data-component="link" href="" target=""></a>
+				<input readonly class="preview-control-element" data-component="input" value="test" >
 			</label>
-			<button class="customize-copy-preview-link button button-secondary" data-copy-text="<?php esc_attr_e( 'Copy' ); ?>" data-copied-text="<?php esc_attr_e( 'Copied' ); ?>" ><?php esc_html_e( 'Copy' ); ?></button>
+			<button class="customize-copy-preview-link preview-control-element button button-secondary" data-component="button" data-copy-text="<?php esc_attr_e( 'Copy' ); ?>" data-copied-text="<?php esc_attr_e( 'Copied' ); ?>" ><?php esc_html_e( 'Copy' ); ?></button>
 		</div>
 		<?php
 	}

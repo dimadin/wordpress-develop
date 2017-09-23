@@ -164,6 +164,30 @@ body {
 	border-top: 1px solid #ddd;
 	border-left: none;
 	border-right: none;
+	text-indent: -999px;
+	color: white;
+}
+
+#customize-control-changeset_preview_link a.preview-control-element {
+	display: inline-block;
+	position: absolute;
+	white-space: nowrap;
+	overflow: hidden;
+	width: 217px;
+	bottom: 14px;
+	font-size: 14px;
+	text-decoration: none;
+}
+
+#customize-control-changeset_preview_link a.preview-control-element.disabled,
+#customize-control-changeset_preview_link a.preview-control-element.disabled:active,
+#customize-control-changeset_preview_link a.preview-control-element.disabled:focus,
+#customize-control-changeset_preview_link a.preview-control-element.disabled:visited {
+	color: black;
+	opacity: 0.4;
+	cursor: default;
+	outline: none;
+	box-shadow: none;
 }
 
 #accordion-section-publish_settings,
