@@ -5131,6 +5131,9 @@
 							parent.send( 'changeset-uuid', api.settings.changeset.uuid );
 						}
 
+						// Prevent subsequent requestChangesetUpdate() calls from including the settings that have been saved.
+						api._lastSavedRevision = Math.max( latestRevision, api._lastSavedRevision );
+
 						if ( response.setting_validities ) {
 							api._handleSettingValidities( {
 								settingValidities: response.setting_validities,
