@@ -451,10 +451,7 @@
 				} );
 			}
 
-			if ( autosave ) {
-				api.state( 'autosaved' ).set( true );
-			}
-			api.previewer.send( 'changeset-saved', _.extend( {}, data, { saved_changeset_values: savedChangesetValues, autosaved: Boolean( autosave ) } ) );
+			api.previewer.send( 'changeset-saved', _.extend( {}, data, { saved_changeset_values: savedChangesetValues } ) );
 		} );
 		request.fail( function requestChangesetUpdateFail( data ) {
 			deferred.reject( data );
@@ -1742,7 +1739,7 @@
 					$( window ).off( 'beforeunload.customize-confirm' );
 
 					// Include autosaved param to load autosave revision without prompting user to restore it.
-					if ( api.state( 'autosaved' ).get() ) {
+					if ( ! api.state( 'saved' ).get() ) {
 						urlParser.search += '&customize_autosaved=on';
 					}
 
@@ -4058,7 +4055,7 @@
 					customize_messenger_channel: previewFrame.query.customize_messenger_channel
 				}
 			);
-			if ( api.state( 'autosaved' ).get() ) {
+			if ( ! api.state( 'saved' ).get() ) {
 				params.customize_autosaved = 'on';
 			}
 
@@ -4922,7 +4919,7 @@
 					nonce: this.nonce.preview,
 					customize_changeset_uuid: api.settings.changeset.uuid
 				};
-				if ( api.state( 'autosaved' ).get() ) {
+				if ( ! api.state( 'saved' ).get() ) {
 					queryVars.customize_autosaved = 'on';
 				}
 
@@ -5152,8 +5149,6 @@
 						// Restore the global dirty state if any settings were modified during save.
 						if ( ! _.isEmpty( modifiedWhileSaving ) ) {
 							api.state( 'saved' ).set( false );
-						} else {
-							api.state( 'autosaved' ).set( false ); // Autosave revision just got deleted after a successful 'full' save of a changeset.
 						}
 					} );
 				};
@@ -5300,7 +5295,6 @@
 		(function() {
 			var state = new api.Values(),
 				saved = state.create( 'saved' ),
-				autosaved = state.create( 'autosaved' ),
 				saving = state.create( 'saving' ),
 				activated = state.create( 'activated' ),
 				processing = state.create( 'processing' ),
@@ -5340,7 +5334,6 @@
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
 			saved( true );
-			autosaved( api.settings.changeset.autosaved );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
 				api.each( function( setting ) {
 					if ( setting._dirty ) {
@@ -5895,7 +5888,7 @@
 			var isInsideIframe = false;
 
 			function isCleanState() {
-				return api.state( 'saved' ).get() && ! api.state( 'autosaved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
+				return api.state( 'saved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
 			}
 
 			/*
@@ -6271,6 +6264,13 @@
 		// Autosave changeset.
 		( function() {
 			var timeoutId, updateChangesetWithReschedule, scheduleChangesetUpdate, updatePending = false;
+
+			api.state( 'saved' ).bind( function( isSaved ) {
+				if ( ! isSaved && ! api.settings.changeset.autosaved ) {
+					api.settings.changeset.autosaved = true; // Once a change is made then autosaving kicks in.
+					api.previewer.send( 'autosaving' );
+				}
+			} );
 
 			/**
 			 * Request changeset update and then re-schedule the next changeset update time.
