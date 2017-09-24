@@ -2804,12 +2804,36 @@ function _wp_customize_include() {
 		$changeset_uuid = sanitize_key( $input_vars['customize_changeset_uuid'] );
 	}
 
-	// @todo The following logic needs to be filterable so Customize Snapshots can disable to preserve the non-linear Changeset mode.
-	// Automatically fetch the most recent drafted changeset.
-	if ( empty( $changeset_uuid ) ) {
+	/**
+	 * Filters whether or not changeset branching is allowed.
+	 *
+	 * By default in core, when changeset branching is not allowed, changesets will operate
+	 * linearly in that only one saved changeset will exist at a time (with a 'draft' or
+	 * 'future' status). This makes the Customizer operate in a way that is similar to going to
+	 * "edit" to one existing post: all users will be making changes to the same post, and autosave
+	 * revisions will be made for that post.
+	 *
+	 * By contrast, when changeset branching is allowed, then the model is like users going
+	 * to "add new" for a page and each user makes changes independently of each other since
+	 * they are all operating on their own separate pages, each getting their own separate
+	 * initial auto-drafts and then once initially saved, autosave revisions on top of that
+	 * user's specific post.
+	 *
+	 * Since linear changesets are deemed to be more suitable for the majority of WordPress users,
+	 * they are the default. For WordPress sites that have heavy site management in the Customizer
+	 * by multiple users then branching changesets should be enabled by means of this filter.
+	 *
+	 * @since 4.9.0
+	 * @param bool $allow_branching Whether branching is allowed. If `false`, the default,
+	 *                              then only one saved changeset exists at a time.
+	 */
+	$branching = apply_filters( 'customize_changeset_branching', false );
+
+	// Automatically fetch the most recent drafted changeset when changeset branching is not enabled.
+	if ( ! $branching && empty( $changeset_uuid ) ) {
 		$unpublished_changeset_posts = get_posts( array(
 			'post_type' => 'customize_changeset',
-			'post_status' => array( 'draft', 'pending', 'future' ),
+			'post_status' => array( 'any' ), // Note: not including auto-draft!
 			'posts_per_page' => 1,
 			'order' => 'DESC',
 			'orderby' => 'date',
@@ -2819,8 +2843,9 @@ function _wp_customize_include() {
 			'update_post_term_cache' => false,
 			'lazy_load_term_meta' => false,
 		) );
-		if ( ! empty( $unpublished_changeset_posts ) ) {
-			$changeset_uuid = $unpublished_changeset_posts[0]->post_name;
+		$unpublished_changeset_post = array_shift( $unpublished_changeset_posts );
+		if ( ! empty( $unpublished_changeset_post ) && wp_is_uuid( $unpublished_changeset_post->post_name ) ) {
+			$changeset_uuid = $unpublished_changeset_post->post_name;
 		}
 	}
 
@@ -2856,7 +2881,7 @@ function _wp_customize_include() {
 	$settings_previewed = ! $is_customize_save_action;
 
 	require_once ABSPATH . WPINC . '/class-wp-customize-manager.php';
-	$GLOBALS['wp_customize'] = new WP_Customize_Manager( compact( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved' ) );
+	$GLOBALS['wp_customize'] = new WP_Customize_Manager( compact( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved', 'branching' ) );
 }
 
 /**

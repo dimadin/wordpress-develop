@@ -3823,11 +3823,6 @@
 
 			control.editor = wp.codeEditor.initialize( $textarea, settings );
 
-			// Refresh when receiving focus.
-			control.editor.codemirror.on( 'focus', function( codemirror ) {
-				codemirror.refresh();
-			});
-
 			/*
 			 * When the CodeMirror instance changes, mirror to the textarea,
 			 * where we have our "true" change event handler bound.
@@ -4270,7 +4265,7 @@
 
 			clearInterval( control.interval ); // To ensure multiple intervals are not running in any case.
 			timestamp = ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime();
-			
+
 			if ( _.isNaN( timestamp ) ) {
 				return deferred.reject( 'invalid_date' );
 			}
@@ -5756,6 +5751,9 @@
 							parent.send( 'changeset-uuid', api.settings.changeset.uuid );
 						}
 
+						// Prevent subsequent requestChangesetUpdate() calls from including the settings that have been saved.
+						api._lastSavedRevision = Math.max( latestRevision, api._lastSavedRevision );
+
 						if ( response.setting_validities ) {
 							api._handleSettingValidities( {
 								settingValidities: response.setting_validities,
@@ -6021,6 +6019,15 @@
 				}
 			});
 
+			// Populate changeset UUID param when state becomes dirty.
+			if ( api.settings.changeset.branching ) {
+				saved.bind( function( isSaved ) {
+					if ( ! isSaved ) {
+						populateChangesetUuidParam( true );
+					}
+				});
+			}
+
 			saving.bind( function( isSaving ) {
 				body.toggleClass( 'saving', isSaving );
 			} );
@@ -6030,7 +6037,6 @@
 				if ( 'publish' === response.changeset_status ) {
 					state( 'activated' ).set( true );
 				}
-				populateChangesetUuidParam( 'auto-draft' !== response.changeset_status );
 			});
 
 			activated.bind( function( to ) {
@@ -6074,9 +6080,12 @@
 				history.replaceState( {}, document.title, urlParser.href );
 			};
 
-			changesetStatus.bind( function( newStatus ) {
-				populateChangesetUuidParam( '' !== newStatus && 'auto-draft' !== newStatus && 'publish' !== newStatus );
-			} );
+			// @todo Should this be included with linear, but exclude auto-draft in condition?
+			if ( api.settings.changeset.branching ) {
+				changesetStatus.bind( function( newStatus ) {
+					populateChangesetUuidParam( '' !== newStatus && 'publish' !== newStatus );
+				} );
+			}
 		}( api.state ) );
 
 		// Set up initial notifications.
@@ -6106,7 +6115,7 @@
 				urlParser.href = location.href;
 				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
 				if ( api.settings.changeset.latestAutoDraftUuid ) {
-					queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
+					queryParams.changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
 				} else {
 					queryParams.customize_autosaved = 'on';
 				}
@@ -6189,7 +6198,9 @@
 			}
 
 			if ( api.settings.changeset.autosaved ) {
-				stripParamsFromLocation( [ 'customize_autosaved' ] );
+				stripParamsFromLocation( [ 'customize_autosaved' ] ); // Remove param when restoring autosave revision.
+			} else if ( ! api.settings.changeset.branching && 'auto-draft' === api.settings.changeset.status ) {
+				stripParamsFromLocation( [ 'changeset_uuid' ] ); // Remove UUID when restoring autosave auto-draft.
 			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
 				addAutosaveRestoreNotification();
 			}
