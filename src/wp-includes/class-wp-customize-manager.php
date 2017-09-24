@@ -179,7 +179,15 @@ final class WP_Customize_Manager {
 	 * @since 4.9.0
 	 * @var bool
 	 */
-	protected $autosaved;
+	protected $autosaved = false;
+
+	/**
+	 * Whether the changeset branching is allowed.
+	 *
+	 * @since 4.9.0
+	 * @var bool
+	 */
+	protected $branching = true;
 
 	/**
 	 * Whether settings should be previewed.
@@ -187,7 +195,7 @@ final class WP_Customize_Manager {
 	 * @since 4.9.0
 	 * @var bool
 	 */
-	protected $settings_previewed;
+	protected $settings_previewed = true;
 
 	/**
 	 * Unsanitized values for Customize Settings parsed from $_POST['customized'].
@@ -233,12 +241,14 @@ final class WP_Customize_Manager {
 	 *     @type string $theme              Theme to be previewed (for theme switch). Defaults to customize_theme or theme query params.
 	 *     @type string $messenger_channel  Messenger channel. Defaults to customize_messenger_channel query param.
 	 *     @type bool   $settings_previewed If settings should be previewed. Defaults to true.
+	 *     @type bool   $branching          If changeset branching is allowed; otherwise, changesets are linear. Defaults to true.
+	 *     @type bool   $autosaved          If data from a changeset's autosaved revision should be loaded if it exists. Defaults to false.
 	 * }
 	 */
 	public function __construct( $args = array() ) {
 
 		$args = array_merge(
-			array_fill_keys( array( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved' ), null ),
+			array_fill_keys( array( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved', 'branching' ), null ),
 			$args
 		);
 
@@ -259,16 +269,16 @@ final class WP_Customize_Manager {
 			$args['messenger_channel'] = sanitize_key( wp_unslash( $_REQUEST['customize_messenger_channel'] ) );
 		}
 
-		if ( ! isset( $args['settings_previewed'] ) ) {
-			$args['settings_previewed'] = true;
-		}
-
 		$this->original_stylesheet = get_stylesheet();
 		$this->theme = wp_get_theme( 0 === validate_file( $args['theme'] ) ? $args['theme'] : null );
 		$this->messenger_channel = $args['messenger_channel'];
-		$this->settings_previewed = ! empty( $args['settings_previewed'] );
-		$this->autosaved = ! empty( $args['autosaved'] );
 		$this->_changeset_uuid = $args['changeset_uuid'];
+
+		foreach ( array( 'settings_previewed', 'autosaved', 'branching' ) as $key ) {
+			if ( isset( $args[ $key ] ) ) {
+				$this->$key = (bool) $args[ $key ];
+			}
+		}
 
 		require_once( ABSPATH . WPINC . '/class-wp-customize-setting.php' );
 		require_once( ABSPATH . WPINC . '/class-wp-customize-panel.php' );
@@ -2621,6 +2631,7 @@ final class WP_Customize_Manager {
 				// See _wp_translate_postdata() for why this is required as it will use the edit_post meta capability.
 				add_filter( 'map_meta_cap', array( $this, 'grant_edit_post_capability_for_changeset' ), 10, 4 );
 				$post_array['post_ID'] = $post_array['ID'];
+				$post_array['post_type'] = 'customize_changeset';
 				$r = wp_create_post_autosave( wp_slash( $post_array ) );
 				remove_filter( 'map_meta_cap', array( $this, 'grant_edit_post_capability_for_changeset' ), 10 );
 			} else {
@@ -2953,19 +2964,20 @@ final class WP_Customize_Manager {
 			wp_send_json_error( 'missing_changeset', 404 );
 		}
 
-		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
-			wp_send_json_error( 'cannot_delete_changeset_post', 403 );
-		}
-
 		if ( 'auto-draft' === get_post_status( $changeset_post_id ) ) {
 			if ( ! update_post_meta( $changeset_post_id, '_customize_restore_dismissed', true ) ) {
-				wp_send_json_error( 'auto_draft_deletion_failure', 500 );
+				wp_send_json_error( 'auto_draft_dismissal_failure', 500 );
 			} else {
-				wp_send_json_success( 'auto_draft_deleted' );
+				wp_send_json_success( 'auto_draft_dismissed' );
 			}
 		} else {
 			$revision = wp_get_post_autosave( $changeset_post_id );
+
 			if ( $revision ) {
+				if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
+					wp_send_json_error( 'cannot_delete_autosave_revision', 403 );
+				}
+
 				if ( ! wp_delete_post( $revision->ID, true ) ) {
 					wp_send_json_error( 'autosave_revision_deletion_failure', 500 );
 				} else {
@@ -3785,7 +3797,8 @@ final class WP_Customize_Manager {
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
-				'autosaved' => $this->autosaved, // @todo This will need to be kept synced with the autosaved state in the Customizer app via postMessage, like status is.
+				'branching' => $this->branching,
+				'autosaved' => $this->autosaved,
 				'hasAutosaveRevision' => ! empty( $autosave_revision_post ),
 				'latestAutoDraftUuid' => $autosave_autodraft_post ? $autosave_autodraft_post->post_name : null,
 				'status' => $changeset_post ? $changeset_post->post_status : '',
