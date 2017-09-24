@@ -36,7 +36,9 @@
 			newQueryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
 
 			newQueryParams.customize_changeset_uuid = oldQueryParams.customize_changeset_uuid;
-			newQueryParams.customize_autosaved = 'on';
+			if ( api.settings.changeset.autosaved ) {
+				newQueryParams.customize_autosaved = 'on';
+			}
 			if ( oldQueryParams.customize_theme ) {
 				newQueryParams.customize_theme = oldQueryParams.customize_theme;
 			}
@@ -764,8 +766,6 @@
 		});
 
 		api.preview.bind( 'saved', function( response ) {
-			api.settings.changeset.autosaved = false;
-
 			if ( response.next_changeset_uuid ) {
 				api.settings.changeset.uuid = response.next_changeset_uuid;
 
@@ -790,12 +790,30 @@
 			api.trigger( 'saved', response );
 		} );
 
+		// Update the URLs to reflect the fact we've started autosaving.
+		api.preview.bind( 'autosaving', function() {
+			if ( api.settings.changeset.autosaved ) {
+				return;
+			}
+
+			api.settings.changeset.autosaved = true; // Start deferring to any autosave once changeset is updated.
+
+			$( document.body ).find( 'a[href], area' ).each( function() {
+				api.prepareLinkPreview( this );
+			} );
+			$( document.body ).find( 'form' ).each( function() {
+				api.prepareFormPreview( this );
+			} );
+			if ( history.replaceState ) {
+				history.replaceState( currentHistoryState, '', location.href );
+			}
+		} );
+
 		/*
 		 * Clear dirty flag for settings when saved to changeset so that they
 		 * won't be needlessly included in selective refresh or ajax requests.
 		 */
 		api.preview.bind( 'changeset-saved', function( data ) {
-			api.settings.changeset.autosaved = Boolean( data.autosaved );
 			_.each( data.saved_changeset_values, function( value, settingId ) {
 				var setting = api( settingId );
 				if ( setting && _.isEqual( setting.get(), value ) ) {

@@ -355,14 +355,23 @@
 	 * @since 4.7.0
 	 * @access public
 	 *
-	 * @param {object} [changes] Mapping of setting IDs to setting params each normally including a value property, or mapping to null.
-	 *                           If not provided, then the changes will still be obtained from unsaved dirty settings.
-	 * @param {boolean} [autosave=false] Whether changes will be stored in autosave revision.
+	 * @param {object}  [changes] - Mapping of setting IDs to setting params each normally including a value property, or mapping to null.
+	 *                             If not provided, then the changes will still be obtained from unsaved dirty settings.
+	 * @param {object}  [args] - Additional options for the save request.
+	 * @param {boolean} [args.autosave=false] - Whether changes will be stored in autosave revision if the changeset has been promoted from an auto-draft.
+	 * @param {string}  [args.title] - Title to update in the changeset. Optional.
+	 * @param {string}  [args.date] - Date to update in the changeset. Optional.
 	 * @returns {jQuery.Promise} Promise resolving with the response data.
 	 */
-	api.requestChangesetUpdate = function requestChangesetUpdate( changes, autosave ) {
-		var deferred, request, submittedChanges = {}, data;
+	api.requestChangesetUpdate = function requestChangesetUpdate( changes, args ) {
+		var deferred, request, submittedChanges = {}, data, submittedArgs;
 		deferred = new $.Deferred();
+
+		submittedArgs = _.extend( {
+			title: null,
+			date: null,
+			autosave: false
+		}, args );
 
 		if ( changes ) {
 			_.extend( submittedChanges, changes );
@@ -380,9 +389,22 @@
 		} );
 
 		// Short-circuit when there are no pending changes.
-		if ( _.isEmpty( submittedChanges ) ) {
+		if ( _.isEmpty( submittedChanges ) && null === submittedArgs.title && null === submittedArgs.date ) {
 			deferred.resolve( {} );
 			return deferred.promise();
+		}
+
+		// Allow plugins to attach additional params to the settings.
+		api.trigger( 'changeset-save', submittedChanges, submittedArgs );
+
+		// A status would cause a revision to be made, and for this wp.customize.previewer.save() should be used. Status is also disallowed for revisions regardless.
+		if ( submittedArgs.status ) {
+			return deferred.reject( { code: 'illegal_status_in_changeset_update' } ).promise();
+		}
+
+		// Dates not beung allowed for revisions are is a technical limitation of post revisions.
+		if ( submittedArgs.date && submittedArgs.autosave ) {
+			return deferred.reject( { code: 'illegal_autosave_with_date_gmt' } ).promise();
 		}
 
 		// Make sure that publishing a changeset waits for all changeset update requests to complete.
@@ -390,9 +412,6 @@
 		deferred.always( function() {
 			api.state( 'processing' ).set( api.state( 'processing' ).get() - 1 );
 		} );
-
-		// Allow plugins to attach additional params to the settings.
-		api.trigger( 'changeset-save', submittedChanges );
 
 		// Ensure that if any plugins add data to save requests by extending query() that they get included here.
 		data = api.previewer.query( { excludeCustomizedSaved: true } );
@@ -402,8 +421,14 @@
 			customize_theme: api.settings.theme.stylesheet,
 			customize_changeset_data: JSON.stringify( submittedChanges )
 		} );
-		if ( autosave ) {
-			data.autosave = 'true';
+		if ( null !== submittedArgs.title ) {
+			data.customize_changeset_title = submittedArgs.title;
+		}
+		if ( null !== submittedArgs.date ) {
+			data.customize_changeset_date = submittedArgs.date;
+		}
+		if ( false !== submittedArgs.autosave ) {
+			data.customize_changeset_autosave = 'true';
 		}
 
 		request = wp.ajax.post( 'customize_save', data );
@@ -415,6 +440,11 @@
 			api._lastSavedRevision = Math.max( api._latestRevision, api._lastSavedRevision );
 
 			api.state( 'changesetStatus' ).set( data.changeset_status );
+
+			if ( data.changeset_date ) {
+				api.state( 'changesetDate' ).set( data.changeset_date );
+			}
+
 			deferred.resolve( data );
 			api.trigger( 'changeset-saved', data );
 
@@ -426,10 +456,7 @@
 				} );
 			}
 
-			if ( autosave ) {
-				api.state( 'autosaved' ).set( true );
-			}
-			api.previewer.send( 'changeset-saved', _.extend( {}, data, { saved_changeset_values: savedChangesetValues, autosaved: Boolean( autosave ) } ) );
+			api.previewer.send( 'changeset-saved', _.extend( {}, data, { saved_changeset_values: savedChangesetValues } ) );
 		} );
 		request.fail( function requestChangesetUpdateFail( data ) {
 			deferred.reject( data );
@@ -1724,12 +1751,12 @@
 
 				api.state( 'processing' ).unbind( onceProcessingComplete );
 
-				request = api.requestChangesetUpdate( {}, true /* Autosave. */ );
+				request = api.requestChangesetUpdate( {}, { autosave: true } );
 				request.done( function() {
 					$( window ).off( 'beforeunload.customize-confirm' );
 
 					// Include autosaved param to load autosave revision without prompting user to restore it.
-					if ( api.state( 'autosaved' ).get() ) {
+					if ( ! api.state( 'saved' ).get() ) {
 						urlParser.search += '&customize_autosaved=on';
 					}
 
@@ -3959,6 +3986,7 @@
 		inputElements: {},
 		initialClientTimestamp: 0,
 		invalidDate: false,
+		interval: false,
 
 		/**
 		 * Initialize behaviors.
@@ -3994,13 +4022,11 @@
 				control.elements.push( element );
 			} );
 
-			// if ( ! control.params.allowPastDate ) {
-			// 	api.state( 'saving', function( isSaving ) {
-			// 		if ( isSaving ) {
-			// 			control.toggleFutureDateNotification( ! control.isFutureDate() );
-			// 		}
-			// 	} );
-			// }
+			api.state( 'saving' ).bind( function( isSaving ) {
+				if ( isSaving && ! control.params.allowPastDate ) {
+					control.toggleFutureDateNotification( ! control.isFutureDate() );
+				}
+			} );
 
 			control.dateInputs.on( 'input', control.populateSetting );
 			control.inputElements.month.bind( control.updateDaysForMonth );
@@ -4054,7 +4080,7 @@
 		 * @return {boolean} If date input fields has error.
 		 */
 		validateInputs: function validateInputs() {
-			var control = this;
+			var control = this, errorMessage;
 
 			control.invalidDate = false;
 
@@ -4069,13 +4095,10 @@
 					maxLength = parseInt( element.element.attr( 'maxlength' ), 10 );
 					value = element();
 					control.invalidDate = value > max || value < min || String( value ).length > maxLength;
+					errorMessage = control.invalidDate ? api.l10n.invalid + ' ' + component : '';
 
-					if ( control.invalidDate ) {
-						el.setCustomValidity( api.l10n.invalid + ' ' + component );
-						_.result( el, 'reportValidity' );
-					} else {
-						el.setCustomValidity( '' );
-					}
+					el.setCustomValidity( errorMessage );
+					_.result( el, 'reportValidity' );
 				}
 			} );
 
@@ -4137,7 +4160,7 @@
 		populateSetting: function populateSetting() {
 			var control = this, date;
 
-			if ( control.validateInputs() ) {
+			if ( control.validateInputs() || ! control.params.allowPastDate && ! control.isFutureDate() ) {
 				return false;
 			}
 
@@ -4217,17 +4240,61 @@
 		},
 
 		/**
+		 * Get remaining time of when the date is set.
+		 *
+		 * @param {int} timestamp Time stamp of the future date.
+		 * @return {int} remainingTime Remaining time in milliseconds;
+		 */
+		getRemainingTime: function getRemainingTime( timestamp ) {
+			var control = this, millisecondsDivider = 1000, remainingTime;
+
+			remainingTime = timestamp - control.getCurrentTimestamp();
+			remainingTime = Math.ceil( remainingTime / millisecondsDivider );
+			return remainingTime;
+		},
+
+		/**
 		 * Check if the date is in the future.
 		 *
 		 * @returns {boolean} True if future date.
 		 */
 		isFutureDate: function isFutureDate() {
-			var control = this, millisecondsDivider = 1000, remainingTime;
+			var control = this;
+			return 0 < control.getRemainingTime( control.getInputDateTimestamp() );
+		},
 
-			remainingTime = control.getInputDateTimestamp() - control.getCurrentTimestamp();
-			remainingTime = Math.ceil( remainingTime / millisecondsDivider );
+		/**
+		 * Checks to see if the given time has arrived.
+		 * Use .progress() to get the remaining countdown time in milliseconds.
+		 *
+		 * @param {string} datetime Date time in Y-m-d H:i:s format.
+		 * @param {int} timeInterval Time interval after which the time needs to be checked in milliseconds.
+		 * @return {jQuery.deferred.promise}
+		 */
+		timeArrived: function timeArrived( datetime, timeInterval ) {
+			var control = this, deferred = $.Deferred(), timeRemaining, timestamp;
 
-			return 0 < remainingTime;
+			if ( ! datetime ) {
+				return deferred.reject( 'date_not_defined' );
+			}
+
+			clearInterval( control.interval ); // To ensure multiple intervals are not running in any case.
+			timestamp = ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime();
+			
+			if ( _.isNaN( timestamp ) ) {
+				return deferred.reject( 'invalid_date' );
+			}
+
+			control.interval = setInterval( function() {
+				timeRemaining = control.getRemainingTime( timestamp );
+				deferred.notify( timeRemaining ); // Plugins can convert to days hours minutes if required by listening to progress().
+				if ( 0 > timeRemaining ) {
+					clearInterval( control.interval );
+					deferred.resolve( timestamp );
+				}
+			}, timeInterval );
+
+			return deferred.promise();
 		},
 
 		/**
@@ -4308,54 +4375,107 @@
 	 */
 	api.PreviewLinkControl = api.Control.extend({
 
+		previewElements: {},
+
 		/**
 		 * Initialize behaviors.
 		 *
 		 * @since 4.9.0
 		 * @returns {void}
 		 */
-		ready: function() {
-			var control = this, copyButton, inputNode, element, getLink;
+		ready: function ready() {
+			var control = this, element, component, node, link, input, button;
 
-			copyButton = control.container.find( '.customize-copy-preview-link' );
-			inputNode = control.container.find( 'input' );
-			element = new api.Element( inputNode );
-			control.elements.push( element );
+			_.bindAll( control, 'updatePreviewLink' );
 
-			// @todo Work pending, getting link temporarily.
-			getLink = function() {
-				var a = document.createElement( 'a' ), params = {};
+			if ( ! control.setting ) {
+			    control.setting = new api.Value();
+			}
 
-				params.customize_changeset_uuid = api.settings.changeset.uuid;
-				a.href = api.previewer.previewUrl.get();
+			control.container.find( '.preview-control-element' ).each( function() {
+				node = $( this );
+				component = node.data( 'component' );
+				element = new api.Element( node );
+				control.previewElements[ component ] = element;
+				control.elements.push( element );
+			} );
 
-				if ( ! api.settings.theme.active ) {
-					params.theme = api.settings.theme.stylesheet;
-				}
+			link = control.previewElements.link;
+			input = control.previewElements.input;
+			button = control.previewElements.button;
 
-				a.search = $.param( params );
+			input.link( control.setting );
+			link.link( control.setting );
 
-				return a.href;
-			};
+			link.bind( function( value ) {
+				link.element.attr( 'href', value );
+				link.element.attr( 'target', api.settings.changeset.uuid );
+			} );
 
-			element.set( getLink() );
+			api.bind( 'ready', control.updatePreviewLink );
+			api.bind( 'change', control.updatePreviewLink );
+			api.state( 'saved' ).bind( control.updatePreviewLink );
 
-			copyButton.on( 'click', function( event ) {
+			button.element.on( 'click', function( event ) {
 				event.preventDefault();
-
-				if ( element.get() ) {
-					inputNode.select();
+				if ( control.setting() ) {
+					input.element.select();
 					document.execCommand( 'copy' );
-					copyButton.text( copyButton.data( 'copied-text' ) );
+					button( button.element.data( 'copied-text' ) );
 				}
 			} );
 
-			copyButton.on( 'mouseenter', function() {
-				if ( element.get() ) {
-					copyButton.focus();
-					copyButton.text( copyButton.data( 'copy-text' ) );
+			link.element.on( 'click', function( event ) {
+				if ( link.element.hasClass( 'disabled' ) ) {
+					event.preventDefault();
 				}
 			} );
+
+			button.element.on( 'mouseenter', function() {
+				if ( control.setting() ) {
+					button( button.element.data( 'copy-text' ) );
+				}
+			} );
+		},
+
+		/**
+		 * Updates Preview Link
+		 *
+		 * @return {void}
+		 */
+		updatePreviewLink: function updatePreviewLink() {
+			var control = this, unsavedDirtyValues;
+
+			unsavedDirtyValues = ! _.isEmpty( api.dirtyValues( {
+				unsaved: true
+			} ) );
+
+			control.toggleSaveNotification( unsavedDirtyValues );
+			control.previewElements.link.element.toggleClass( 'disabled', unsavedDirtyValues );
+			control.previewElements.button.element.prop( 'disabled', unsavedDirtyValues );
+			control.setting.set( api.previewer.getFrontendPreviewUrl() );
+		},
+
+		/**
+		 * Toggles save notification.
+		 *
+		 * @param {boolean} notify Add or remove notification.
+		 * @return {void}
+		 */
+		toggleSaveNotification: function toggleSaveNotification( notify ) {
+			var control = this, notificationCode, notification;
+
+			notificationCode = 'changes_not_saved';
+
+			if ( notify ) {
+				notification = new api.Notification( notificationCode, {
+					type: 'info',
+					message: api.l10n.saveBeforeShare
+				} );
+				control.notifications.add( notificationCode, notification );
+			} else {
+				control.notifications.remove( notificationCode );
+			}
 		}
 	});
 
@@ -4458,7 +4578,7 @@
 					customize_messenger_channel: previewFrame.query.customize_messenger_channel
 				}
 			);
-			if ( api.state( 'autosaved' ).get() ) {
+			if ( ! api.state( 'saved' ).get() ) {
 				params.customize_autosaved = 'on';
 			}
 
@@ -5248,6 +5368,8 @@
 		'paneVisible',
 		'expandedPanel',
 		'expandedSection',
+		'changesetDate',
+		'selectedChangesetDate',
 		'changesetStatus',
 		'selectedChangesetStatus',
 		'previewerAlive',
@@ -5388,7 +5510,7 @@
 					nonce: this.nonce.preview,
 					customize_changeset_uuid: api.settings.changeset.uuid
 				};
-				if ( api.state( 'autosaved' ).get() ) {
+				if ( ! api.state( 'saved' ).get() ) {
 					queryVars.customize_autosaved = 'on';
 				}
 
@@ -5425,6 +5547,7 @@
 				var previewer = this,
 					deferred = $.Deferred(),
 					changesetStatus = api.state( 'selectedChangesetStatus' ).get(),
+					selectedChangesetDate = api.state( 'selectedChangesetDate' ).get(),
 					processing = api.state( 'processing' ),
 					submitWhenDoneProcessing,
 					submit,
@@ -5485,7 +5608,6 @@
 					} );
 
 					invalidControls = _.union( invalidSettingLessControls, _.values( api.findControlsForSettings( invalidSettings ) ) );
-
 					if ( ! _.isEmpty( invalidControls ) ) {
 
 						invalidControls[0][0].focus();
@@ -5515,9 +5637,13 @@
 						nonce: previewer.nonce.save,
 						customize_changeset_status: changesetStatus
 					} );
+
 					if ( args && args.date ) {
 						query.customize_changeset_date = args.date;
+					} else if ( 'future' === changesetStatus && selectedChangesetDate ) {
+						query.customize_changeset_date = selectedChangesetDate;
 					}
+
 					if ( args && args.title ) {
 						query.customize_changeset_title = args.title;
 					}
@@ -5610,6 +5736,8 @@
 						previewer.send( 'saved', response );
 
 						api.state( 'changesetStatus' ).set( response.changeset_status );
+						api.state( 'changesetDate' ).set( response.changeset_date );
+
 						if ( 'publish' === response.changeset_status ) {
 
 							// Mark all published as clean if they haven't been modified during the request.
@@ -5643,8 +5771,6 @@
 						// Restore the global dirty state if any settings were modified during save.
 						if ( ! _.isEmpty( modifiedWhileSaving ) ) {
 							api.state( 'saved' ).set( false );
-						} else {
-							api.state( 'autosaved' ).set( false ); // Autosave revision just got deleted after a successful 'full' save of a changeset.
 						}
 					} );
 				};
@@ -5662,6 +5788,30 @@
 				}
 
 				return deferred.promise();
+			},
+
+			/**
+			 * Builds the front preview url with the current state of customizer.
+			 *
+			 * @since 4.9
+			 *
+			 * @return {string} Preview url.
+			 */
+			getFrontendPreviewUrl: function() {
+				var previewer = this,
+					a = document.createElement( 'a' ),
+					params = {};
+
+				params.customize_changeset_uuid = api.settings.changeset.uuid;
+
+				if ( ! api.state( 'activated' ).get() ) {
+					params.customize_theme = api.settings.theme.stylesheet;
+				}
+
+				a.href = previewer.previewUrl();
+				a.search = $.param( params );
+
+				return a.href;
 			}
 		});
 
@@ -5790,7 +5940,6 @@
 		// Save and activated states
 		(function( state ) {
 			var saved = state.instance( 'saved' ),
-				autosaved = state.instance( 'autosaved' ),
 				saving = state.instance( 'saving' ),
 				activated = state.instance( 'activated' ),
 				processing = state.instance( 'processing' ),
@@ -5799,10 +5948,12 @@
 				expandedSection = state.instance( 'expandedSection' ),
 				changesetStatus = state.instance( 'changesetStatus' ),
 				selectedChangesetStatus = state.instance( 'selectedChangesetStatus' ),
+				changesetDate = state.instance( 'changesetDate' ),
 				previewerAlive = state.instance( 'previewerAlive' ),
 				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
 
+			// @todo Enable schedule button when state( 'selectedChangesetDate' ) is changed.
 			state.bind( 'change', function() {
 				var canSave;
 
@@ -5846,10 +5997,10 @@
 
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
+			changesetDate( api.settings.changeset.publishDate );
 			selectedChangesetStatus( '' === api.settings.changeset.status || 'auto-draft' === api.settings.changeset.status ? 'publish' : api.settings.changeset.status );
 			selectedChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
-			autosaved( api.settings.changeset.autosaved );
 			if ( '' === changesetStatus() ) { // Handle case for loading starter content.
 				api.each( function( setting ) {
 					if ( setting._dirty ) {
@@ -5932,11 +6083,13 @@
 
 		// Set up initial notifications.
 		(function() {
-			var urlParser, queryParams, missedScheduleCode = 'missed_schedule', autosaveAvailableCode = 'autosave_available';
 
-			// Show notification when the changeset missed its schedule.
-			if ( api.settings.changeset.missedSchedule ) {
-				api.notifications.add( missedScheduleCode, new api.Notification( missedScheduleCode, {
+			/**
+			 * Show notification when the changeset missed its schedule.
+			 */
+			function showMissedScheduleNotification() {
+				var code = 'missed_schedule';
+				api.notifications.add( code, new api.Notification( code, {
 					message: api.l10n.missedScheduleError,
 					type: 'error',
 					dismissible: true,
@@ -5944,44 +6097,80 @@
 				} ) );
 			}
 
-			if ( api.settings.changeset.autosaved ) {
-
-				// Remove parameter from the URL.
+			/**
+			 * Obtain the URL to restore the autosave.
+			 *
+			 * @returns {string} Customizer URL.
+			 */
+			function getAutosaveRestorationUrl() {
+				var urlParser, queryParams;
 				urlParser = document.createElement( 'a' );
 				urlParser.href = location.href;
 				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
-				delete queryParams.customize_autosaved;
+				if ( api.settings.changeset.latestAutoDraftUuid ) {
+					queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
+				} else {
+					queryParams.customize_autosaved = 'on';
+				}
+				urlParser.search = $.param( queryParams );
+				return urlParser.href;
+			}
+
+			/**
+			 * Remove parameter from the URL.
+			 *
+			 * @param {Array} params - Parameter names to remove.
+			 * @returns {void}
+			 */
+			function stripParamsFromLocation( params ) {
+				var urlParser = document.createElement( 'a' ), queryParams, strippedParams = 0;
+				urlParser.href = location.href;
+				queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
+				_.each( params, function( param ) {
+					if ( 'undefined' !== typeof queryParams[ param ] ) {
+						strippedParams += 1;
+						delete queryParams[ param ];
+					}
+				} );
+				if ( 0 === strippedParams ) {
+					return;
+				}
+
 				urlParser.search = $.param( queryParams );
 				history.replaceState( {}, document.title, urlParser.href );
-			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
+			}
+
+			/**
+			 * Add notification regarding the availability of an autosave to restore.
+			 *
+			 * @returns {void}
+			 */
+			function addAutosaveRestoreNotification() {
+				var code = 'autosave_available', onStateChange;
 
 				// Since there is an autosave revision and the user hasn't loaded with autosaved, add notification to prompt to load autosaved version.
-				api.notifications.add( autosaveAvailableCode, new api.Notification( autosaveAvailableCode, {
+				api.notifications.add( code, new api.Notification( code, {
 					message: api.l10n.autosaveNotice,
 					type: 'warning',
 					dismissible: true,
 					render: function() {
-						var li = api.Notification.prototype.render.call( this );
+						var li = api.Notification.prototype.render.call( this ), link;
 
-						// Populate the "View the autosave" link's URL.
-						urlParser = document.createElement( 'a' );
-						urlParser.href = location.href;
-						queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
-						if ( api.settings.changeset.latestAutoDraftUuid ) {
-							queryParams.customize_changeset_uuid = api.settings.changeset.latestAutoDraftUuid;
-						} else {
-							queryParams.customize_autosaved = 'on';
-						}
-						urlParser.search = $.param( queryParams );
-						li.find( 'a' ).prop( 'href', urlParser.href );
+						// Handle clicking on restoration link.
+						link = li.find( 'a' );
+						link.prop( 'href', getAutosaveRestorationUrl() );
+						link.on( 'click', function( event ) {
+							event.preventDefault();
+							location.replace( getAutosaveRestorationUrl() );
+						} );
 
 						// Handle dismissal of notice.
 						li.find( '.notice-dismiss' ).on( 'click', function() {
-							wp.ajax.post( 'delete_customize_changeset_autosave', {
+							wp.ajax.post( 'dismiss_customize_changeset_autosave', {
 								wp_customize: 'on',
 								customize_theme: api.settings.theme.stylesheet,
 								customize_changeset_uuid: api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.uuid,
-								nonce: api.settings.nonce.delete_autosave
+								nonce: api.settings.nonce.dismiss_autosave
 							} );
 						} );
 
@@ -5990,11 +6179,24 @@
 				} ) );
 
 				// Remove the notification once the user starts making changes.
-				api.state( 'saved' ).bind( function( saved ) {
-					if ( ! saved ) {
-						api.notifications.remove( autosaveAvailableCode );
-					}
-				} );
+				onStateChange = function() {
+					api.notifications.remove( code );
+					api.state( 'saved' ).unbind( onStateChange );
+					api.state( 'saving' ).unbind( onStateChange );
+					api.state( 'changesetStatus' ).unbind( onStateChange );
+				};
+				api.state( 'saved' ).bind( onStateChange );
+				api.state( 'saving' ).bind( onStateChange );
+				api.state( 'changesetStatus' ).bind( onStateChange );
+			}
+
+			if ( api.settings.changeset.autosaved ) {
+				stripParamsFromLocation( [ 'customize_autosaved' ] );
+			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
+				addAutosaveRestoreNotification();
+			}
+			if ( api.settings.changeset.missedSchedule ) {
+				showMissedScheduleNotification();
 			}
 		})();
 
@@ -6370,7 +6572,7 @@
 			var isInsideIframe = false;
 
 			function isCleanState() {
-				return api.state( 'saved' ).get() && ! api.state( 'autosaved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
+				return api.state( 'saved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
 			}
 
 			/*
@@ -6403,15 +6605,15 @@
 					api.each( function( setting ) {
 						setting._dirty = false;
 					});
-					$( window ).off( 'blur.wp-customize-changeset-update' );
+					$( document ).off( 'visibilitychange.wp-customize-changeset-update' );
 					$( window ).off( 'beforeunload.wp-customize-changeset-update' );
 
 					// @todo Replace X with spinner? Don't wait too long for request to finish?
-					wp.ajax.post( 'delete_customize_changeset_autosave', {
+					wp.ajax.post( 'dismiss_customize_changeset_autosave', {
 						wp_customize: 'on',
 						customize_theme: api.settings.theme.stylesheet,
 						customize_changeset_uuid: api.settings.changeset.uuid,
-						nonce: api.settings.nonce.delete_autosave
+						nonce: api.settings.nonce.dismiss_autosave
 					} ).always( function() {
 						clearedToClose.resolve();
 					} );
@@ -6681,15 +6883,22 @@
 				element.set( api.state( 'selectedChangesetStatus' ).get() );
 
 				api.control( 'changeset_scheduled_date', function( dateControl ) {
-					var toggleDateControl;
+					var toggleDateControl, publishWhenTime, timeInterval = 10000;
 
 					dateControl.notifications.alt = true;
+					dateControl.deferred.embedded.done( function() {
+						api.state( 'selectedChangesetDate' ).sync( dateControl.setting );
+					    api.state( 'selectedChangesetDate' ).set( dateControl.setting() );
+					} );
 
-					// @todo Remove once implemented.
-					dateControl.notifications.add( 'not_implemented', new api.Notification( 'not_implemented', {
-						type: 'warning',
-						message: 'This is not implemented yet.'
-					} ) );
+					publishWhenTime = function( datetime ) {
+						dateControl.timeArrived( datetime, timeInterval ).done( function() {
+							// @todo Handle Publishing.
+						} );
+					};
+
+					publishWhenTime( api.state( 'changesetDate' ).get() );
+					api.state( 'changesetDate' ).bind( publishWhenTime );
 
 					dateControl.active.validate = function() {
 						return 'future' ===  element.get();
@@ -6786,6 +6995,13 @@
 		( function() {
 			var timeoutId, updateChangesetWithReschedule, scheduleChangesetUpdate, updatePending = false;
 
+			api.state( 'saved' ).bind( function( isSaved ) {
+				if ( ! isSaved && ! api.settings.changeset.autosaved ) {
+					api.settings.changeset.autosaved = true; // Once a change is made then autosaving kicks in.
+					api.previewer.send( 'autosaving' );
+				}
+			} );
+
 			/**
 			 * Request changeset update and then re-schedule the next changeset update time.
 			 *
@@ -6795,7 +7011,7 @@
 			updateChangesetWithReschedule = function() {
 				if ( ! updatePending ) {
 					updatePending = true;
-					api.requestChangesetUpdate( {}, true /* Autosave. */ ).always( function() {
+					api.requestChangesetUpdate( {}, { autosave: true } ).always( function() {
 						updatePending = false;
 					} );
 				}
@@ -6819,8 +7035,10 @@
 			scheduleChangesetUpdate();
 
 			// Save changeset when focus removed from window.
-			$( window ).on( 'blur.wp-customize-changeset-update', function() {
-				updateChangesetWithReschedule();
+			$( document ).on( 'visibilitychange.wp-customize-changeset-update', function() {
+				if ( document.hidden ) {
+					updateChangesetWithReschedule();
+				}
 			} );
 
 			// Save changeset before unloading window.
