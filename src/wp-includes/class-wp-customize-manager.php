@@ -2960,9 +2960,9 @@ final class WP_Customize_Manager {
 
 		if ( 'auto-draft' === get_post_status( $changeset_post_id ) ) {
 			if ( ! update_post_meta( $changeset_post_id, '_customize_restore_dismissed', true ) ) {
-				wp_send_json_error( 'auto_draft_deletion_failure', 500 );
+				wp_send_json_error( 'auto_draft_dismissal_failure', 500 );
 			} else {
-				wp_send_json_success( 'auto_draft_deleted' );
+				wp_send_json_success( 'auto_draft_dismissed' );
 			}
 		} else {
 			$revision = wp_get_post_autosave( $changeset_post_id );
