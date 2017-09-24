@@ -2958,19 +2958,20 @@ final class WP_Customize_Manager {
 			wp_send_json_error( 'missing_changeset', 404 );
 		}
 
-		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
-			wp_send_json_error( 'cannot_delete_changeset_post', 403 );
-		}
-
 		if ( 'auto-draft' === get_post_status( $changeset_post_id ) ) {
 			if ( ! update_post_meta( $changeset_post_id, '_customize_restore_dismissed', true ) ) {
-				wp_send_json_error( 'auto_draft_deletion_failure', 500 );
+				wp_send_json_error( 'auto_draft_dismissal_failure', 500 );
 			} else {
-				wp_send_json_success( 'auto_draft_deleted' );
+				wp_send_json_success( 'auto_draft_dismissed' );
 			}
 		} else {
 			$revision = wp_get_post_autosave( $changeset_post_id );
+
 			if ( $revision ) {
+				if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
+					wp_send_json_error( 'cannot_delete_autosave_revision', 403 );
+				}
+
 				if ( ! wp_delete_post( $revision->ID, true ) ) {
 					wp_send_json_error( 'autosave_revision_deletion_failure', 500 );
 				} else {
