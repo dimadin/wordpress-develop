@@ -50,8 +50,8 @@ class WP_Customize_Preview_Link_Control extends WP_Customize_Control {
 				<span class="screen-reader-text"><?php esc_html_e( 'Preview Link' ); ?></span>
 				<a class="preview-control-element" data-component="link" href="" target=""></a>
 				<input readonly class="preview-control-element" data-component="input" value="test" >
+				<button class="customize-copy-preview-link preview-control-element button button-secondary" data-component="button" data-copy-text="<?php esc_attr_e( 'Copy' ); ?>" data-copied-text="<?php esc_attr_e( 'Copied' ); ?>" ><?php esc_html_e( 'Copy' ); ?></button>
 			</label>
-			<button class="customize-copy-preview-link preview-control-element button button-secondary" data-component="button" data-copy-text="<?php esc_attr_e( 'Copy' ); ?>" data-copied-text="<?php esc_attr_e( 'Copied' ); ?>" ><?php esc_html_e( 'Copy' ); ?></button>
 		</div>
 		<?php
 	}

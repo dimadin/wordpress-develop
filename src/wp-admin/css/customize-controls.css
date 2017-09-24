@@ -168,6 +168,11 @@ body {
 	color: white;
 }
 
+#customize-control-changeset_preview_link label {
+	position: relative;
+	display: block;
+}
+
 #customize-control-changeset_preview_link a.preview-control-element {
 	display: inline-block;
 	position: absolute;
