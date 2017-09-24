@@ -440,6 +440,11 @@
 			api._lastSavedRevision = Math.max( api._latestRevision, api._lastSavedRevision );
 
 			api.state( 'changesetStatus' ).set( data.changeset_status );
+
+			if ( data.changeset_date ) {
+				api.state( 'changesetDate' ).set( data.changeset_date );
+			}
+
 			deferred.resolve( data );
 			api.trigger( 'changeset-saved', data );
 
@@ -3971,6 +3976,7 @@
 		inputElements: {},
 		initialClientTimestamp: 0,
 		invalidDate: false,
+		interval: false,
 
 		/**
 		 * Initialize behaviors.
@@ -4224,17 +4230,61 @@
 		},
 
 		/**
+		 * Get remaining time of when the date is set.
+		 *
+		 * @param {int} timestamp Time stamp of the future date.
+		 * @return {int} remainingTime Remaining time in milliseconds;
+		 */
+		getRemainingTime: function getRemainingTime( timestamp ) {
+			var control = this, millisecondsDivider = 1000, remainingTime;
+
+			remainingTime = timestamp - control.getCurrentTimestamp();
+			remainingTime = Math.ceil( remainingTime / millisecondsDivider );
+			return remainingTime;
+		},
+
+		/**
 		 * Check if the date is in the future.
 		 *
 		 * @returns {boolean} True if future date.
 		 */
 		isFutureDate: function isFutureDate() {
-			var control = this, millisecondsDivider = 1000, remainingTime;
+			var control = this;
+			return 0 < control.getRemainingTime( control.getInputDateTimestamp() );
+		},
 
-			remainingTime = control.getInputDateTimestamp() - control.getCurrentTimestamp();
-			remainingTime = Math.ceil( remainingTime / millisecondsDivider );
+		/**
+		 * Checks to see if the given time has arrived.
+		 * Use .progress() to get the remaining countdown time in milliseconds.
+		 *
+		 * @param {string} datetime Date time in Y-m-d H:i:s format.
+		 * @param {int} timeInterval Time interval after which the time needs to be checked in milliseconds.
+		 * @return {jQuery.deferred.promise}
+		 */
+		timeArrived: function timeArrived( datetime, timeInterval ) {
+			var control = this, deferred = $.Deferred(), timeRemaining, timestamp;
 
-			return 0 < remainingTime;
+			if ( ! datetime ) {
+				return deferred.reject( 'date_not_defined' );
+			}
+
+			clearInterval( control.interval ); // To ensure multiple intervals are not running in any case.
+			timestamp = ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime();
+			
+			if ( _.isNaN( timestamp ) ) {
+				return deferred.reject( 'invalid_date' );
+			}
+
+			control.interval = setInterval( function() {
+				timeRemaining = control.getRemainingTime( timestamp );
+				deferred.notify( timeRemaining ); // Plugins can convert to days hours minutes if required by listening to progress().
+				if ( 0 > timeRemaining ) {
+					clearInterval( control.interval );
+					deferred.resolve( timestamp );
+				}
+			}, timeInterval );
+
+			return deferred.promise();
 		},
 
 		/**
@@ -5308,8 +5358,9 @@
 		'paneVisible',
 		'expandedPanel',
 		'expandedSection',
-		'changesetStatus',
+		'changesetDate',
 		'selectedChangesetDate',
+		'changesetStatus',
 		'selectedChangesetStatus',
 		'previewerAlive',
 		'editShortcutVisibility'
@@ -5683,6 +5734,8 @@
 						previewer.send( 'saved', response );
 
 						api.state( 'changesetStatus' ).set( response.changeset_status );
+						api.state( 'changesetDate' ).set( response.changeset_date );
+
 						if ( 'publish' === response.changeset_status ) {
 
 							// Mark all published as clean if they haven't been modified during the request.
@@ -5893,6 +5946,7 @@
 				expandedSection = state.instance( 'expandedSection' ),
 				changesetStatus = state.instance( 'changesetStatus' ),
 				selectedChangesetStatus = state.instance( 'selectedChangesetStatus' ),
+				changesetDate = state.instance( 'changesetDate' ),
 				previewerAlive = state.instance( 'previewerAlive' ),
 				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
@@ -5941,6 +5995,7 @@
 
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
+			changesetDate( api.settings.changeset.publishDate );
 			selectedChangesetStatus( '' === api.settings.changeset.status || 'auto-draft' === api.settings.changeset.status ? 'publish' : api.settings.changeset.status );
 			selectedChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
@@ -6826,13 +6881,22 @@
 				element.set( api.state( 'selectedChangesetStatus' ).get() );
 
 				api.control( 'changeset_scheduled_date', function( dateControl ) {
-					var toggleDateControl;
+					var toggleDateControl, publishWhenTime, timeInterval = 10000;
 
 					dateControl.notifications.alt = true;
 					dateControl.deferred.embedded.done( function() {
 						api.state( 'selectedChangesetDate' ).sync( dateControl.setting );
 					    api.state( 'selectedChangesetDate' ).set( dateControl.setting() );
 					} );
+
+					publishWhenTime = function( datetime ) {
+						dateControl.timeArrived( datetime, timeInterval ).done( function() {
+							// @todo Handle Publishing.
+						} );
+					};
+
+					publishWhenTime( api.state( 'changesetDate' ).get() );
+					api.state( 'changesetDate' ).bind( publishWhenTime );
 
 					dateControl.active.validate = function() {
 						return 'future' ===  element.get();

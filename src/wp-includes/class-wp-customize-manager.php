@@ -2242,10 +2242,16 @@ final class WP_Customize_Manager {
 		} else {
 			$response = $r;
 
+			$changeset_post = get_post( $this->changeset_post_id() );
+
 			// Note that if the changeset status was publish, then it will get set to trash if revisions are not supported.
-			$response['changeset_status'] = get_post_status( $this->changeset_post_id() );
+			$response['changeset_status'] = $changeset_post->post_status;
 			if ( $is_publish && 'trash' === $response['changeset_status'] ) {
 				$response['changeset_status'] = 'publish';
+			}
+
+			if ( 'future' === $response['changeset_status'] ) {
+				$response['changeset_date'] = $changeset_post->post_date;
 			}
 
 			if ( 'publish' === $response['changeset_status'] ) {
