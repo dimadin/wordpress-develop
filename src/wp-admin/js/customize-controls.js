@@ -5798,10 +5798,8 @@
 					a = document.createElement( 'a' ),
 					params = {};
 
-				params.customize_changeset_uuid = api.settings.changeset.uuid;
-
-				if ( ! api.state( 'activated' ).get() ) {
-					params.customize_theme = api.settings.theme.stylesheet;
+				if ( api.state( 'changesetStatus' ).get() && 'publish' !== api.state( 'changesetStatus' ).get() ) {
+					params.customize_changeset_uuid = api.settings.changeset.uuid;
 				}
 
 				a.href = previewer.previewUrl();
