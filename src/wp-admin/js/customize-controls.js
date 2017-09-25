@@ -6078,6 +6078,23 @@
 				history.replaceState( {}, document.title, urlParser.href );
 			};
 
+			/**
+			 * Deactivate themes section if changeset status is not auto-draft
+			 */
+			api.section( 'themes', function( section ) {
+				var canActivate;
+
+				canActivate = function() {
+					return ! changesetStatus() || 'auto-draft' === changesetStatus();
+				};
+
+				section.active.validate = canActivate;
+				section.active.set( canActivate() );
+				changesetStatus.bind( function() {
+					section.active.set( canActivate() );
+				} );
+			} );
+
 			// @todo Should this be included with linear, but exclude auto-draft in condition?
 			if ( api.settings.changeset.branching ) {
 				changesetStatus.bind( function( newStatus ) {
