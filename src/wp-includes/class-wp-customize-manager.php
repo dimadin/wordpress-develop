@@ -3803,6 +3803,7 @@ final class WP_Customize_Manager {
 				'latestAutoDraftUuid' => $autosave_autodraft_post ? $autosave_autodraft_post->post_name : null,
 				'status' => $changeset_post ? $changeset_post->post_status : '',
 				'missedSchedule' => $missed_schedule,
+				'currentUserCanPublish' => current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts ),
 				'publishDate' => $changeset_post ? $changeset_post->post_date : '', // @todo Only if future status? Rename to just date?
 			),
 			'initialServerDate' => current_time( 'mysql', false ),
@@ -3965,17 +3966,22 @@ final class WP_Customize_Manager {
 		) );
 
 		/* Publish Settings Controls */
+		$status_choices = array(
+			'publish' => __( 'Publish' ),
+			'draft' => __( 'Save Draft' ),
+			'future' => __( 'Schedule' ),
+		);
+
+		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts ) ) {
+			unset( $status_choices[ 'publish' ] );
+		}
 
 		$this->add_control( 'changeset_status', array(
 			'section' => 'publish_settings',
 			'settings' => array(),
 			'type' => 'radio',
 			'label' => __( 'Action' ),
-			'choices' => array(
-				'publish' => __( 'Publish' ),
-				'draft' => __( 'Save Draft' ),
-				'future' => __( 'Schedule' ),
-			),
+			'choices' => $status_choices,
 			'capability' => 'customize',
 		) );
 

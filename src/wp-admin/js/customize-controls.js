@@ -5957,7 +5957,11 @@
 					publishSettingsBtn.prop( 'disabled', false );
 
 				} else if ( '' === changesetStatus.get() && saved() ) {
-					saveBtn.val( api.l10n.published );
+					if ( api.settings.changeset.currentUserCanPublish ) {
+						saveBtn.val( api.l10n.published );
+					} else {
+						saveBtn.val( api.l10n.saved );
+					}
 					publishSettingsBtn.prop( 'disabled', true );
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
@@ -5966,6 +5970,8 @@
 						saveBtn.val( api.l10n.saveDraft );
 					} else if ( 'future' === selectedChangesetStatus.get() ) {
 						saveBtn.val( api.l10n.schedule );
+					} else if ( ! api.settings.changeset.currentUserCanPublish ){
+						selectedChangesetStatus( 'draft' );
 					} else {
 						saveBtn.val( api.l10n.publish );
 					}
