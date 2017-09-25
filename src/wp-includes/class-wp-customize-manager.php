@@ -2228,7 +2228,7 @@ final class WP_Customize_Manager {
 		}
 
 		$autosave = ! empty( $_POST['customize_changeset_autosave'] );
-		if ( ! defined( 'DOING_AUTOSAVE' ) ) { // Back-compat.
+		if ( $autosave && ! defined( 'DOING_AUTOSAVE' ) ) { // Back-compat.
 			define( 'DOING_AUTOSAVE', true );
 		}
 
