@@ -1122,6 +1122,10 @@ p.customize-section-description {
 	margin: 0;
 }
 
+.wp-full-overlay.collapsed #customize-controls #customize-notifications-area {
+	display: none !important;
+}
+
 #customize-controls #customize-notifications-area,
 #customize-controls .customize-section-title > .customize-control-notifications-container,
 #customize-controls .panel-meta > .customize-control-notifications-container {
