@@ -7052,7 +7052,7 @@
 				element.set( api.state( 'selectedChangesetStatus' ).get() );
 
 				api.control( 'changeset_scheduled_date', function( dateControl ) {
-					var toggleDateControl, publishWhenTime, timeInterval = 10000;
+					var toggleDateControl, publishWhenTime, timeInterval = 1000;
 
 					dateControl.notifications.alt = true;
 					dateControl.deferred.embedded.done( function() {
@@ -7061,8 +7061,19 @@
 					} );
 
 					publishWhenTime = function( datetime ) {
+						if ( 'future' !== api.state( 'changesetStatus' ).get() || ! datetime ) {
+						    return;
+						}
+
 						dateControl.timeArrived( datetime, timeInterval ).done( function() {
-							// @todo Handle Publishing.
+							var request = api.requestChangesetUpdate( {}, {
+								title: api.settings.changeset.uuid
+							} );
+							request.done( function( resp ) {
+								if ( 'trash' === resp.changeset_status || 'changeset_already_published' === resp.code ) {
+									api.state( 'changesetStatus' ).set( '' );
+								}
+							} );
 						} );
 					};
 
