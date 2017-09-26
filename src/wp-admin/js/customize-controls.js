@@ -1901,18 +1901,78 @@
 		 *
 		 * @since 4.9.0
 		 *
-		 * @param {Boolean}  expanded
-		 * @param {Object}   args
-		 * @param {Boolean}  args.unchanged
-		 * @param {Boolean}  args.allowMultiple
-		 * @param {Function} args.completeCallback
+		 * @param {Boolean}  expanded - The expanded state to transition to.
+		 * @param {Object}   [args] - Args.
+		 * @param {boolean}  [args.unchanged] - Whether the state is already known to not be changed, and so short-circuit with calling completeCallback early.
+		 * @param {Function} [args.completeCallback] - Function to call when the slideUp/slideDown has completed.
+		 * @param {Object}   [args.duration] - The duration for the animation.
 		 */
 		onChangeExpanded: function( expanded, args ) {
-			var overriddenArgs = _.extend( {}, args, {
-				unchanged: true,
-				allowMultiple: true
-			} );
-			return api.Section.prototype.onChangeExpanded.call( this, expanded, overriddenArgs );
+			var section = this,
+				container = section.headContainer.closest( '.wp-full-overlay-sidebar-content' ),
+				content = section.contentContainer,
+				backBtn = content.find( '.customize-section-back' ),
+				sectionTitle = section.headContainer.find( '.accordion-section-title' ).first(),
+				expand, panel;
+
+			if ( expanded && ! content.hasClass( 'open' ) ) {
+
+				if ( args.unchanged ) {
+					expand = args.completeCallback;
+				} else {
+					expand = $.proxy( function() {
+						section._animateChangeExpanded( function() {
+							sectionTitle.attr( 'tabindex', '-1' );
+							backBtn.attr( 'tabindex', '0' );
+
+							backBtn.focus();
+							content.css( 'top', '' );
+							container.scrollTop( 0 );
+
+							if ( args.completeCallback ) {
+								args.completeCallback();
+							}
+						} );
+
+						content.addClass( 'open' );
+					}, this );
+				}
+
+				if ( section.panel() ) {
+					api.panel( section.panel() ).expand({
+						duration: args.duration,
+						completeCallback: expand
+					});
+				} else {
+					expand();
+				}
+
+			} else if ( ! expanded && content.hasClass( 'open' ) ) {
+				if ( section.panel() ) {
+					panel = api.panel( section.panel() );
+					if ( panel.contentContainer.hasClass( 'skip-transition' ) ) {
+						panel.collapse();
+					}
+				}
+				section._animateChangeExpanded( function() {
+					backBtn.attr( 'tabindex', '-1' );
+					sectionTitle.attr( 'tabindex', '0' );
+
+					sectionTitle.focus();
+					content.css( 'top', '' );
+
+					if ( args.completeCallback ) {
+						args.completeCallback();
+					}
+				} );
+
+				content.removeClass( 'open' );
+
+			} else {
+				if ( args.completeCallback ) {
+					args.completeCallback();
+				}
+			}
 		}
 	});
 
