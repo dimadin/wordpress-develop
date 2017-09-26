@@ -359,6 +359,7 @@
 	 *                             If not provided, then the changes will still be obtained from unsaved dirty settings.
 	 * @param {object}  [args] - Additional options for the save request.
 	 * @param {boolean} [args.autosave=false] - Whether changes will be stored in autosave revision if the changeset has been promoted from an auto-draft.
+	 * @param {boolean} [args.force=false] - Send request to update even when there are no changes to submit. This can be used to request the latest status of the changeset on the server.
 	 * @param {string}  [args.title] - Title to update in the changeset. Optional.
 	 * @param {string}  [args.date] - Date to update in the changeset. Optional.
 	 * @returns {jQuery.Promise} Promise resolving with the response data.
@@ -370,7 +371,8 @@
 		submittedArgs = _.extend( {
 			title: null,
 			date: null,
-			autosave: false
+			autosave: false,
+			force: false
 		}, args );
 
 		if ( changes ) {
@@ -388,14 +390,14 @@
 			}
 		} );
 
+		// Allow plugins to attach additional params to the settings.
+		api.trigger( 'changeset-save', submittedChanges, submittedArgs );
+
 		// Short-circuit when there are no pending changes.
-		if ( _.isEmpty( submittedChanges ) && null === submittedArgs.title && null === submittedArgs.date ) {
+		if ( ! submittedArgs.force && _.isEmpty( submittedChanges ) && null === submittedArgs.title && null === submittedArgs.date ) {
 			deferred.resolve( {} );
 			return deferred.promise();
 		}
-
-		// Allow plugins to attach additional params to the settings.
-		api.trigger( 'changeset-save', submittedChanges, submittedArgs );
 
 		// A status would cause a revision to be made, and for this wp.customize.previewer.save() should be used. Status is also disallowed for revisions regardless.
 		if ( submittedArgs.status ) {
@@ -7069,7 +7071,7 @@
 							var request, notification, code = 'scheduled_changeset_published';
 
 							request = api.requestChangesetUpdate( {}, {
-								title: api.settings.changeset.uuid
+								force: true // Note that autosave is not true, so any pending changes will also get
 							} );
 
 							request.done( function( resp ) {
