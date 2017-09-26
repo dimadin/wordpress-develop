@@ -622,7 +622,7 @@ final class WP_Customize_Manager {
 
 		if ( ! $branching ) {
 			$unpublished_changeset_posts = $this->get_changeset_posts( array(
-				'post_status' => array( 'any' ), // Note: not including auto-draft!
+				'post_status' => array_diff( get_post_stati(), array( 'auto-draft', 'publish', 'trash', 'inherit', 'private' ) ),
 				'exclude_restore_dismissed' => false,
 				'posts_per_page' => 1,
 				'order' => 'DESC',
