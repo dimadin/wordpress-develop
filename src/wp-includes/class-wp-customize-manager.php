@@ -2371,7 +2371,7 @@ final class WP_Customize_Manager {
 				$response['changeset_date'] = $changeset_post->post_date;
 			}
 
-			if ( 'publish' === $response['changeset_status'] ) {
+			if ( 'publish' === $response['changeset_status'] || 'trash' === $response['changeset_status'] ) {
 				$response['next_changeset_uuid'] = wp_generate_uuid4();
 			}
 		}

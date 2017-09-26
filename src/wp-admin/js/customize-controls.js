@@ -7066,12 +7066,24 @@
 						}
 
 						dateControl.timeArrived( datetime, timeInterval ).done( function() {
-							var request = api.requestChangesetUpdate( {}, {
+							var request, notification, code = 'scheduled_changeset_published';
+
+							request = api.requestChangesetUpdate( {}, {
 								title: api.settings.changeset.uuid
 							} );
+
 							request.done( function( resp ) {
 								if ( 'trash' === resp.changeset_status || 'changeset_already_published' === resp.code ) {
 									api.state( 'changesetStatus' ).set( '' );
+									if ( resp.next_changeset_uuid ) {
+										notification = new api.Notification( code, {
+											message: api.l10n.changesetPublished,
+											type: 'info',
+											dismissible: true
+										} );
+										api.notifications.add( code, notification );
+										api.settings.changeset.uuid = resp.next_changeset_uuid
+									}
 								}
 							} );
 						} );

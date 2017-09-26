@@ -557,6 +557,7 @@ function wp_default_scripts( &$scripts ) {
 		'schedule'           => __( 'Schedule' ),
 		'scheduled'          => __( 'Scheduled' ),
 		'invalid'            => __( 'Invalid' ),
+		'changesetPublished' => __( 'Scheduled changeset published.' ),
 		'saveBeforeShare'    => __( 'Please save your changes in order to share the preview.' ),
 		'futureDateError'    => __( 'You must supply a future date to schedule.' ),
 		'saveAlert'          => __( 'The changes you made will be lost if you navigate away from this page.' ),
