@@ -6077,6 +6077,7 @@
 				changesetStatus = state.instance( 'changesetStatus' ),
 				selectedChangesetStatus = state.instance( 'selectedChangesetStatus' ),
 				changesetDate = state.instance( 'changesetDate' ),
+				selectedChangesetDate = state.instance( 'selectedChangesetDate' ),
 				previewerAlive = state.instance( 'previewerAlive' ),
 				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
@@ -6117,7 +6118,7 @@
 				 * Save (publish) button should be enabled if saving is not currently happening,
 				 * and if the theme is not active or the changeset exists but is not published.
 				 */
-				canSave = ! saving() && ( ! activated() || ! saved() || ( changesetStatus() !== selectedChangesetStatus() && '' !== changesetStatus() ) );
+				canSave = ! saving() && ( ! activated() || ! saved() || ( changesetStatus() !== selectedChangesetStatus() && '' !== changesetStatus() ) || ( 'future' === selectedChangesetStatus() && changesetDate.get() !== selectedChangesetDate.get() ) );
 
 				saveBtn.prop( 'disabled', ! canSave );
 			});
