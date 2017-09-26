@@ -2245,7 +2245,8 @@ final class WP_Customize_Manager {
 		}
 
 		$changeset_post_id = $this->changeset_post_id();
-		if ( empty( $changeset_post_id ) ) {
+		$is_new_changeset = empty( $changeset_post_id );
+		if ( $is_new_changeset ) {
 			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->create_posts ) ) {
 				wp_send_json_error( 'cannot_create_changeset_post' );
 			}
@@ -2335,6 +2336,20 @@ final class WP_Customize_Manager {
 			}
 		} else {
 			$response = $r;
+
+			// Dismiss all other auto-draft changeset posts for this user (they serve like autosave revisions), as there should only be one.
+			if ( $is_new_changeset ) {
+				$changeset_autodraft_posts = $this->get_changeset_posts( array(
+					'post_status' => 'auto-draft',
+					'exclude_restore_dismissed' => true,
+					'posts_per_page' => -1,
+				) );
+				foreach ( $changeset_autodraft_posts as $autosave_autodraft_post ) {
+					if ( $autosave_autodraft_post->ID !== $this->changeset_post_id() ) {
+						update_post_meta( $autosave_autodraft_post->ID, '_customize_restore_dismissed', true );
+					}
+				}
+			}
 
 			// Note that if the changeset status was publish, then it will get set to trash if revisions are not supported.
 			$response['changeset_status'] = get_post_status( $this->changeset_post_id() );
@@ -2726,19 +2741,6 @@ final class WP_Customize_Manager {
 			$r = wp_insert_post( wp_slash( $post_array ), true );
 			if ( ! is_wp_error( $r ) ) {
 				$this->_changeset_post_id = $r; // Update cached post ID for the loaded changeset.
-
-				// @todo Limit this to linear mode?
-				// Dismiss all other auto-draft changeset posts for this user (they serve like autosave revisions), as there should only be one.
-				$changeset_autodraft_posts = $this->get_changeset_posts( array(
-					'post_status' => 'auto-draft',
-					'exclude_restore_dismissed' => true,
-					'posts_per_page' => -1,
-				) );
-				foreach ( $changeset_autodraft_posts as $autosave_autodraft_post ) {
-					if ( $autosave_autodraft_post->ID !== $this->_changeset_post_id ) {
-						update_post_meta( $autosave_autodraft_post->ID, '_customize_restore_dismissed', true );
-					}
-				}
 			}
 		}
 		if ( $has_kses ) {
