@@ -3866,7 +3866,7 @@ final class WP_Customize_Manager {
 		$autosave_revision_post = null;
 		$autosave_autodraft_post = null;
 		$changeset_post_id = $this->changeset_post_id();
-		if ( ! $this->saved_starter_content_changeset ) {
+		if ( ! $this->saved_starter_content_changeset && ! $this->autosaved ) {
 			if ( $changeset_post_id ) {
 				$autosave_revision_post = wp_get_post_autosave( $changeset_post_id );
 			} else {
