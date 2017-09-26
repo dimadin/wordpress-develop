@@ -5526,7 +5526,8 @@
 				stripParamsFromLocation( [ 'customize_autosaved' ] ); // Remove param when restoring autosave revision.
 			} else if ( ! api.settings.changeset.branching && 'auto-draft' === api.settings.changeset.status ) {
 				stripParamsFromLocation( [ 'changeset_uuid' ] ); // Remove UUID when restoring autosave auto-draft.
-			} else if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
+			}
+			if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
 				addAutosaveRestoreNotification();
 			}
 		})();

@@ -198,6 +198,14 @@ final class WP_Customize_Manager {
 	protected $settings_previewed = true;
 
 	/**
+	 * Whether a starter content changeset was saved.
+	 *
+	 * @since 4.9.0
+	 * @var bool
+	 */
+	protected $saved_starter_content_changeset = false;
+
+	/**
 	 * Unsanitized values for Customize Settings parsed from $_POST['customized'].
 	 *
 	 * @var array
@@ -1540,6 +1548,7 @@ final class WP_Customize_Manager {
 			'data' => array_fill_keys( $this->pending_starter_content_settings_ids, array( 'starter_content' => true ) ),
 			'starter_content' => true,
 		) );
+		$this->saved_starter_content_changeset = true;
 
 		$this->pending_starter_content_settings_ids = array();
 	}
@@ -3857,16 +3866,18 @@ final class WP_Customize_Manager {
 		$autosave_revision_post = null;
 		$autosave_autodraft_post = null;
 		$changeset_post_id = $this->changeset_post_id();
-		if ( $changeset_post_id ) {
-			$autosave_revision_post = wp_get_post_autosave( $changeset_post_id );
-		} else {
-			$autosave_autodraft_posts = $this->get_changeset_posts( array(
-				'posts_per_page' => 1,
-				'post_status' => 'auto-draft',
-				'exclude_restore_dismissed' => true,
-			) );
-			if ( ! empty( $autosave_autodraft_posts ) ) {
-				$autosave_autodraft_post = array_shift( $autosave_autodraft_posts );
+		if ( ! $this->saved_starter_content_changeset ) {
+			if ( $changeset_post_id ) {
+				$autosave_revision_post = wp_get_post_autosave( $changeset_post_id );
+			} else {
+				$autosave_autodraft_posts = $this->get_changeset_posts( array(
+					'posts_per_page' => 1,
+					'post_status' => 'auto-draft',
+					'exclude_restore_dismissed' => true,
+				) );
+				if ( ! empty( $autosave_autodraft_posts ) ) {
+					$autosave_autodraft_post = array_shift( $autosave_autodraft_posts );
+				}
 			}
 		}
 
