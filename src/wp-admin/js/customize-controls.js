@@ -592,6 +592,48 @@
 	};
 
 	/**
+	 * Get current timestamp adjusted for server clock time.
+	 *
+	 * Same functionality as the `current_time( 'mysql', false )` function in PHP.
+	 *
+	 * @since 4.9.0
+	 *
+	 * @returns {int} Current timestamp.
+	 */
+	api.utils.getCurrentTimestamp = function getCurrentTimestamp() {
+		var currentDate, currentClientTimestamp, timestampDifferential;
+		currentClientTimestamp = _.now();
+		currentDate = new Date( api.settings.initialServerDate.replace( /-/g, '/' ) );
+		timestampDifferential = currentClientTimestamp - api.settings.initialClientTimestamp;
+		timestampDifferential += api.settings.initialClientTimestamp - api.settings.initialServerTimestamp;
+		currentDate.setTime( currentDate.getTime() + timestampDifferential );
+		return currentDate.getTime();
+	};
+
+	/**
+	 * Get remaining time of when the date is set.
+	 *
+	 * @since 4.9.0
+	 *
+	 * @param {string|int|Date} datetime - Date time or timestamp of the future date.
+	 * @return {int} remainingTime - Remaining time in milliseconds.
+	 */
+	api.utils.getRemainingTime = function getRemainingTime( datetime ) {
+		var millisecondsDivider = 1000, remainingTime, timestamp;
+		if ( datetime instanceof Date ) {
+			timestamp = datetime.getTime();
+		} else if ( 'string' === typeof datetime ) {
+			timestamp = ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime();
+		} else {
+			timestamp = datetime;
+		}
+
+		remainingTime = timestamp - api.utils.getCurrentTimestamp();
+		remainingTime = Math.ceil( remainingTime / millisecondsDivider );
+		return remainingTime;
+	},
+
+	/**
 	 * Return browser supported `transitionend` event name.
 	 *
 	 * @since 4.7.0
@@ -4110,7 +4152,6 @@
 
 		dateInputs: {},
 		inputElements: {},
-		initialClientTimestamp: 0,
 		invalidDate: false,
 		interval: false,
 
@@ -4125,7 +4166,6 @@
 
 			_.bindAll( control, 'populateSetting', 'updateDaysForMonth', 'updateMinutesForHour' );
 
-			control.initialClientTimestamp = _.now();
 			control.dateInputs = control.container.find( '.date-input' );
 
 			// @todo This needs https://core.trac.wordpress.org/ticket/37964
@@ -4341,42 +4381,9 @@
 		 */
 		getInputDateTimestamp: function getInputDateTimestamp() {
 			var control = this, dateObject, inputDateString;
-
 			inputDateString = control.convertInputDateToString();
 			dateObject = new Date( inputDateString.replace( /-/g, '/' ) );
 			return dateObject.getTime();
-		},
-
-		/**
-		 * Get current date/time in the site's timezone.
-		 *
-		 * Same functionality as the `current_time( 'mysql', false )` function in PHP.
-		 *
-		 * @returns {int} Current datetime string.
-		 */
-		getCurrentTimestamp: function getCurrentTimestamp() {
-			var control = this, currentDate, currentClientTimestamp, timestampDifferential;
-
-			currentClientTimestamp = _.now();
-			currentDate = new Date( api.settings.initialServerDate.replace( /-/g, '/' ) );
-			timestampDifferential = currentClientTimestamp - control.initialClientTimestamp;
-			timestampDifferential += control.initialClientTimestamp - api.settings.initialServerTimestamp;
-			currentDate.setTime( currentDate.getTime() + timestampDifferential );
-			return currentDate.getTime();
-		},
-
-		/**
-		 * Get remaining time of when the date is set.
-		 *
-		 * @param {int} timestamp Time stamp of the future date.
-		 * @return {int} remainingTime Remaining time in milliseconds;
-		 */
-		getRemainingTime: function getRemainingTime( timestamp ) {
-			var control = this, millisecondsDivider = 1000, remainingTime;
-
-			remainingTime = timestamp - control.getCurrentTimestamp();
-			remainingTime = Math.ceil( remainingTime / millisecondsDivider );
-			return remainingTime;
 		},
 
 		/**
@@ -4386,7 +4393,7 @@
 		 */
 		isFutureDate: function isFutureDate() {
 			var control = this;
-			return 0 < control.getRemainingTime( control.getInputDateTimestamp() );
+			return 0 < api.utils.getRemainingTime( control.convertInputDateToString() );
 		},
 
 		/**
