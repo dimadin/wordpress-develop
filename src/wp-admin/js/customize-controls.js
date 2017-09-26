@@ -1085,6 +1085,8 @@
 	 */
 	api.Section = Container.extend({
 		containerType: 'section',
+		containerParent: '#customize-theme-controls',
+		containerPaneParent: '.customize-pane-parent',
 		defaults: {
 			title: '',
 			description: '',
@@ -1137,8 +1139,9 @@
 		 */
 		embed: function () {
 			var inject,
-				section = this,
-				container = $( '#customize-theme-controls' );
+				section = this;
+
+			section.cointainerParent = api.ensure( section.containerParent );
 
 			// Watch for changes to the panel state
 			inject = function ( panelId ) {
@@ -1153,19 +1156,19 @@
 								parentContainer.append( section.headContainer );
 							}
 							if ( ! section.contentContainer.parent().is( section.headContainer ) ) {
-								container.append( section.contentContainer );
+								section.cointainerParent.append( section.contentContainer );
 							}
 							section.deferred.embedded.resolve();
 						});
 					} );
 				} else {
 					// There is no panel, so embed the section in the root of the customizer
-					parentContainer = $( '.customize-pane-parent' ); // @todo This should be defined elsewhere, and to be configurable
+					parentContainer = api.ensure( section.containerPaneParent );
 					if ( ! section.headContainer.parent().is( parentContainer ) ) {
 						parentContainer.append( section.headContainer );
 					}
 					if ( ! section.contentContainer.parent().is( section.headContainer ) ) {
-						container.append( section.contentContainer );
+						section.cointainerParent.append( section.contentContainer );
 					}
 					section.deferred.embedded.resolve();
 				}
@@ -1843,6 +1846,29 @@
 					return false;
 				}
 			});
+		}
+	});
+
+	/**
+	 * wp.customize.OuterSection
+	 *
+	 * @since 4.9
+	 * Creates section outside of the sidebar, there is no ui to trigger the collapse/expand so
+	 * it would require custom handling.
+	 *
+	 * @constructor
+	 * @augments wp.customize.Section
+	 * @augments wp.customize.Container
+	 */
+	api.OuterSection = api.Section.extend({
+
+		/**
+		 * @since 4.9.0
+		 */
+		initialize: function () {
+			this.containerParent = '#customize-outer-theme-controls';
+			this.containerPaneParent = '.customize-outer-pane-parent';
+			return api.Section.prototype.initialize.apply( this, arguments );
 		}
 	});
 
@@ -5179,7 +5205,8 @@
 	};
 	api.panelConstructor = {};
 	api.sectionConstructor = {
-		themes: api.ThemesSection
+		themes: api.ThemesSection,
+		outer: api.OuterSection
 	};
 
 	/**
@@ -5405,6 +5432,9 @@
 		saveBtn.show();
 		api.section( 'publish_settings', function( section ) {
 			var backgroundEls, animationDuration = 500, updateButtonsState;
+
+			section.containerPaneParent = '.customize-outer-pane-parent';
+			section.containerParent = '#customize-outer-theme-controls';
 
 			section.onChangeExpanded = function( expanded, args ) {
 				var overriddenArgs = _.extend( {}, args, {
