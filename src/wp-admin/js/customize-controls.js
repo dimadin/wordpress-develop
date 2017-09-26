@@ -1852,9 +1852,10 @@
 	/**
 	 * wp.customize.OuterSection
 	 *
-	 * @since 4.9
-	 * Creates section outside of the sidebar, there is no ui to trigger the collapse/expand so
+	 * Creates section outside of the sidebar, there is no ui to trigger collapse/expand so
 	 * it would require custom handling.
+	 *
+	 * @since 4.9
 	 *
 	 * @constructor
 	 * @augments wp.customize.Section
@@ -1862,37 +1863,49 @@
 	 */
 	api.OuterSection = api.Section.extend({
 
-		outerContainer: '#customize-sidebar-outer-content',
-
 		/**
 		 * @since 4.9.0
 		 */
 		initialize: function () {
 			var section = this;
-
-			section.outerContainer = api.ensure( section.outerContainer );
 			section.containerParent = '#customize-outer-theme-controls';
 			section.containerPaneParent = '.customize-outer-pane-parent';
-
 			return api.Section.prototype.initialize.apply( section, arguments );
 		},
 
+		/**
+		 * Overrides api.Section.prototype.attachEvents to add behaviors for outer accordion section.
+		 *
+		 * @since 4.9.0
+		 */
 		attachEvents: function() {
-			var section = this,
-				body = $( 'body' ),
-				animationDuration = 180; // From css transition.
+			var section = this, body = $( 'body' );
 
 			section.expanded.bind( function( isExpanded ) {
 				body.toggleClass( 'outer-section-open', isExpanded );
 				section.container.toggleClass( 'open', isExpanded );
-				_.delay( function() {
-					section.container.removeClass( 'busy' );
-				}, animationDuration );
+				api.section.each( function( _section ) {
+				    if ( 'outer' === _section.params.type && _section.id !== section.id ) {
+						_section.container.removeClass( 'open' );
+				    }
+				} );
 			} );
 
 			return api.Section.prototype.attachEvents.apply( section, arguments );
 		},
 
+		/**
+		 * Overrides api.Section.prototype.onChangeExpanded to prevent collapse/expand effect
+		 * on other sections and panels.
+		 *
+		 * @since 4.9.0
+		 *
+		 * @param {Boolean}  expanded
+		 * @param {Object}   args
+		 * @param {Boolean}  args.unchanged
+		 * @param {Boolean}  args.allowMultiple
+		 * @param {Function} args.completeCallback
+		 */
 		onChangeExpanded: function( expanded, args ) {
 			var overriddenArgs = _.extend( {}, args, {
 				unchanged: true,
@@ -5461,18 +5474,6 @@
 
 		saveBtn.show();
 
-		// @todo Test section, remove after test.
-		api.section( 'section_test_1', function( section ) {
-			var testButton = $( '<button style="margin-left: 40px;" id="test-button">Test</button>' );
-
-			testButton.on( 'click', function( event ) {
-			    event.preventDefault();
-			    section.expanded.set( ! section.expanded.get() );
-			} );
-
-			$( '#customize-header-actions' ).append( testButton );
-		});
-
 		api.section( 'publish_settings', function( section ) {
 			var updateButtonsState;
 
@@ -5491,7 +5492,6 @@
 			section.active.bind( updateButtonsState );
 
 			section.contentContainer.find( '.customize-action' ).text( api.l10n.updating );
-			section.contentContainer.find( '.customize-section-back' ).removeAttr( 'tabindex' );
 			publishSettingsBtn.prop( 'disabled', false );
 
 			publishSettingsBtn.on( 'click', function( event ) {

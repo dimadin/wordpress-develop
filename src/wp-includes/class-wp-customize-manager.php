@@ -4069,20 +4069,6 @@ final class WP_Customize_Manager {
 			'active_callback' => array( $this, 'is_theme_active' ),
 		) );
 
-		$this->add_section( 'section_test_1', array(
-			'title' => __( 'Section Test 1' ),
-			'priority' => 0,
-			'capability' => 'customize',
-			'type' => 'outer',
-		) );
-
-		$this->add_section( 'section_test_2', array(
-			'title' => __( 'Section Test 1' ),
-			'priority' => 0,
-			'capability' => 'customize',
-			'type' => 'outer',
-		) );
-
 		/* Publish Settings Controls */
 		$status_choices = array(
 			'publish' => __( 'Publish' ),
