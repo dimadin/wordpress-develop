@@ -4391,6 +4391,7 @@
 
 		/**
 		 * Checks to see if the given time has arrived.
+		 *
 		 * Use .progress() to get the remaining countdown time in milliseconds.
 		 *
 		 * @param {string} datetime Date time in Y-m-d H:i:s format.
@@ -4404,21 +4405,30 @@
 				return deferred.reject( 'date_not_defined' );
 			}
 
-			clearInterval( control.interval ); // To ensure multiple intervals are not running in any case.
 			timestamp = ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime();
 
 			if ( _.isNaN( timestamp ) ) {
 				return deferred.reject( 'invalid_date' );
 			}
 
-			control.interval = setInterval( function() {
+			// Clear and reject the previous timeArrived promise.
+			if ( control._timeArrivedInterval ) {
+				clearInterval( control._timeArrivedInterval ); // To ensure multiple intervals are not running in any case.
+			}
+			if ( control._timeArrivedDeferred ) {
+				control._timeArrivedDeferred.reject();
+			}
+
+			control._timeArrivedInterval = setInterval( function() {
 				timeRemaining = control.getRemainingTime( timestamp );
 				deferred.notify( timeRemaining ); // Plugins can convert to days hours minutes if required by listening to progress().
 				if ( 0 > timeRemaining ) {
-					clearInterval( control.interval );
+					clearInterval( control._timeArrivedInterval );
 					deferred.resolve( timestamp );
 				}
 			}, timeInterval );
+
+			control._timeArrivedDeferred = deferred;
 
 			return deferred.promise();
 		},
