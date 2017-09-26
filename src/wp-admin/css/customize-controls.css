@@ -85,7 +85,7 @@ body {
 	opacity: 0.4;
 }
 
-body.outer-section-open .wp-full-overlay-main.expanded {
+body.outer-section-open .wp-full-overlay.expanded .wp-full-overlay-main {
 	left: 300px;
 }
 
@@ -2245,6 +2245,10 @@ body.adding-widget .add-new-widget:before,
 
 	#publish-settings {
 		height: 31px;
+	}
+
+	#customize-control-changeset_status label {
+		padding-top: 15px;
 	}
 
 	body.adding-widget div#available-widgets,
