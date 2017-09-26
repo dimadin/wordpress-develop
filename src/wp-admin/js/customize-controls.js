@@ -5492,6 +5492,7 @@
 			section.active.bind( updateButtonsState );
 
 			section.contentContainer.find( '.customize-action' ).text( api.l10n.updating );
+			section.contentContainer.find( '.customize-section-back' ).removeAttr( 'tabindex' );
 			publishSettingsBtn.prop( 'disabled', false );
 
 			publishSettingsBtn.on( 'click', function( event ) {

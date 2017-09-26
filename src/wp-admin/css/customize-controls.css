@@ -27,7 +27,6 @@ body {
 #customize-save-button-wrapper {
 	float: right;
 	margin-top: 9px;
-	overflow: hidden;
 }
 
 #customize-save-button-wrapper .save {
@@ -90,6 +89,13 @@ body.outer-section-open .wp-full-overlay-main {
 	left: 300px;
 }
 
+#customize-outer-theme-controls li.notice {
+	padding-top: 8px;
+	padding-bottom: 8px;
+	margin-left: 0;
+	margin-bottom: 10px;
+}
+
 #publish-settings {
 	text-indent: 0;
 	border-radius: 0 3px 3px 0;
@@ -100,6 +106,8 @@ body.outer-section-open .wp-full-overlay-main {
 	width: 30px;
 	float: left;
 	display: none; /* Shown when ready. */
+	-webkit-transform: none;
+	transform: none;
 }
 
 #customize-header-actions .spinner {
@@ -305,7 +313,7 @@ body.outer-section-open .wp-full-overlay-main {
 }
 
 #customize-control-changeset_preview_link {
-	margin-top: 12px;
+	margin-top: 20px;
 }
 
 #customize-control-changeset_status {
@@ -317,7 +325,7 @@ body.outer-section-open .wp-full-overlay-main {
 	box-sizing: content-box;
 	width: 100%;
 	margin-left: -12px;
-	padding: 12px;
+	padding: 12px 12px 18px;
 	background: #ffffff;
 	border-bottom: 1px solid #ddd;
 	margin-bottom: 0;

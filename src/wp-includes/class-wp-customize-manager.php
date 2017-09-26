@@ -4101,7 +4101,7 @@ final class WP_Customize_Manager {
 			'min_year' => date( 'Y' ),
 			'allow_past_date' => false,
 			'twelve_hour_format' => false !== stripos( get_option( 'time_format' ), 'a' ),
-			'description' => __( 'Schedule your customization changes to publish ( "go live" ) at a future date.' ),
+			'description' => __( 'Schedule your customization changes to publish ("go live") at a future date.' ),
 			'capability' => 'customize',
 			'default_value' => $initial_date,
 		) ) );
