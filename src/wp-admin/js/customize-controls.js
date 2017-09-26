@@ -6768,7 +6768,7 @@
 				 * since customize-loader.js will also use one. So autosave restorations are disabled
 				 * when customize-loader.js is used.
 				 */
-				if ( isInsideIframe && isCleanState() ) {
+				if ( isInsideIframe || isCleanState() ) {
 					clearedToClose.resolve();
 				} else if ( confirm( api.l10n.saveAlert ) ) {
 
