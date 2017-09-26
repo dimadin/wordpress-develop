@@ -253,35 +253,8 @@ body.outer-section-open .wp-full-overlay.expanded .wp-full-overlay-main {
 	box-shadow: none;
 }
 
-#accordion-section-publish_settings,
-.customize-pane-child.hidden {
-	display: none !important;
-}
-
 #sub-accordion-section-publish_settings .customize-section-description-container {
 	display: none;
-}
-
-#customize-theme-controls .accordion-section-content#sub-accordion-section-publish_settings {
-	-webkit-transform: translate( 0, -100% );
-	transform: translate( 0, -100% );
-	left: 0;
-	top: 0;
-	height: auto;
-	z-index: 99999;
-	background: #f1f1f1;
-	transition: 0.3s;
-	transition-timing-function: cubic-bezier(1.2, 0.9, 0.8, 1.2);
-}
-
-#customize-theme-controls .accordion-section-content#sub-accordion-section-publish_settings.publish-settings-open {
-	visibility: visible;
-	display: block;
-	min-height:100%;
-	-webkit-transform: translate( 0, 0 );
-	transform: translate( 0, 0 );
-	transition-duration: 0.3s;
-	transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
 }
 
 #customize-controls .customize-info.section-meta {
