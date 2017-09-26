@@ -2794,59 +2794,15 @@ function _wp_customize_include() {
 	);
 
 	$theme = null;
-	$changeset_uuid = null;
+	$changeset_uuid = false; // Value false indicates UUID should be determined after_setup_theme to either re-use existing saved changeset or else generate a new UUID if none exists.
 	$messenger_channel = null;
 	$autosaved = null;
+	$branching = false; // Set initially fo false since defaults to true for back-compat; can be overridden via the customize_changeset_branching filter.
 
 	if ( $is_customize_admin_page && isset( $input_vars['changeset_uuid'] ) ) {
 		$changeset_uuid = sanitize_key( $input_vars['changeset_uuid'] );
 	} elseif ( ! empty( $input_vars['customize_changeset_uuid'] ) ) {
 		$changeset_uuid = sanitize_key( $input_vars['customize_changeset_uuid'] );
-	}
-
-	/**
-	 * Filters whether or not changeset branching is allowed.
-	 *
-	 * By default in core, when changeset branching is not allowed, changesets will operate
-	 * linearly in that only one saved changeset will exist at a time (with a 'draft' or
-	 * 'future' status). This makes the Customizer operate in a way that is similar to going to
-	 * "edit" to one existing post: all users will be making changes to the same post, and autosave
-	 * revisions will be made for that post.
-	 *
-	 * By contrast, when changeset branching is allowed, then the model is like users going
-	 * to "add new" for a page and each user makes changes independently of each other since
-	 * they are all operating on their own separate pages, each getting their own separate
-	 * initial auto-drafts and then once initially saved, autosave revisions on top of that
-	 * user's specific post.
-	 *
-	 * Since linear changesets are deemed to be more suitable for the majority of WordPress users,
-	 * they are the default. For WordPress sites that have heavy site management in the Customizer
-	 * by multiple users then branching changesets should be enabled by means of this filter.
-	 *
-	 * @since 4.9.0
-	 * @param bool $allow_branching Whether branching is allowed. If `false`, the default,
-	 *                              then only one saved changeset exists at a time.
-	 */
-	$branching = apply_filters( 'customize_changeset_branching', false );
-
-	// Automatically fetch the most recent drafted changeset when changeset branching is not enabled.
-	if ( ! $branching && empty( $changeset_uuid ) ) {
-		$unpublished_changeset_posts = get_posts( array(
-			'post_type' => 'customize_changeset',
-			'post_status' => array( 'any' ), // Note: not including auto-draft!
-			'posts_per_page' => 1,
-			'order' => 'DESC',
-			'orderby' => 'date',
-			'no_found_rows' => true,
-			'cache_results' => true,
-			'update_post_meta_cache' => false,
-			'update_post_term_cache' => false,
-			'lazy_load_term_meta' => false,
-		) );
-		$unpublished_changeset_post = array_shift( $unpublished_changeset_posts );
-		if ( ! empty( $unpublished_changeset_post ) && wp_is_uuid( $unpublished_changeset_post->post_name ) ) {
-			$changeset_uuid = $unpublished_changeset_post->post_name;
-		}
 	}
 
 	// Note that theme will be sanitized via WP_Theme.
