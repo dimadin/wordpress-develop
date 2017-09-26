@@ -6110,7 +6110,7 @@
 				} );
 			} );
 
-			// @todo Should this be included with linear, but exclude auto-draft in condition?
+			// Show changeset UUID in URL when in branching mode and there is a saved changeset.
 			if ( api.settings.changeset.branching ) {
 				changesetStatus.bind( function( newStatus ) {
 					populateChangesetUuidParam( '' !== newStatus && 'publish' !== newStatus );
@@ -6637,7 +6637,12 @@
 				var clearedToClose = $.Deferred();
 				event.preventDefault();
 
-				if ( isCleanState() ) {
+				/*
+				 * The isInsideIframe condition is because Customizer is not able to use a confirm()
+				 * since customize-loader.js will also use one. So autosave restorations are disabled
+				 * when customize-loader.js is used.
+				 */
+				if ( isInsideIframe && isCleanState() ) {
 					clearedToClose.resolve();
 				} else if ( confirm( api.l10n.saveAlert ) ) {
 
@@ -6648,15 +6653,22 @@
 					$( document ).off( 'visibilitychange.wp-customize-changeset-update' );
 					$( window ).off( 'beforeunload.wp-customize-changeset-update' );
 
-					// @todo Replace X with spinner? Don't wait too long for request to finish?
-					wp.ajax.post( 'dismiss_customize_changeset_autosave', {
-						wp_customize: 'on',
-						customize_theme: api.settings.theme.stylesheet,
-						customize_changeset_uuid: api.settings.changeset.uuid,
-						nonce: api.settings.nonce.dismiss_autosave
-					} ).always( function() {
+					closeBtn.css( 'cursor', 'progress' );
+					if ( '' === api.state( 'changesetStatus' ).get() ) {
 						clearedToClose.resolve();
-					} );
+					} else {
+						wp.ajax.send( 'dismiss_customize_changeset_autosave', {
+							timeout: 500, // Don't wait too long.
+							data: {
+								wp_customize: 'on',
+								customize_theme: api.settings.theme.stylesheet,
+								customize_changeset_uuid: api.settings.changeset.uuid,
+								nonce: api.settings.nonce.dismiss_autosave
+							}
+						} ).always( function() {
+							clearedToClose.resolve();
+						} );
+					}
 				} else {
 					clearedToClose.reject();
 				}
