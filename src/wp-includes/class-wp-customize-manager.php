@@ -237,7 +237,8 @@ final class WP_Customize_Manager {
 	 * @param array $args {
 	 *     Args.
 	 *
-	 *     @type string $changeset_uuid     Changeset UUID, the post_name for the customize_changeset post containing the customized state. Defaults to new UUID.
+	 *     @type string $changeset_uuid     Changeset UUID, the post_name for the customize_changeset post containing the customized state.
+	 *                                      Defaults to empty to then be set in the `establish_changeset_uuid` method.
 	 *     @type string $theme              Theme to be previewed (for theme switch). Defaults to customize_theme or theme query params.
 	 *     @type string $messenger_channel  Messenger channel. Defaults to customize_messenger_channel query param.
 	 *     @type bool   $settings_previewed If settings should be previewed. Defaults to true.
@@ -251,11 +252,6 @@ final class WP_Customize_Manager {
 			array_fill_keys( array( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved', 'branching' ), null ),
 			$args
 		);
-
-		// Note that the UUID format will be validated in the setup_theme() method.
-		if ( ! isset( $args['changeset_uuid'] ) ) {
-			$args['changeset_uuid'] = wp_generate_uuid4();
-		}
 
 		// The theme and messenger_channel should be supplied via $args, but they are also looked at in the $_REQUEST global here for back-compat.
 		if ( ! isset( $args['theme'] ) ) {
@@ -494,7 +490,8 @@ final class WP_Customize_Manager {
 			return;
 		}
 
-		if ( ! wp_is_uuid( $this->_changeset_uuid ) ) {
+		// If a changeset was provided
+		if ( ! empty( $this->_changeset_uuid ) && ! wp_is_uuid( $this->_changeset_uuid ) ) {
 			$this->wp_die( -1, __( 'Invalid changeset UUID' ) );
 		}
 
@@ -555,6 +552,9 @@ final class WP_Customize_Manager {
 			}
 		}
 
+		// Make sure changeset UUID is established immediately after the theme is loaded.
+		add_action( 'after_setup_theme', array( $this, 'establish_changeset_uuid' ), 5 );
+
 		/*
 		 * Import theme starter content for fresh installations when landing in the customizer.
 		 * Import starter content at after_setup_theme:100 so that any
@@ -565,6 +565,72 @@ final class WP_Customize_Manager {
 		}
 
 		$this->start_previewing_theme();
+	}
+
+	/**
+	 * Establish the changeset UUID.
+	 *
+	 * If the Customizer is not initialized with a `changeset_uuid` param, this method will determine which UUID
+	 * should be used. If changeset branching is disabled, then the most recent drafted/scheduled changeset will
+	 * be loaded by default. Otherwise, if there are no existing saved changesets or if changeset branching is
+	 * enabled, then a new UUID will be generated.
+	 *
+	 * @since 4.9.0
+	 */
+	public function establish_changeset_uuid() {
+		if ( ! empty( $this->_changeset_uuid ) ) {
+			return;
+		}
+
+		$changeset_uuid = null;
+
+		/**
+		 * Filters whether or not changeset branching is allowed.
+		 *
+		 * By default in core, when changeset branching is not allowed, changesets will operate
+		 * linearly in that only one saved changeset will exist at a time (with a 'draft' or
+		 * 'future' status). This makes the Customizer operate in a way that is similar to going to
+		 * "edit" to one existing post: all users will be making changes to the same post, and autosave
+		 * revisions will be made for that post.
+		 *
+		 * By contrast, when changeset branching is allowed, then the model is like users going
+		 * to "add new" for a page and each user makes changes independently of each other since
+		 * they are all operating on their own separate pages, each getting their own separate
+		 * initial auto-drafts and then once initially saved, autosave revisions on top of that
+		 * user's specific post.
+		 *
+		 * Since linear changesets are deemed to be more suitable for the majority of WordPress users,
+		 * they are the default. For WordPress sites that have heavy site management in the Customizer
+		 * by multiple users then branching changesets should be enabled by means of this filter.
+		 *
+		 * @since 4.9.0
+		 *
+		 * @param bool                 $allow_branching Whether branching is allowed. If `false`, the default,
+		 *                                              then only one saved changeset exists at a time.
+		 * @param WP_Customize_Manager $wp_customize    Manager instance.
+		 */
+		$branching = apply_filters( 'customize_changeset_branching', false, $this );
+
+		if ( ! $branching ) {
+			$unpublished_changeset_posts = $this->get_changeset_posts( array(
+				'post_status' => array( 'any' ), // Note: not including auto-draft!
+				'exclude_restore_dismissed' => false,
+				'posts_per_page' => 1,
+				'order' => 'DESC',
+				'orderby' => 'date',
+			) );
+			$unpublished_changeset_post = array_shift( $unpublished_changeset_posts );
+			if ( ! empty( $unpublished_changeset_post ) && wp_is_uuid( $unpublished_changeset_post->post_name ) ) {
+				$changeset_uuid = $unpublished_changeset_post->post_name;
+			}
+		}
+
+		// If no changeset UUID has been set yet, then generate a new one.
+		if ( empty( $changeset_uuid ) ) {
+			$changeset_uuid = wp_generate_uuid4();
+		}
+
+		$this->_changeset_uuid = $changeset_uuid;
 	}
 
 	/**
@@ -672,10 +738,16 @@ final class WP_Customize_Manager {
 	 * Get the changeset UUID.
 	 *
 	 * @since 4.7.0
+	 * @since 4.9.0 An exception is thrown if the changeset UUID has not been established yet.
+	 * @see WP_Customize_Manager::establish_changeset_uuid()
 	 *
+	 * @throws Exception When the UUID has not been set yet.
 	 * @return string UUID.
 	 */
 	public function changeset_uuid() {
+		if ( empty( $this->_changeset_uuid ) ) {
+			throw new Exception( 'Changeset UUID has not been set.' );
+		}
 		return $this->_changeset_uuid;
 	}
 
@@ -845,18 +917,21 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Get auto-draft changeset posts.
+	 * Get changeset posts.
+	 *
+	 * @since 4.9.0
 	 *
 	 * @param array $args {
 	 *     Args to pass into `get_posts()` to query changesets.
 	 *
-	 *     @type int  $posts_per_page             Number of posts to return. Defaults to -1 (all posts).
-	 *     @type int  $author                     Post author. Defaults to current user.
-	 *     @type bool $exclude_restore_dismissed  Whether to exclude changeset auto-drafts that have been dismissed. Defaults to true.
+	 *     @type int    $posts_per_page             Number of posts to return. Defaults to -1 (all posts).
+	 *     @type int    $author                     Post author. Defaults to current user.
+	 *     @type string $post_status                Status of changeset. Defaults to 'auto-draft'.
+	 *     @type bool   $exclude_restore_dismissed  Whether to exclude changeset auto-drafts that have been dismissed. Defaults to true.
 	 * }
 	 * @return WP_Post[] Auto-draft changesets.
 	 */
-	protected function get_autodraft_changesets( $args = array() ) {
+	protected function get_changeset_posts( $args = array() ) {
 		$default_args = array(
 			'exclude_restore_dismissed' => true,
 			'posts_per_page' => -1,
@@ -897,7 +972,7 @@ final class WP_Customize_Manager {
 	 */
 	public function changeset_post_id() {
 		if ( ! isset( $this->_changeset_post_id ) ) {
-			$post_id = $this->find_changeset_post_id( $this->_changeset_uuid );
+			$post_id = $this->find_changeset_post_id( $this->changeset_uuid() );
 			if ( ! $post_id ) {
 				$post_id = false;
 			}
@@ -1878,7 +1953,7 @@ final class WP_Customize_Manager {
 
 		$settings = array(
 			'changeset' => array(
-				'uuid' => $this->_changeset_uuid,
+				'uuid' => $this->changeset_uuid(),
 				'autosaved' => $this->autosaved,
 			),
 			'timeouts' => array(
@@ -2644,8 +2719,13 @@ final class WP_Customize_Manager {
 				$this->_changeset_post_id = $r; // Update cached post ID for the loaded changeset.
 
 				// @todo Limit this to linear mode?
-				// Delete all other auto-draft changeset posts for this user (they serve like autosave revisions), as there should only be one.
-				foreach ( $this->get_autodraft_changesets() as $autosave_autodraft_post ) {
+				// Dismiss all other auto-draft changeset posts for this user (they serve like autosave revisions), as there should only be one.
+				$changeset_autodraft_posts = $this->get_changeset_posts( array(
+					'post_status' => 'auto-draft',
+					'exclude_restore_dismissed' => true,
+					'posts_per_page' => -1,
+				) );
+				foreach ( $changeset_autodraft_posts as $autosave_autodraft_post ) {
 					if ( $autosave_autodraft_post->ID !== $this->_changeset_post_id ) {
 						update_post_meta( $autosave_autodraft_post->ID, '_customize_restore_dismissed', true );
 					}
@@ -3769,8 +3849,10 @@ final class WP_Customize_Manager {
 		if ( $changeset_post_id ) {
 			$autosave_revision_post = wp_get_post_autosave( $changeset_post_id );
 		} else {
-			$autosave_autodraft_posts = $this->get_autodraft_changesets( array(
+			$autosave_autodraft_posts = $this->get_changeset_posts( array(
 				'posts_per_page' => 1,
+				'post_status' => 'auto-draft',
+				'exclude_restore_dismissed' => true,
 			) );
 			if ( ! empty( $autosave_autodraft_posts ) ) {
 				$autosave_autodraft_post = array_shift( $autosave_autodraft_posts );
