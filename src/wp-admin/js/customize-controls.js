@@ -5424,7 +5424,7 @@
 				history.replaceState( {}, document.title, urlParser.href );
 			};
 
-			// @todo Should this be included with linear, but exclude auto-draft in condition?
+			// Show changeset UUID in URL when in branching mode and there is a saved changeset.
 			if ( api.settings.changeset.branching ) {
 				changesetStatus.bind( function( newStatus ) {
 					populateChangesetUuidParam( '' !== newStatus && 'publish' !== newStatus );
