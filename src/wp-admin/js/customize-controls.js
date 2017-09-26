@@ -5934,7 +5934,12 @@
 				var clearedToClose = $.Deferred();
 				event.preventDefault();
 
-				if ( isCleanState() ) {
+				/*
+				 * The isInsideIframe condition is because Customizer is not able to use a confirm()
+				 * since customize-loader.js will also use one. So autosave restorations are disabled
+				 * when customize-loader.js is used.
+				 */
+				if ( isInsideIframe && isCleanState() ) {
 					clearedToClose.resolve();
 				} else if ( confirm( api.l10n.saveAlert ) ) {
 
