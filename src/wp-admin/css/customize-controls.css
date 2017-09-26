@@ -71,7 +71,7 @@ body {
 	display: block;
 }
 
-.outer-section-open #customize-outer-theme-controls-wrapper {
+.outer-section-open .wp-full-overlay.expanded #customize-outer-theme-controls-wrapper {
 	visibility: visible;
 	left: 0;
 	transition: left .18s;
@@ -81,11 +81,11 @@ body {
 	margin: 0;
 }
 
-.outer-section-open #customize-preview {
+.outer-section-open .wp-full-overlay.expanded #customize-preview {
 	opacity: 0.4;
 }
 
-body.outer-section-open .wp-full-overlay-main {
+body.outer-section-open .wp-full-overlay-main.expanded {
 	left: 300px;
 }
 
