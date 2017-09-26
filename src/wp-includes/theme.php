@@ -2794,7 +2794,7 @@ function _wp_customize_include() {
 	);
 
 	$theme = null;
-	$changeset_uuid = null;
+	$changeset_uuid = false; // Value false indicates UUID should be determined after_setup_theme to either re-use existing saved changeset or else generate a new UUID if none exists.
 	$messenger_channel = null;
 	$autosaved = null;
 

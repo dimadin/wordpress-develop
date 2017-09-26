@@ -237,13 +237,17 @@ final class WP_Customize_Manager {
 	 * @param array $args {
 	 *     Args.
 	 *
-	 *     @type string $changeset_uuid     Changeset UUID, the post_name for the customize_changeset post containing the customized state.
-	 *                                      Defaults to empty to then be set in the `establish_changeset_uuid` method.
-	 *     @type string $theme              Theme to be previewed (for theme switch). Defaults to customize_theme or theme query params.
-	 *     @type string $messenger_channel  Messenger channel. Defaults to customize_messenger_channel query param.
-	 *     @type bool   $settings_previewed If settings should be previewed. Defaults to true.
-	 *     @type bool   $branching          If changeset branching is allowed; otherwise, changesets are linear. Defaults to true.
-	 *     @type bool   $autosaved          If data from a changeset's autosaved revision should be loaded if it exists. Defaults to false.
+	 *     @type null|string|false $changeset_uuid     Changeset UUID, the `post_name` for the customize_changeset post containing the customized state.
+	 *                                                 Defaults to `null` resulting in a UUID to be immediately generated. If `false` is provided, then
+	 *                                                 then the changeset UUID will be determined during `after_setup_theme`: when the
+	 *                                                 `customize_changeset_branching` filter returns false, then the default UUID will be that
+	 *                                                 of the most recent `customize_changeset` post that has a status other than 'auto-draft',
+	 *                                                 'publish', or 'trash'. Otherwise, if changeset branching is enabled, then a random UUID will be used.
+	 *     @type string            $theme              Theme to be previewed (for theme switch). Defaults to customize_theme or theme query params.
+	 *     @type string            $messenger_channel  Messenger channel. Defaults to customize_messenger_channel query param.
+	 *     @type bool              $settings_previewed If settings should be previewed. Defaults to true.
+	 *     @type bool              $branching          If changeset branching is allowed; otherwise, changesets are linear. Defaults to true.
+	 *     @type bool              $autosaved          If data from a changeset's autosaved revision should be loaded if it exists. Defaults to false.
 	 * }
 	 */
 	public function __construct( $args = array() ) {
@@ -252,6 +256,11 @@ final class WP_Customize_Manager {
 			array_fill_keys( array( 'changeset_uuid', 'theme', 'messenger_channel', 'settings_previewed', 'autosaved', 'branching' ), null ),
 			$args
 		);
+
+		// Note that the UUID format will be validated in the setup_theme() method.
+		if ( ! isset( $args['changeset_uuid'] ) ) {
+			$args['changeset_uuid'] = wp_generate_uuid4();
+		}
 
 		// The theme and messenger_channel should be supplied via $args, but they are also looked at in the $_REQUEST global here for back-compat.
 		if ( ! isset( $args['theme'] ) ) {
@@ -490,8 +499,8 @@ final class WP_Customize_Manager {
 			return;
 		}
 
-		// If a changeset was provided
-		if ( ! empty( $this->_changeset_uuid ) && ! wp_is_uuid( $this->_changeset_uuid ) ) {
+		// If a changeset was provided is invalid.
+		if ( isset( $this->_changeset_uuid ) && false !== $this->_changeset_uuid && ! wp_is_uuid( $this->_changeset_uuid ) ) {
 			$this->wp_die( -1, __( 'Invalid changeset UUID' ) );
 		}
 
