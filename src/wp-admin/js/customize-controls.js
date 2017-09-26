@@ -1205,7 +1205,7 @@
 				content = meta.find( '.customize-section-description:first' );
 				content.toggleClass( 'open' );
 				content.slideToggle();
-				content.attr( 'aria-expanded', function ( i, attr ) {
+				$( this ).attr( 'aria-expanded', function( i, attr ) {
 					return 'true' === attr ? 'false' : 'true';
 				});
 			});
@@ -1923,12 +1923,7 @@
 
 			meta = panel.container.find( '.panel-meta:first' );
 
-			meta.find( '> .accordion-section-title .customize-help-toggle' ).on( 'click keydown', function( event ) {
-				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
-					return;
-				}
-				event.preventDefault(); // Keep this AFTER the key filter above
-
+			meta.find( '> .accordion-section-title .customize-help-toggle' ).on( 'click', function() {
 				if ( meta.hasClass( 'cannot-expand' ) ) {
 					return;
 				}
@@ -3815,6 +3810,20 @@
 			});
 
 			control.editor = wp.codeEditor.initialize( $textarea, settings );
+
+			// Improve the editor accessibility.
+			$( control.editor.codemirror.display.lineDiv )
+				.attr({
+					role: 'textbox',
+					'aria-multiline': 'true',
+					'aria-label': control.params.label,
+					'aria-describedby': 'editor-keyboard-trap-help-1 editor-keyboard-trap-help-2 editor-keyboard-trap-help-3 editor-keyboard-trap-help-4'
+				});
+
+			// Focus the editor when clicking on its label.
+			control.container.find( 'label' ).on( 'click', function() {
+				control.editor.codemirror.focus();
+			});
 
 			/*
 			 * When the CodeMirror instance changes, mirror to the textarea,
@@ -6174,7 +6183,7 @@
 				});
 			});
 
-			// Set up the section desription behaviors.
+			// Set up the section description behaviors.
 			sectionReady.done( function setupSectionDescription( section ) {
 				var control = api.control( 'custom_css' );
 
@@ -6182,16 +6191,20 @@
 				section.container.find( '.section-description-buttons .section-description-close' ).on( 'click', function() {
 					section.container.find( '.section-meta .customize-section-description:first' )
 						.removeClass( 'open' )
-						.slideUp()
-						.attr( 'aria-expanded', 'false' );
+						.slideUp();
+
+					section.container.find( '.customize-help-toggle' )
+						.attr( 'aria-expanded', 'false' )
+						.focus(); // Avoid focus loss.
 				});
 
 				// Reveal help text if setting is empty.
 				if ( control && ! control.setting.get() ) {
 					section.container.find( '.section-meta .customize-section-description:first' )
 						.addClass( 'open' )
-						.show()
-						.attr( 'aria-expanded', 'true' );
+						.show();
+
+					section.container.find( '.customize-help-toggle' ).attr( 'aria-expanded', 'true' );
 				}
 			});
 		})();
