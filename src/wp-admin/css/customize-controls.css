@@ -40,6 +40,40 @@ body {
 	border-radius: 3px 0 0 3px;
 }
 
+#customize-outer-theme-controls {
+	padding-top: 12px;
+}
+
+#customize-outer-theme-controls-wrapper {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -301px;
+	visibility: hidden;
+	overflow-x: hidden;
+	overflow-y: auto;
+	width: 300px;
+	margin: 0;
+	z-index: 4;
+	background: #eee;
+	transition: left .18s;
+	border-right: 1px solid #ddd;
+}
+
+.outer-section-open .wp-full-overlay.expanded {
+	margin-left: 300px;
+}
+
+#customize-outer-theme-controls .accordion-section-content {
+	display: block;
+}
+
+.outer-section-open #customize-outer-theme-controls-wrapper {
+	visibility: visible;
+	left: 0;
+	transition: left .18s;
+}
+
 #publish-settings {
 	text-indent: 0;
 	border-radius: 0 3px 3px 0;

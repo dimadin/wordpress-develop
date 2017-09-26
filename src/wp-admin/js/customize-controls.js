@@ -1141,7 +1141,7 @@
 			var inject,
 				section = this;
 
-			section.cointainerParent = api.ensure( section.containerParent );
+			section.containerParent = api.ensure( section.containerParent );
 
 			// Watch for changes to the panel state
 			inject = function ( panelId ) {
@@ -1156,7 +1156,7 @@
 								parentContainer.append( section.headContainer );
 							}
 							if ( ! section.contentContainer.parent().is( section.headContainer ) ) {
-								section.cointainerParent.append( section.contentContainer );
+								section.containerParent.append( section.contentContainer );
 							}
 							section.deferred.embedded.resolve();
 						});
@@ -1168,7 +1168,7 @@
 						parentContainer.append( section.headContainer );
 					}
 					if ( ! section.contentContainer.parent().is( section.headContainer ) ) {
-						section.cointainerParent.append( section.contentContainer );
+						section.containerParent.append( section.contentContainer );
 					}
 					section.deferred.embedded.resolve();
 				}
@@ -1862,13 +1862,43 @@
 	 */
 	api.OuterSection = api.Section.extend({
 
+		outerContainer: '#customize-sidebar-outer-content',
+
 		/**
 		 * @since 4.9.0
 		 */
 		initialize: function () {
-			this.containerParent = '#customize-outer-theme-controls';
-			this.containerPaneParent = '.customize-outer-pane-parent';
-			return api.Section.prototype.initialize.apply( this, arguments );
+			var section = this;
+
+			section.outerContainer = api.ensure( section.outerContainer );
+			section.containerParent = '#customize-outer-theme-controls';
+			section.containerPaneParent = '.customize-outer-pane-parent';
+
+			return api.Section.prototype.initialize.apply( section, arguments );
+		},
+
+		attachEvents: function() {
+			var section = this,
+				body = $( 'body' ),
+				animationDuration = 180; // From css transition.
+
+			section.expanded.bind( function( isExpanded ) {
+				body.toggleClass( 'outer-section-open', isExpanded );
+				section.container.toggleClass( 'open', isExpanded );
+				_.delay( function() {
+					section.container.removeClass( 'busy' );
+				}, animationDuration );
+			} );
+
+			return api.Section.prototype.attachEvents.apply( section, arguments );
+		},
+
+		onChangeExpanded: function( expanded, args ) {
+			var overriddenArgs = _.extend( {}, args, {
+				unchanged: true,
+				allowMultiple: true
+			} );
+			return api.Section.prototype.onChangeExpanded.call( this, expanded, overriddenArgs );
 		}
 	});
 
@@ -5430,19 +5460,21 @@
 			footerActions = $( '#customize-footer-actions' );
 
 		saveBtn.show();
+
+		// @todo Test section, remove after test.
+		api.section( 'section_test_1', function( section ) {
+			var testButton = $( '<button style="margin-left: 40px;" id="test-button">Test</button>' );
+
+			testButton.on( 'click', function( event ) {
+			    event.preventDefault();
+			    section.expanded.set( ! section.expanded.get() );
+			} );
+
+			$( '#customize-header-actions' ).append( testButton );
+		});
+
 		api.section( 'publish_settings', function( section ) {
-			var backgroundEls, animationDuration = 500, updateButtonsState;
-
-			section.containerPaneParent = '.customize-outer-pane-parent';
-			section.containerParent = '#customize-outer-theme-controls';
-
-			section.onChangeExpanded = function( expanded, args ) {
-				var overriddenArgs = _.extend( {}, args, {
-					unchanged: true,
-					allowMultiple: true
-				} );
-				return api.Section.prototype.onChangeExpanded.call( this, expanded, overriddenArgs );
-			};
+			var updateButtonsState;
 
 			// Make sure publish settings are not available until the theme has been activated.
 			if ( ! api.settings.theme.active ) {
@@ -5469,18 +5501,7 @@
 
 			section.expanded.bind( function( isExpanded ) {
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
-				backgroundEls = $( '.customize-pane-child, .customize-info, .customize-pane-parent' ).not( section.contentContainer );
-
 				publishSettingsBtn.toggleClass( 'active', isExpanded );
-				section.container.toggleClass( 'publish-settings-open', isExpanded );
-
-				if ( isExpanded ) {
-					_.delay( function() {
-						backgroundEls.toggleClass( 'hidden', section.expanded.get() );
-					}, animationDuration );
-				} else {
-					backgroundEls.removeClass( 'hidden' );
-				}
 			} );
 		} );
 
