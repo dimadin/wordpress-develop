@@ -5950,15 +5950,22 @@
 					$( document ).off( 'visibilitychange.wp-customize-changeset-update' );
 					$( window ).off( 'beforeunload.wp-customize-changeset-update' );
 
-					// @todo Replace X with spinner? Don't wait too long for request to finish?
-					wp.ajax.post( 'dismiss_customize_changeset_autosave', {
-						wp_customize: 'on',
-						customize_theme: api.settings.theme.stylesheet,
-						customize_changeset_uuid: api.settings.changeset.uuid,
-						nonce: api.settings.nonce.dismiss_autosave
-					} ).always( function() {
+					closeBtn.css( 'cursor', 'progress' );
+					if ( '' === api.state( 'changesetStatus' ).get() ) {
 						clearedToClose.resolve();
-					} );
+					} else {
+						wp.ajax.send( 'dismiss_customize_changeset_autosave', {
+							timeout: 500, // Don't wait too long.
+							data: {
+								wp_customize: 'on',
+								customize_theme: api.settings.theme.stylesheet,
+								customize_changeset_uuid: api.settings.changeset.uuid,
+								nonce: api.settings.nonce.dismiss_autosave
+							}
+						} ).always( function() {
+							clearedToClose.resolve();
+						} );
+					}
 				} else {
 					clearedToClose.reject();
 				}
