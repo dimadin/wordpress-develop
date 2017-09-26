@@ -2797,6 +2797,7 @@ function _wp_customize_include() {
 	$changeset_uuid = false; // Value false indicates UUID should be determined after_setup_theme to either re-use existing saved changeset or else generate a new UUID if none exists.
 	$messenger_channel = null;
 	$autosaved = null;
+	$branching = false; // Set initially fo false since defaults to true for back-compat; can be overridden via the customize_changeset_branching filter.
 
 	if ( $is_customize_admin_page && isset( $input_vars['changeset_uuid'] ) ) {
 		$changeset_uuid = sanitize_key( $input_vars['changeset_uuid'] );

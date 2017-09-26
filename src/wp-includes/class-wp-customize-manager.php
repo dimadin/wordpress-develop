@@ -562,7 +562,7 @@ final class WP_Customize_Manager {
 		}
 
 		// Make sure changeset UUID is established immediately after the theme is loaded.
-		add_action( 'after_setup_theme', array( $this, 'establish_changeset_uuid' ), 5 );
+		add_action( 'after_setup_theme', array( $this, 'establish_loaded_changeset' ), 5 );
 
 		/*
 		 * Import theme starter content for fresh installations when landing in the customizer.
@@ -577,21 +577,17 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Establish the changeset UUID.
+	 * Establish the loaded changeset.
 	 *
-	 * If the Customizer is not initialized with a `changeset_uuid` param, this method will determine which UUID
-	 * should be used. If changeset branching is disabled, then the most recent drafted/scheduled changeset will
-	 * be loaded by default. Otherwise, if there are no existing saved changesets or if changeset branching is
+	 * This method runs right at after_setup_theme and applies the 'customize_changeset_branching' filter to determine
+	 * whether concurrent changesets are allowed. Then if the Customizer is not initialized with a `changeset_uuid` param,
+	 * this method will determine which UUID should be used. If changeset branching is disabled, then the most saved
+	 * changeset will be loaded by default. Otherwise, if there are no existing saved changesets or if changeset branching is
 	 * enabled, then a new UUID will be generated.
 	 *
 	 * @since 4.9.0
 	 */
-	public function establish_changeset_uuid() {
-		if ( ! empty( $this->_changeset_uuid ) ) {
-			return;
-		}
-
-		$changeset_uuid = null;
+	public function establish_loaded_changeset() {
 
 		/**
 		 * Filters whether or not changeset branching is allowed.
@@ -618,28 +614,32 @@ final class WP_Customize_Manager {
 		 *                                              then only one saved changeset exists at a time.
 		 * @param WP_Customize_Manager $wp_customize    Manager instance.
 		 */
-		$branching = apply_filters( 'customize_changeset_branching', false, $this );
+		$this->branching = apply_filters( 'customize_changeset_branching', $this->branching, $this );
 
-		if ( ! $branching ) {
-			$unpublished_changeset_posts = $this->get_changeset_posts( array(
-				'post_status' => array_diff( get_post_stati(), array( 'auto-draft', 'publish', 'trash', 'inherit', 'private' ) ),
-				'exclude_restore_dismissed' => false,
-				'posts_per_page' => 1,
-				'order' => 'DESC',
-				'orderby' => 'date',
-			) );
-			$unpublished_changeset_post = array_shift( $unpublished_changeset_posts );
-			if ( ! empty( $unpublished_changeset_post ) && wp_is_uuid( $unpublished_changeset_post->post_name ) ) {
-				$changeset_uuid = $unpublished_changeset_post->post_name;
+		if ( empty( $this->_changeset_uuid ) ) {
+			$changeset_uuid = null;
+
+			if ( ! $this->branching ) {
+				$unpublished_changeset_posts = $this->get_changeset_posts( array(
+					'post_status' => array_diff( get_post_stati(), array( 'auto-draft', 'publish', 'trash', 'inherit', 'private' ) ),
+					'exclude_restore_dismissed' => false,
+					'posts_per_page' => 1,
+					'order' => 'DESC',
+					'orderby' => 'date',
+				) );
+				$unpublished_changeset_post = array_shift( $unpublished_changeset_posts );
+				if ( ! empty( $unpublished_changeset_post ) && wp_is_uuid( $unpublished_changeset_post->post_name ) ) {
+					$changeset_uuid = $unpublished_changeset_post->post_name;
+				}
 			}
-		}
 
-		// If no changeset UUID has been set yet, then generate a new one.
-		if ( empty( $changeset_uuid ) ) {
-			$changeset_uuid = wp_generate_uuid4();
-		}
+			// If no changeset UUID has been set yet, then generate a new one.
+			if ( empty( $changeset_uuid ) ) {
+				$changeset_uuid = wp_generate_uuid4();
+			}
 
-		$this->_changeset_uuid = $changeset_uuid;
+			$this->_changeset_uuid = $changeset_uuid;
+		}
 	}
 
 	/**
@@ -748,14 +748,14 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.7.0
 	 * @since 4.9.0 An exception is thrown if the changeset UUID has not been established yet.
-	 * @see WP_Customize_Manager::establish_changeset_uuid()
+	 * @see WP_Customize_Manager::establish_loaded_changeset()
 	 *
 	 * @throws Exception When the UUID has not been set yet.
 	 * @return string UUID.
 	 */
 	public function changeset_uuid() {
 		if ( empty( $this->_changeset_uuid ) ) {
-			throw new Exception( 'Changeset UUID has not been set.' );
+			throw new Exception( 'Changeset UUID has not been set.' ); // @todo Why not call $this->establish_loaded_changeset() instead?
 		}
 		return $this->_changeset_uuid;
 	}
