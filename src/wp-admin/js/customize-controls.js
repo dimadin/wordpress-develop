@@ -631,7 +631,7 @@
 		remainingTime = timestamp - api.utils.getCurrentTimestamp();
 		remainingTime = Math.ceil( remainingTime / millisecondsDivider );
 		return remainingTime;
-	},
+	};
 
 	/**
 	 * Return browser supported `transitionend` event name.
@@ -7008,7 +7008,7 @@
 				} );
 
 				publishWhenTime = function() {
-					var promise, publishSettingsSection;
+					var publishSettingsSection;
 
 					api.state( 'selectedChangesetStatus' ).set( 'publish' );
 					publishSettingsSection = api.section( 'publish_settings' );
