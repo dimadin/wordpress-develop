@@ -684,9 +684,9 @@ jQuery( window ).load( function (){
 		timeRemainingWithDateInstance = wp.customize.utils.getRemainingTime( new Date( datetime.replace( /-/g, '/' ) ) );
 		timeRemaingingWithTimestamp = wp.customize.utils.getRemainingTime( ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime() );
 
-		assert.ok( ! _.isNaN( timeRemaining ), timeRemaining );
-		assert.ok( ! _.isNaN( timeRemainingWithDateInstance ), timeRemaining );
-		assert.ok( ! _.isNaN( timeRemaingingWithTimestamp ), timeRemaining );
+		assert.equal( typeof timeRemaining, 'number', timeRemaining );
+		assert.equal( typeof timeRemainingWithDateInstance, 'number', timeRemaining );
+		assert.equal( typeof timeRemaingingWithTimestamp, 'number', timeRemaining );
 		assert.deepEqual( timeRemaining, timeRemainingWithDateInstance );
 		assert.deepEqual( timeRemaining, timeRemaingingWithTimestamp );
 	});
@@ -727,7 +727,7 @@ jQuery( window ).load( function (){
 		assert.equal( typeof year(), 'number', 'Should always return integer' );
 
 		month( 'test' );
-		assert.ok( ! month(), 'Should not accept text' );
+		assert.notOk( month(), 'Should not accept text' );
 
 		// Test control.parseDateTime();
 		dateTimeArray = control.parseDateTime( datetime );
@@ -786,7 +786,7 @@ jQuery( window ).load( function (){
 		control.toggleFutureDateNotification( true );
 		assert.ok( control.notifications.has( 'not_future_date' ) );
 		control.toggleFutureDateNotification( false );
-		assert.ok( ! control.notifications.has( 'not_future_date' ) );
+		assert.notOk( control.notifications.has( 'not_future_date' ) );
 
 		// Test control.populateDateInputs();
 		control.populateDateInputs();
@@ -799,11 +799,11 @@ jQuery( window ).load( function (){
 		hour( 33 );
 		assert.ok( control.validateInputs() );
 		hour( 10 );
-		assert.ok( ! control.validateInputs() );
+		assert.notOk( control.validateInputs() );
 		minute( 123 );
 		assert.ok( control.validateInputs() );
 		minute( 20 );
-		assert.ok( ! control.validateInputs() );
+		assert.notOk( control.validateInputs() );
 
 		// Test control.populateSetting();
 		day( 2 );
@@ -833,7 +833,7 @@ jQuery( window ).load( function (){
 		assert.ok( control.isFutureDate() );
 
 		year( 2016 );
-		assert.ok( ! control.isFutureDate() );
+		assert.notOk( control.isFutureDate() );
 
 		/**
 		 * Test control.updateMinutesForHour().
@@ -876,8 +876,8 @@ jQuery( window ).load( function (){
 		assert.ok( defaultSection.expanded() ); // Ensure it does not affect other sections state.
 
 		section.collapse();
-		assert.ok( ! body.hasClass( 'outer-section-open' ) );
-		assert.ok( ! section.container.hasClass( 'open' ) ); // Ensure it does not affect other sections state.
+		assert.notOk( body.hasClass( 'outer-section-open' ) );
+		assert.notOk( section.container.hasClass( 'open' ) ); // Ensure it does not affect other sections state.
 		assert.ok( defaultSection.expanded() );
 
 		// Tear down
@@ -886,14 +886,28 @@ jQuery( window ).load( function (){
 
 	module( 'Customize Controls: PreviewLinkControl' );
 	test( 'Test PreviewLinkControl creation and its methods', function( assert ) {
-		var control, section, sectionId = 'publish_settings';
+		var section, sectionId = 'publish_settings', newLink;
 
 		section = wp.customize.section( sectionId );
 		section.deferred.embedded.resolve();
 
+		assert.expect( 7 );
 		section.deferred.embedded.done( function() {
-		    control = section.controls()[0];
-			assert.ok( _.isObject( control ) );
+			_.each( section.controls(), function( control ) {
+				if ( 'changeset_preview_link' === control.id ) {
+					assert.equal( control.templateSelector, 'customize-preview-link-control' );
+					assert.equal( control.setting.get(), 'http://example.org/' );
+					assert.equal( _.size( control.previewElements ), control.elements.length );
+
+					newLink = 'http://example.org?' + wp.customize.settings.changeset.uuid;
+					control.setting.set( newLink );
+
+					assert.equal( control.previewElements.input(), newLink );
+					assert.equal( control.previewElements.link(), newLink );
+					assert.equal( control.previewElements.link.element.attr( 'href' ), newLink );
+					assert.equal( control.previewElements.link.element.attr( 'target' ), wp.customize.settings.changeset.uuid );
+				}
+			} );
 		} );
 	});
 });
