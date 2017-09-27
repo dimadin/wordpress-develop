@@ -1383,6 +1383,98 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test writing changesets when user supplies unchanged values.
+	 *
+	 * @ticket 39896
+	 * @covers WP_Customize_Manager::save_changeset_post()
+	 * @covers WP_Customize_Manager::grant_edit_post_capability_for_changeset()
+	 */
+	public function test_save_changeset_post_with_autosave() {
+		wp_set_current_user( self::$admin_user_id );
+		$uuid = wp_generate_uuid4();
+		$changeset_post_id = wp_insert_post( array(
+			'post_type' => 'customize_changeset',
+			'post_content' => wp_json_encode( array(
+				'blogname' => array(
+					'value' => 'Auto-draft Title',
+				),
+			) ),
+			'post_author' => self::$admin_user_id,
+			'post_name' => $uuid,
+			'post_status' => 'auto-draft',
+		) );
+
+		$wp_customize = new WP_Customize_Manager( array(
+			'changeset_uuid' => $uuid,
+		) );
+		$wp_customize->register_controls(); // And settings too.
+
+		// Autosave of an auto-draft overwrites original.
+		$wp_customize->save_changeset_post( array(
+			'data' => array(
+				'blogname' => array(
+					'value' => 'Autosaved Auto-draft Title',
+				),
+			),
+			'autosave' => true,
+		) );
+		$this->assertFalse( wp_get_post_autosave( $changeset_post_id ) );
+		$this->assertContains( 'Autosaved Auto-draft Title', get_post( $changeset_post_id )->post_content );
+
+		// Update status to draft for subsequent tests.
+		$wp_customize->save_changeset_post( array(
+			'data' => array(
+				'blogname' => array(
+					'value' => 'Draft Title',
+				),
+			),
+			'status' => 'draft',
+			'autosave' => false,
+		) );
+		$this->assertContains( 'Draft Title', get_post( $changeset_post_id )->post_content );
+
+		// Fail: illegal_autosave_with_date_gmt.
+		$r = $wp_customize->save_changeset_post( array(
+			'autosave' => true,
+			'date_gmt' => ( gmdate( 'Y' ) + 1 ) . '-12-01 00:00:00',
+		) );
+		$this->assertInstanceOf( 'WP_Error', $r );
+		$this->assertEquals( 'illegal_autosave_with_date_gmt', $r->get_error_code() );
+
+		// Fail: illegal_autosave_with_status.
+		$r = $wp_customize->save_changeset_post( array(
+			'autosave' => true,
+			'status' => 'pending',
+		) );
+		$this->assertEquals( 'illegal_autosave_with_status', $r->get_error_code() );
+
+		// Fail: illegal_autosave_with_non_current_user.
+		$r = $wp_customize->save_changeset_post( array(
+			'autosave' => true,
+			'user_id' => $this->factory()->user->create( array( 'role' => 'administrator' ) ),
+		) );
+		$this->assertEquals( 'illegal_autosave_with_non_current_user', $r->get_error_code() );
+
+		// Try autosave.
+		$this->assertFalse( wp_get_post_autosave( $changeset_post_id ) );
+		$r = $wp_customize->save_changeset_post( array(
+			'data' => array(
+				'blogname' => array(
+					'value' => 'Autosave Title',
+				),
+			),
+			'autosave' => true,
+		) );
+		$this->assertInternalType( 'array', $r );
+
+		// Verify that autosave happened.
+		$autosave_revision = wp_get_post_autosave( $changeset_post_id );
+		$this->assertInstanceOf( 'WP_Post', $autosave_revision );
+		$this->assertContains( 'Draft Title', get_post( $changeset_post_id )->post_content );
+		$this->assertContains( 'Autosave Title', $autosave_revision->post_content );
+	}
+
+	/**
 	 * Test passing `null` for a setting ID to remove it from the changeset.
 	 *
 	 * @ticket 41621
