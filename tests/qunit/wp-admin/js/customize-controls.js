@@ -728,7 +728,7 @@ jQuery( window ).load( function (){
 		ampm = control.inputElements.ampm;
 
 		year( '23' );
-		assert.ok( ! _.isNaN( year() ), 'Should always return integer' );
+		assert.equal( typeof year(), 'number', 'Should always return integer' );
 
 		month( 'test' );
 		assert.ok( ! month(), 'Should not accept text' );
@@ -808,6 +808,36 @@ jQuery( window ).load( function (){
 		assert.ok( control.validateInputs() );
 		minute( 20 );
 		assert.ok( ! control.validateInputs() );
+
+		// Test control.populateSetting();
+		day( 2 );
+		month( 11 );
+		year( 2018 );
+		hour( 4 );
+		minute( 20 );
+		ampm( 'pm' );
+		control.populateSetting();
+		assert.equal( control.setting(), '2018-11-02 16:20:00' );
+
+		hour( 123 );
+		control.populateSetting();
+		assert.equal( control.setting(), '2018-11-02 16:20:00' ); // Should not update if invalid hour.
+
+		hour( 5 );
+		control.populateSetting();
+		assert.equal( control.setting(), '2018-11-02 17:20:00' );
+
+		// Test control.isFutureDate();
+		day( 2 );
+		month( 11 );
+		year( 2318 );
+		hour( 4 );
+		minute( 20 );
+		ampm( 'pm' );
+		assert.ok( control.isFutureDate() );
+
+		year( 2016 );
+		assert.ok( ! control.isFutureDate() );
 
 		/**
 		 * Test control.updateMinutesForHour().
