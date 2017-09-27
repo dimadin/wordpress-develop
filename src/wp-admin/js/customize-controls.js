@@ -5763,7 +5763,13 @@
 					});
 
 					request.fail( function ( response ) {
-						var notification;
+						var notification, notificationArgs;
+						notificationArgs = {
+							type: 'error',
+							dismissible: true,
+							fromServer: true,
+							saveFailure: true
+						};
 
 						if ( '0' === response ) {
 							response = 'not_logged_in';
@@ -5781,26 +5787,21 @@
 								previewer.preview.iframe.show();
 							} );
 						} else if ( response.code ) {
-							notification = new api.Notification( response.code, {
-								message: response.message,
-								type: 'error',
-								dismissible: true,
-								fromServer: true,
-								saveFailure: true
-							} );
 							if ( 'not_future_date' === response.code && api.section.has( 'publish_settings' ) && api.section( 'publish_settings' ).active.get() && api.control.has( 'changeset_scheduled_date' ) ) {
 								api.control( 'changeset_scheduled_date' ).toggleFutureDateNotification( true ).focus();
 							} else {
-								api.notifications.add( response.code, notification );
+								notification = new api.Notification( response.code, _.extend( notificationArgs, {
+									message: response.message
+								} ) );
 							}
 						} else {
-							api.notifications.add( 'unknown_error', new api.Notification( 'unknown_error', {
-								message: api.l10n.serverSaveError,
-								type: 'error',
-								dismissible: true,
-								fromServer: true,
-								saveFailure: true
+							notification = new api.Notification( 'unknown_error', _.extend( notificationArgs, {
+								message: api.l10n.serverSaveError
 							} ) );
+						}
+
+						if ( notification ) {
+							api.notifications.add( notification.code, notification );
 						}
 
 						if ( response.setting_validities ) {
@@ -5812,6 +5813,14 @@
 
 						deferred.rejectWith( previewer, [ response ] );
 						api.trigger( 'error', response );
+
+						// Start a new changeset if the underlying changeset was published.
+						if ( 'changeset_already_published' === response.code && response.next_changeset_uuid ) {
+							api.settings.changeset.uuid = response.next_changeset_uuid;
+							api.state( 'changesetStatus' ).set( '' );
+							parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							api.previewer.send( 'changeset-uuid', api.settings.changeset.uuid );
+						}
 					} );
 
 					request.done( function( response ) {
@@ -7016,24 +7025,7 @@
 					if ( publishSettingsSection ) {
 						publishSettingsSection.collapse();
 					}
-
-					promise = api.previewer.save();
-
-					// @todo Handle case where changeset got published on the server before we had a chance to publish it punctually.
-					// 	request.done( function( resp ) {
-					// 		if ( 'trash' === resp.changeset_status || 'changeset_already_published' === resp.code ) {
-					// 			api.state( 'changesetStatus' ).set( '' );
-					// 			if ( resp.next_changeset_uuid ) {
-					// 				notification = new api.Notification( code, {
-					// 					message: api.l10n.changesetPublished,
-					// 					type: 'info',
-					// 					dismissible: true
-					// 				} );
-					// 				api.notifications.add( code, notification );
-					// 				api.settings.changeset.uuid = resp.next_changeset_uuid
-					// 			}
-					// 		}
-					// 	} );
+					api.previewer.save();
 				};
 
 				// Start countdown for when the dateTime arrives, or clear interval when it is .

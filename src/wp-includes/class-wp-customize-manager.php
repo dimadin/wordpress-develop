@@ -2439,7 +2439,13 @@ final class WP_Customize_Manager {
 		if ( $changeset_post_id ) {
 			$existing_status = get_post_status( $changeset_post_id );
 			if ( 'publish' === $existing_status || 'trash' === $existing_status ) {
-				return new WP_Error( 'changeset_already_published' );
+				return new WP_Error(
+					'changeset_already_published',
+					__( 'The previous set of changes already been published. Please try saving your current set of changes again.' ),
+					array(
+						'next_changeset_uuid' => wp_generate_uuid4(),
+					)
+				);
 			}
 
 			$existing_changeset_data = $this->get_changeset_post_data( $changeset_post_id );
