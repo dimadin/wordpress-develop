@@ -389,6 +389,7 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 	 *
 	 * @ticket 39896
 	 * @covers WP_Customize_Manager::handle_dismiss_changeset_autosave_request()
+	 * @covers WP_Customize_Manager::dismiss_user_auto_draft_changesets()
 	 */
 	public function test_handle_dismiss_changeset_autosave_request() {
 		$uuid = wp_generate_uuid4();

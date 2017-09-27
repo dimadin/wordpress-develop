@@ -1005,6 +1005,30 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Dismiss all of the current user's auto-drafts (other than the present one).
+	 *
+	 * @since 4.9.0
+	 * @return int The number of auto-drafts that were dismissed.
+	 */
+	protected function dismiss_user_auto_draft_changesets() {
+		$changeset_autodraft_posts = $this->get_changeset_posts( array(
+			'post_status' => 'auto-draft',
+			'exclude_restore_dismissed' => true,
+			'posts_per_page' => -1,
+		) );
+		$dismissed = 0;
+		foreach ( $changeset_autodraft_posts as $autosave_autodraft_post ) {
+			if ( $autosave_autodraft_post->ID === $this->changeset_post_id() ) {
+				continue;
+			}
+			if ( update_post_meta( $autosave_autodraft_post->ID, '_customize_restore_dismissed', true ) ) {
+				$dismissed++;
+			}
+		}
+		return $dismissed;
+	}
+
+	/**
 	 * Get the changeset post id for the loaded changeset.
 	 *
 	 * @since 4.7.0
@@ -2373,16 +2397,7 @@ final class WP_Customize_Manager {
 
 			// Dismiss all other auto-draft changeset posts for this user (they serve like autosave revisions), as there should only be one.
 			if ( $is_new_changeset ) {
-				$changeset_autodraft_posts = $this->get_changeset_posts( array(
-					'post_status' => 'auto-draft',
-					'exclude_restore_dismissed' => true,
-					'posts_per_page' => -1,
-				) );
-				foreach ( $changeset_autodraft_posts as $autosave_autodraft_post ) {
-					if ( $autosave_autodraft_post->ID !== $changeset_post->ID ) {
-						update_post_meta( $autosave_autodraft_post->ID, '_customize_restore_dismissed', true );
-					}
-				}
+				$this->dismiss_user_auto_draft_changesets();
 			}
 
 			// Note that if the changeset status was publish, then it will get set to trash if revisions are not supported.
@@ -3091,20 +3106,7 @@ final class WP_Customize_Manager {
 		$changeset_post_id = $this->changeset_post_id();
 
 		if ( empty( $changeset_post_id ) || 'auto-draft' === get_post_status( $changeset_post_id ) ) {
-			$changeset_autodraft_posts = $this->get_changeset_posts( array(
-				'post_status' => 'auto-draft',
-				'exclude_restore_dismissed' => true,
-				'posts_per_page' => -1,
-			) );
-			$dismissed = 0;
-			foreach ( $changeset_autodraft_posts as $autosave_autodraft_post ) {
-				if ( $autosave_autodraft_post->ID === $changeset_post_id ) {
-					continue;
-				}
-				if ( update_post_meta( $autosave_autodraft_post->ID, '_customize_restore_dismissed', true ) ) {
-					$dismissed++;
-				}
-			}
+			$dismissed = $this->dismiss_user_auto_draft_changesets();
 			if ( $dismissed > 0 ) {
 				wp_send_json_success( 'auto_draft_dismissed' );
 			} else {
