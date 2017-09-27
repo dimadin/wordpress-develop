@@ -411,20 +411,56 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	 * @covers WP_Customize_Manager::changeset_data()
 	 */
 	function test_changeset_data() {
+		wp_set_current_user( self::$admin_user_id );
 		$uuid = wp_generate_uuid4();
 		$wp_customize = new WP_Customize_Manager( array( 'changeset_uuid' => $uuid ) );
 		$this->assertEquals( array(), $wp_customize->changeset_data() );
 
 		$uuid = wp_generate_uuid4();
-		$data = array( 'blogname' => array( 'value' => 'Hello World' ) );
+		$data = array(
+			'blogname' => array( 'value' => 'Hello World' ),
+			'blogdescription' => array( 'value' => 'Greet the world' ),
+		);
 		$this->factory()->post->create( array(
 			'post_name' => $uuid,
 			'post_type' => 'customize_changeset',
-			'post_status' => 'auto-draft',
+			'post_status' => 'draft',
 			'post_content' => wp_json_encode( $data ),
 		) );
 		$wp_customize = new WP_Customize_Manager( array( 'changeset_uuid' => $uuid ) );
 		$this->assertEquals( $data, $wp_customize->changeset_data() );
+
+		// Autosave.
+		$wp_customize->set_post_value( 'blogname', 'Hola Mundo' );
+		$wp_customize->register_controls(); // That is, settings, so blogname setting is registered.
+		$r = $wp_customize->save_changeset_post( array(
+			'autosave' => true,
+		) );
+		$this->assertNotInstanceOf( 'WP_Error', $r );
+
+		// No change to data if not requesting autosave.
+		$wp_customize = new WP_Customize_Manager( array(
+			'changeset_uuid' => $uuid,
+			'autosaved' => false,
+		) );
+		$wp_customize->register_controls(); // That is, settings.
+		$this->assertFalse( $wp_customize->autosaved() );
+		$this->assertEquals( $data, $wp_customize->changeset_data() );
+
+		// No change to data if not requesting autosave.
+		$wp_customize = new WP_Customize_Manager( array(
+			'changeset_uuid' => $uuid,
+			'autosaved' => true,
+		) );
+		$this->assertTrue( $wp_customize->autosaved() );
+		$this->assertNotEquals( $data, $wp_customize->changeset_data() );
+		$this->assertEquals(
+			array_merge(
+				wp_list_pluck( $data, 'value' ),
+				array( 'blogname' => 'Hola Mundo' )
+			),
+			wp_list_pluck( $wp_customize->changeset_data(), 'value' )
+		);
 	}
 
 	/**
