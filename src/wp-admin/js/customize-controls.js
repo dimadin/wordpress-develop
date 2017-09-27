@@ -6066,7 +6066,6 @@
 				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
 				populateChangesetUuidParam;
 
-			// @todo Enable schedule button when state( 'selectedChangesetDate' ) is changed.
 			state.bind( 'change', function() {
 				var canSave;
 
@@ -6085,10 +6084,18 @@
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
 				} else {
-					if ( 'draft' === selectedChangesetStatus.get() ) {
-						saveBtn.val( api.l10n.saveDraft );
-					} else if ( 'future' === selectedChangesetStatus.get() ) {
-						saveBtn.val( api.l10n.schedule );
+					if ( 'draft' === selectedChangesetStatus() ) {
+						if ( saved() && selectedChangesetStatus() === changesetStatus() ) {
+							saveBtn.val( api.l10n.draftSaved );
+						} else {
+							saveBtn.val( api.l10n.saveDraft );
+						}
+					} else if ( 'future' === selectedChangesetStatus() ) {
+						if ( saved() && selectedChangesetStatus() === changesetStatus() ) {
+							saveBtn.val( api.l10n.scheduled );
+						} else {
+							saveBtn.val( api.l10n.schedule );
+						}
 					} else if ( ! api.settings.changeset.currentUserCanPublish ){
 						selectedChangesetStatus( 'draft' );
 					} else {
