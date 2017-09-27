@@ -387,9 +387,6 @@ final class WP_Customize_Manager {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_section_templates' ), 1 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_control_templates' ), 1 );
 
-		// Render preview link control template.
-		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_preview_link_template' ) );
-
 		// Export header video settings with the partial response.
 		add_filter( 'customize_render_partials_response', array( $this, 'export_header_video_settings' ), 10, 3 );
 
@@ -3554,16 +3551,6 @@ final class WP_Customize_Manager {
 				<# } ); #>
 			</ul>
 		</script>
-		<?php
-	}
-
-	/**
-	 * Render preview link control template.
-	 *
-	 * @since 4.9.0
-	 */
-	public function render_preview_link_template() {
-		?>
 		<script type="text/html" id="tmpl-customize-preview-link-control" >
 			<span class="customize-control-title">
 				<label><?php esc_html_e( 'Share Preview Link' ); ?></label>
