@@ -6069,6 +6069,8 @@
 			state.bind( 'change', function() {
 				var canSave;
 
+				saveBtn.removeClass( 'button-see-me' );
+
 				if ( ! activated() ) {
 					saveBtn.val( api.l10n.activate );
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
@@ -6094,6 +6096,7 @@
 						if ( saved() && selectedChangesetStatus() === changesetStatus() ) {
 							saveBtn.val( api.l10n.scheduled );
 						} else {
+							saveBtn.addClass( 'button-see-me' );
 							saveBtn.val( api.l10n.schedule );
 						}
 					} else if ( ! api.settings.changeset.currentUserCanPublish ){

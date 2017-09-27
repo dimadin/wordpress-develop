@@ -1393,18 +1393,77 @@ p.customize-section-description {
 	animation: dice-color-change 3s infinite;
 }
 
-@-webkit-keyframes dice-color-change {
-	0% { color: #d4b146; }
-	50% { color: #ef54b0; }
-	75% { color: #7190d3; }
-	100% { color: #d4b146; }
+.button-see-me {
+	-webkit-animation-name: see-me;
+	animation-name: see-me;
+	-webkit-animation-duration: 1s;
+	animation-duration: 1s;
+	-webkit-animation-timing-function: ease-in-out;
+	animation-timing-function: ease-in-out;
+	-webkit-animation-iteration-count: infinite;
+	animation-iteration-count: infinite;
 }
 
-@keyframes dice-color-change {
-	0% { color: #d4b146; }
-	50% { color: #ef54b0; }
-	75% { color: #7190d3; }
-	100% { color: #d4b146; }
+@-webkit-keyframes see-me {
+	from, 10%, to {
+		-webkit-transform: none;
+		transform: none;
+	}
+	20% {
+		-webkit-transform: skewX( -3.5deg ) skewY( -3.5deg );
+		transform: skewX( -3.5deg ) skewY( -3.5deg );
+	}
+	30% {
+		-webkit-transform: skewX( 1.5deg ) skewY( 1.5deg );
+		transform: skewX( 1.5deg ) skewY( 1.5deg );
+	}
+	40% {
+		-webkit-transform: skewX( -1.0deg ) skewY( -1.0deg );
+		transform: skewX( -1.0deg ) skewY( -1.0deg );
+	}
+	50% {
+		-webkit-transform: skewX( 0.5deg ) skewY( 0.5deg );
+		transform: skewX( 0.5deg ) skewY( 0.5deg );
+	}
+	60% {
+		-webkit-transform: skewX( -0.3deg ) skewY( -0.3deg );
+		transform: skewX( -0.3deg ) skewY( -0.3deg );
+	}
+	80% {
+		-webkit-transform: skewX( 0.1deg ) skewY( 0.1deg );
+		transform: skewX( 0.1deg ) skewY( 0.1deg );
+	}
+}
+
+@keyframes see-me {
+	from, 10%, to {
+		-webkit-transform: none;
+		transform: none;
+	}
+	20% {
+		-webkit-transform: skewX( -3.5deg ) skewY( -3.5deg );
+		transform: skewX( -3.5deg ) skewY( -3.5deg );
+	}
+	30% {
+		-webkit-transform: skewX( 1.5deg ) skewY( 1.5deg );
+		transform: skewX( 1.5deg ) skewY( 1.5deg );
+	}
+	40% {
+		-webkit-transform: skewX( -1.0deg ) skewY( -1.0deg );
+		transform: skewX( -1.0deg ) skewY( -1.0deg );
+	}
+	50% {
+		-webkit-transform: skewX( 0.5deg ) skewY( 0.5deg );
+		transform: skewX( 0.5deg ) skewY( 0.5deg );
+	}
+	60% {
+		-webkit-transform: skewX( -0.3deg ) skewY( -0.3deg );
+		transform: skewX( -0.3deg ) skewY( -0.3deg );
+	}
+	80% {
+		-webkit-transform: skewX( 0.1deg ) skewY( 0.1deg );
+		transform: skewX( 0.1deg ) skewY( 0.1deg );
+	}
 }
 
 .customize-control-header .choice {
