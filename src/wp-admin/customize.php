@@ -27,14 +27,30 @@ if ( ! current_user_can( 'customize' ) ) {
 global $wp_scripts, $wp_customize;
 
 if ( $wp_customize->changeset_post_id() ) {
-	if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $wp_customize->changeset_post_id() ) ) {
+	$changeset_post = get_post( $wp_customize->changeset_post_id() );
+
+	if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post->ID ) ) {
 		wp_die(
 			'<h1>' . __( 'Cheatin&#8217; uh?' ) . '</h1>' .
 			'<p>' . __( 'Sorry, you are not allowed to edit this changeset.' ) . '</p>',
 			403
 		);
 	}
-	if ( in_array( get_post_status( $wp_customize->changeset_post_id() ), array( 'publish', 'trash' ), true ) ) {
+
+	$missed_schedule = (
+		'future' === $changeset_post->post_status &&
+		get_post_time( 'G', true, $changeset_post ) < time()
+	);
+	if ( $missed_schedule ) {
+		wp_publish_post( $changeset_post->ID );
+		wp_die(
+			'<h1>' . __( 'Your scheduled changes just published' ) . '</h1>' .
+			'<p><a href="' . esc_url( remove_query_arg( 'changeset_uuid' ) ) . '">' . __( 'Customize New Changes' ) . '</a></p>',
+			200
+		);
+	}
+
+	if ( in_array( get_post_status( $changeset_post->ID ), array( 'publish', 'trash' ), true ) ) {
 		wp_die(
 			'<h1>' . __( 'Cheatin&#8217; uh?' ) . '</h1>' .
 			'<p>' . __( 'This changeset has already been published and cannot be further modified.' ) . '</p>' .

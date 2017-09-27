@@ -6204,19 +6204,6 @@
 		(function() {
 
 			/**
-			 * Show notification when the changeset missed its schedule.
-			 */
-			function showMissedScheduleNotification() {
-				var code = 'missed_schedule';
-				api.notifications.add( code, new api.Notification( code, {
-					message: api.l10n.missedScheduleError,
-					type: 'error',
-					dismissible: true,
-					saveFailure: true // So it will get auto-dismissed when attempting next save.
-				} ) );
-			}
-
-			/**
 			 * Obtain the URL to restore the autosave.
 			 *
 			 * @returns {string} Customizer URL.
@@ -6316,9 +6303,6 @@
 			}
 			if ( api.settings.changeset.latestAutoDraftUuid || api.settings.changeset.hasAutosaveRevision ) {
 				addAutosaveRestoreNotification();
-			}
-			if ( api.settings.changeset.missedSchedule ) {
-				showMissedScheduleNotification();
 			}
 		})();
 
