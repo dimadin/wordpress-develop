@@ -4672,7 +4672,7 @@
 					customize_messenger_channel: previewFrame.query.customize_messenger_channel
 				}
 			);
-			if ( ! api.state( 'saved' ).get() ) {
+			if ( api.settings.changeset.autosaved || ! api.state( 'saved' ).get() ) {
 				params.customize_autosaved = 'on';
 			}
 
@@ -5612,7 +5612,7 @@
 					nonce: this.nonce.preview,
 					customize_changeset_uuid: api.settings.changeset.uuid
 				};
-				if ( ! api.state( 'saved' ).get() ) {
+				if ( api.settings.changeset.autosaved || ! api.state( 'saved' ).get() ) {
 					queryVars.customize_autosaved = 'on';
 				}
 
