@@ -254,7 +254,6 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 	function test_save_success_publish_create() {
 		$wp_customize = $this->set_up_valid_state();
 
-		// Successful future.
 		$_POST['customize_changeset_status'] = 'publish';
 		$_POST['customize_changeset_title'] = 'Success Changeset';
 		$_POST['customize_changeset_data'] = wp_json_encode( array(
@@ -268,6 +267,7 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 
 		$this->assertEquals( 'publish', $this->_last_response_parsed['data']['changeset_status'] );
 		$this->assertArrayHasKey( 'next_changeset_uuid', $this->_last_response_parsed['data'] );
+		$this->assertTrue( wp_is_uuid( $this->_last_response_parsed['data']['next_changeset_uuid'], 4 ) );
 		$this->assertEquals( 'Success Changeset', get_post( $wp_customize->changeset_post_id() )->post_title );
 		$this->assertEquals( 'Successful Site Title', get_option( 'blogname' ) );
 
@@ -295,7 +295,6 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		) );
 		$wp_customize = $this->set_up_valid_state( $uuid );
 
-		// Successful future.
 		$_POST['customize_changeset_status'] = 'publish';
 		$_POST['customize_changeset_title'] = 'Published';
 		$this->make_ajax_call( 'customize_save' );
@@ -304,6 +303,7 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 
 		$this->assertEquals( 'publish', $this->_last_response_parsed['data']['changeset_status'] );
 		$this->assertArrayHasKey( 'next_changeset_uuid', $this->_last_response_parsed['data'] );
+		$this->assertTrue( wp_is_uuid( $this->_last_response_parsed['data']['next_changeset_uuid'], 4 ) );
 		$this->assertEquals( 'New Site Title', get_option( 'blogname' ) );
 		$this->assertEquals( 'Published', get_post( $post_id )->post_title );
 	}
@@ -336,6 +336,7 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		$_POST['customize_changeset_date'] = $future_date;
 		$this->make_ajax_call( 'customize_save' );
 		$this->assertTrue( $this->_last_response_parsed['success'] );
+		$this->assertArrayHasKey( 'changeset_date', $this->_last_response_parsed['data'] );
 		$changeset_post_schedule = get_post( $post_id );
 		$this->assertEquals( $future_date, $changeset_post_schedule->post_date );
 
@@ -344,6 +345,7 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		$_POST['customize_changeset_status'] = 'draft';
 		$this->make_ajax_call( 'customize_save' );
 		$this->assertTrue( $this->_last_response_parsed['success'] );
+		$this->assertArrayNotHasKey( 'changeset_date', $this->_last_response_parsed['data'] );
 		$changeset_post_draft = get_post( $post_id );
 		$this->assertEquals( $future_date, $changeset_post_draft->post_date );
 
@@ -351,6 +353,7 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		$_POST['customize_changeset_status'] = 'future';
 		$this->make_ajax_call( 'customize_save' );
 		$this->assertTrue( $this->_last_response_parsed['success'] );
+		$this->assertArrayHasKey( 'changeset_date', $this->_last_response_parsed['data'] );
 		$changeset_post_schedule = get_post( $post_id );
 		$this->assertEquals( $future_date, $changeset_post_schedule->post_date );
 		// Success if draft with past date.
@@ -380,8 +383,19 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		$_POST['customize_changeset_status'] = 'publish';
 		$this->make_ajax_call( 'customize_save' );
 		$this->assertTrue( $this->_last_response_parsed['success'] );
+		$this->assertArrayHasKey( 'next_changeset_uuid', $this->_last_response_parsed['data'] );
+		$this->assertTrue( wp_is_uuid( $this->_last_response_parsed['data']['next_changeset_uuid'], 4 ) );
 		$changeset_post_publish = get_post( $post_id );
 		$this->assertNotEquals( $future_date, $changeset_post_publish->post_date );
+
+		// Check response when trying to update an already-published post.
+		$this->assertEquals( 'trash', get_post_status( $post_id ) );
+		$_POST['customize_changeset_status'] = 'publish';
+		$this->make_ajax_call( 'customize_save' );
+		$this->assertFalse( $this->_last_response_parsed['success'] );
+		$this->assertEquals( 'changeset_already_published', $this->_last_response_parsed['data']['code'] );
+		$this->assertArrayHasKey( 'next_changeset_uuid', $this->_last_response_parsed['data'] );
+		$this->assertTrue( wp_is_uuid( $this->_last_response_parsed['data']['next_changeset_uuid'], 4 ) );
 	}
 
 	/**
