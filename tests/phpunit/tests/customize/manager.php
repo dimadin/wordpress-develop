@@ -120,6 +120,8 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		$this->assertEquals( $uuid, $wp_customize->changeset_uuid() );
 		$this->assertEquals( $theme, $wp_customize->get_stylesheet() );
 		$this->assertEquals( $messenger_channel, $wp_customize->get_messenger_channel() );
+		$this->assertFalse( $wp_customize->autosaved() );
+		$this->assertTrue( $wp_customize->branching() );
 
 		$theme = 'twentyfourteen';
 		$messenger_channel = 'preview-456';
@@ -251,6 +253,45 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 
 		$wp_customize = new WP_Customize_Manager();
 		$this->assertSame( true, $wp_customize->settings_previewed() );
+	}
+
+	/**
+	 * Test WP_Customize_Manager::autosaved().
+	 *
+	 * @ticket 39896
+	 * @covers WP_Customize_Manager::autosaved()
+	 */
+	public function test_autosaved() {
+		$wp_customize = new WP_Customize_Manager();
+		$this->assertFalse( $wp_customize->autosaved() );
+
+		$wp_customize = new WP_Customize_Manager( array( 'autosaved' => false ) );
+		$this->assertFalse( $wp_customize->autosaved() );
+
+		$wp_customize = new WP_Customize_Manager( array( 'autosaved' => true ) );
+		$this->assertTrue( $wp_customize->autosaved() );
+	}
+
+	/**
+	 * Test WP_Customize_Manager::branching().
+	 *
+	 * @ticket 39896
+	 * @covers WP_Customize_Manager::branching()
+	 */
+	public function test_branching() {
+		$wp_customize = new WP_Customize_Manager();
+		$this->assertTrue( $wp_customize->branching(), 'Branching should default to true since it is original behavior in 4.7.' );
+
+		$wp_customize = new WP_Customize_Manager( array( 'branching' => false ) );
+		$this->assertFalse( $wp_customize->branching() );
+		add_filter( 'customize_changeset_branching', '__return_true' );
+		$this->assertTrue( $wp_customize->branching() );
+		remove_filter( 'customize_changeset_branching', '__return_true' );
+
+		$wp_customize = new WP_Customize_Manager( array( 'branching' => true ) );
+		$this->assertTrue( $wp_customize->branching() );
+		add_filter( 'customize_changeset_branching', '__return_false' );
+		$this->assertFalse( $wp_customize->branching() );
 	}
 
 	/**

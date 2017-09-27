@@ -599,38 +599,10 @@ final class WP_Customize_Manager {
 	 * @since 4.9.0
 	 */
 	public function establish_loaded_changeset() {
-
-		/**
-		 * Filters whether or not changeset branching is allowed.
-		 *
-		 * By default in core, when changeset branching is not allowed, changesets will operate
-		 * linearly in that only one saved changeset will exist at a time (with a 'draft' or
-		 * 'future' status). This makes the Customizer operate in a way that is similar to going to
-		 * "edit" to one existing post: all users will be making changes to the same post, and autosave
-		 * revisions will be made for that post.
-		 *
-		 * By contrast, when changeset branching is allowed, then the model is like users going
-		 * to "add new" for a page and each user makes changes independently of each other since
-		 * they are all operating on their own separate pages, each getting their own separate
-		 * initial auto-drafts and then once initially saved, autosave revisions on top of that
-		 * user's specific post.
-		 *
-		 * Since linear changesets are deemed to be more suitable for the majority of WordPress users,
-		 * they are the default. For WordPress sites that have heavy site management in the Customizer
-		 * by multiple users then branching changesets should be enabled by means of this filter.
-		 *
-		 * @since 4.9.0
-		 *
-		 * @param bool                 $allow_branching Whether branching is allowed. If `false`, the default,
-		 *                                              then only one saved changeset exists at a time.
-		 * @param WP_Customize_Manager $wp_customize    Manager instance.
-		 */
-		$this->branching = apply_filters( 'customize_changeset_branching', $this->branching, $this );
-
 		if ( empty( $this->_changeset_uuid ) ) {
 			$changeset_uuid = null;
 
-			if ( ! $this->branching ) {
+			if ( ! $this->branching() ) {
 				$unpublished_changeset_posts = $this->get_changeset_posts( array(
 					'post_status' => array_diff( get_post_stati(), array( 'auto-draft', 'publish', 'trash', 'inherit', 'private' ) ),
 					'exclude_restore_dismissed' => false,
@@ -752,6 +724,58 @@ final class WP_Customize_Manager {
 	 */
 	public function settings_previewed() {
 		return $this->settings_previewed;
+	}
+
+	/**
+	 * Gets whether data from a changeset's autosaved revision should be loaded if it exists.
+	 *
+	 * @since 4.9.0
+	 * @see WP_Customize_Manager::changeset_data()
+	 *
+	 * @return bool Is using autosaved changeset revision.
+	 */
+	public function autosaved() {
+		return $this->autosaved;
+	}
+
+	/**
+	 * Whether the changeset branching is allowed.
+	 *
+	 * @since 4.9.0
+	 * @see WP_Customize_Manager::establish_loaded_changeset()
+	 *
+	 * @return bool Is changeset branching.
+	 */
+	public function branching() {
+
+		/**
+		 * Filters whether or not changeset branching is allowed.
+		 *
+		 * By default in core, when changeset branching is not allowed, changesets will operate
+		 * linearly in that only one saved changeset will exist at a time (with a 'draft' or
+		 * 'future' status). This makes the Customizer operate in a way that is similar to going to
+		 * "edit" to one existing post: all users will be making changes to the same post, and autosave
+		 * revisions will be made for that post.
+		 *
+		 * By contrast, when changeset branching is allowed, then the model is like users going
+		 * to "add new" for a page and each user makes changes independently of each other since
+		 * they are all operating on their own separate pages, each getting their own separate
+		 * initial auto-drafts and then once initially saved, autosave revisions on top of that
+		 * user's specific post.
+		 *
+		 * Since linear changesets are deemed to be more suitable for the majority of WordPress users,
+		 * they are the default. For WordPress sites that have heavy site management in the Customizer
+		 * by multiple users then branching changesets should be enabled by means of this filter.
+		 *
+		 * @since 4.9.0
+		 *
+		 * @param bool                 $allow_branching Whether branching is allowed. If `false`, the default,
+		 *                                              then only one saved changeset exists at a time.
+		 * @param WP_Customize_Manager $wp_customize    Manager instance.
+		 */
+		$this->branching = apply_filters( 'customize_changeset_branching', $this->branching, $this );
+
+		return $this->branching;
 	}
 
 	/**
@@ -1053,7 +1077,7 @@ final class WP_Customize_Manager {
 		if ( ! $changeset_post_id ) {
 			$this->_changeset_data = array();
 		} else {
-			if ( $this->autosaved ) {
+			if ( $this->autosaved() ) {
 				$autosave_post = wp_get_post_autosave( $changeset_post_id );
 				if ( $autosave_post ) {
 					$data = $this->get_changeset_post_data( $autosave_post->ID );
@@ -1975,7 +1999,7 @@ final class WP_Customize_Manager {
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
-				'autosaved' => $this->autosaved,
+				'autosaved' => $this->autosaved(),
 			),
 			'timeouts' => array(
 				'selectiveRefresh' => 250,
@@ -3916,7 +3940,7 @@ final class WP_Customize_Manager {
 		$autosave_revision_post = null;
 		$autosave_autodraft_post = null;
 		$changeset_post_id = $this->changeset_post_id();
-		if ( ! $this->saved_starter_content_changeset && ! $this->autosaved ) {
+		if ( ! $this->saved_starter_content_changeset && ! $this->autosaved() ) {
 			if ( $changeset_post_id ) {
 				$autosave_revision_post = wp_get_post_autosave( $changeset_post_id );
 			} else {
@@ -3940,8 +3964,8 @@ final class WP_Customize_Manager {
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
-				'branching' => $this->branching,
-				'autosaved' => $this->autosaved,
+				'branching' => $this->branching(),
+				'autosaved' => $this->autosaved(),
 				'hasAutosaveRevision' => ! empty( $autosave_revision_post ),
 				'latestAutoDraftUuid' => $autosave_autodraft_post ? $autosave_autodraft_post->post_name : null,
 				'status' => $changeset_post ? $changeset_post->post_status : '',
