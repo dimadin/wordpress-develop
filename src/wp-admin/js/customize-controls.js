@@ -4446,16 +4446,28 @@
 	});
 
 	/**
-	 * Class wp.customize.PreviewLinkControl.
+	 * Class PreviewLinkControl.
 	 *
 	 * @since 4.9.0
 	 * @constructor
 	 * @augments wp.customize.Control
 	 * @augments wp.customize.Class
 	 */
-	api.PreviewLinkControl = api.Control.extend({
+	var PreviewLinkControl = api.Control.extend({
 
 		previewElements: {},
+
+		/**
+		 * Override the templateSelector before embedding the control into the page.
+		 *
+		 * @since 4.9.0
+		 * @return {void}
+		 */
+		embed: function() {
+			var control = this;
+			control.templateSelector = 'customize-preview-link-control';
+			return api.Control.prototype.embed.apply( control, arguments );
+		},
 
 		/**
 		 * Initialize behaviors.
@@ -5262,7 +5274,6 @@
 		background_position: api.BackgroundPositionControl,
 		theme:               api.ThemeControl,
 		date_time:           api.DateTimeControl,
-		preview_link:        api.PreviewLinkControl,
 		code_editor:         api.CodeEditorControl
 	};
 	api.panelConstructor = {};
@@ -5494,7 +5505,18 @@
 		saveBtn.show();
 
 		api.section( 'publish_settings', function( section ) {
-			var updateButtonsState;
+			var updateButtonsState, previewLinkControl, previewLinkControlId = 'changeset_preview_link';
+
+			previewLinkControl = new PreviewLinkControl( previewLinkControlId, {
+				params: {
+					section: section.id,
+					active: true,
+					priority: 100,
+					content: '<li id="customize-control-' + previewLinkControlId + '" class="customize-control"></li>'
+				}
+			} );
+
+			api.control.add( previewLinkControlId, previewLinkControl );
 
 			// Make sure publish settings are not available until the theme has been activated.
 			if ( ! api.settings.theme.active ) {

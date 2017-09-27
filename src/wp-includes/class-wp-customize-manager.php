@@ -387,6 +387,9 @@ final class WP_Customize_Manager {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_section_templates' ), 1 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_control_templates' ), 1 );
 
+		// Render preview link control template.
+		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_preview_link_template' ) );
+
 		// Export header video settings with the partial response.
 		add_filter( 'customize_render_partials_response', array( $this, 'export_header_video_settings' ), 10, 3 );
 
@@ -3531,6 +3534,31 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Render preview link control template.
+	 *
+	 * @since 4.9.0
+	 */
+	public function render_preview_link_template() {
+		?>
+		<script type="text/html" id="tmpl-customize-preview-link-control" >
+			<span class="customize-control-title">
+				<label><?php esc_html_e( 'Share Preview Link' ); ?></label>
+			</span>
+			<span class="description customize-control-description"><?php esc_html_e( 'See how changes would look live on your website, and share the preview with people who can\'t access the Customizer.' ); ?></span>
+			<div class="customize-control-notifications-container"></div>
+			<div class="preview-link-wrapper">
+				<label>
+					<span class="screen-reader-text"><?php esc_html_e( 'Preview Link' ); ?></span>
+					<a class="preview-control-element" data-component="link" href="" target=""></a>
+					<input readonly class="preview-control-element" data-component="input" value="test" >
+					<button class="customize-copy-preview-link preview-control-element button button-secondary" data-component="button" data-copy-text="<?php esc_attr_e( 'Copy' ); ?>" data-copied-text="<?php esc_attr_e( 'Copied' ); ?>" ><?php esc_html_e( 'Copy' ); ?></button>
+				</label>
+			</div>
+		</script>
+		<?php
+	}
+
+	/**
 	 * Helper function to compare two objects by priority, ensuring sort stability via instance_number.
 	 *
 	 * @since 3.4.0
@@ -4070,7 +4098,6 @@ final class WP_Customize_Manager {
 		$this->register_control_type( 'WP_Customize_Theme_Control' );
 		$this->register_control_type( 'WP_Customize_Code_Editor_Control' );
 		$this->register_control_type( 'WP_Customize_Date_Time_Control' );
-		$this->register_control_type( 'WP_Customize_Preview_Link_Control' );
 
 		/* Publish Settings */
 
@@ -4118,15 +4145,6 @@ final class WP_Customize_Manager {
 			'capability' => 'customize',
 			'default_value' => $initial_date,
 		) ) );
-
-		$this->add_control( 'changeset_preview_link', array(
-			'section' => 'publish_settings',
-			'settings' => array(),
-			'type' => 'preview_link',
-			'label' => __( 'Share Preview Link' ),
-			'description' => __( 'See how changes would look live on your website, and share the preview with people who can\'t access the Customizer.' ),
-			'capability' => 'customize',
-		) );
 
 		/* Themes */
 
