@@ -3899,6 +3899,9 @@ final class WP_Customize_Manager {
 
 		// Prepare Customizer settings to pass to JavaScript.
 		$changeset_post = null;
+		if ( $changeset_post_id ) {
+			$changeset_post = get_post( $changeset_post_id );
+		}
 
 		$settings = array(
 			'changeset' => array(
@@ -4081,7 +4084,7 @@ final class WP_Customize_Manager {
 		);
 
 		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts ) ) {
-			unset( $status_choices[ 'publish' ] );
+			unset( $status_choices['publish'] );
 		}
 
 		$this->add_control( 'changeset_status', array(
