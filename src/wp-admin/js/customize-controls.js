@@ -4153,7 +4153,6 @@
 		dateInputs: {},
 		inputElements: {},
 		invalidDate: false,
-		interval: false,
 
 		/**
 		 * Initialize behaviors.
@@ -4186,12 +4185,6 @@
 				};
 				control.inputElements[ component ] = element;
 				control.elements.push( element );
-			} );
-
-			api.state( 'saving' ).bind( function( isSaving ) {
-				if ( isSaving && ! control.params.allowPastDate ) {
-					control.toggleFutureDateNotification( ! control.isFutureDate() );
-				}
 			} );
 
 			control.dateInputs.on( 'input', control.populateSetting );
@@ -4394,50 +4387,6 @@
 		isFutureDate: function isFutureDate() {
 			var control = this;
 			return 0 < api.utils.getRemainingTime( control.convertInputDateToString() );
-		},
-
-		/**
-		 * Checks to see if the given time has arrived.
-		 *
-		 * Use .progress() to get the remaining countdown time in milliseconds.
-		 *
-		 * @param {string} datetime Date time in Y-m-d H:i:s format.
-		 * @param {int} timeInterval Time interval after which the time needs to be checked in milliseconds.
-		 * @return {jQuery.deferred.promise}
-		 */
-		timeArrived: function timeArrived( datetime, timeInterval ) {
-			var control = this, deferred = $.Deferred(), timeRemaining, timestamp;
-
-			if ( ! datetime ) {
-				return deferred.reject( 'date_not_defined' );
-			}
-
-			timestamp = ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime();
-
-			if ( _.isNaN( timestamp ) ) {
-				return deferred.reject( 'invalid_date' );
-			}
-
-			// Clear and reject the previous timeArrived promise.
-			if ( control._timeArrivedInterval ) {
-				clearInterval( control._timeArrivedInterval ); // To ensure multiple intervals are not running in any case.
-			}
-			if ( control._timeArrivedDeferred ) {
-				control._timeArrivedDeferred.reject();
-			}
-
-			control._timeArrivedInterval = setInterval( function() {
-				timeRemaining = control.getRemainingTime( timestamp );
-				deferred.notify( timeRemaining ); // Plugins can convert to days hours minutes if required by listening to progress().
-				if ( 0 > timeRemaining ) {
-					clearInterval( control._timeArrivedInterval );
-					deferred.resolve( timestamp );
-				}
-			}, timeInterval );
-
-			control._timeArrivedDeferred = deferred;
-
-			return deferred.promise();
 		},
 
 		/**
@@ -7060,19 +7009,19 @@
 		/**
 		 * Publish settings section and controls.
 		 */
-		api.control( 'changeset_status', function( control ) {
-			control.deferred.embedded.done( function() {
-				var radioNodes, element;
+		api.control( 'changeset_status', function( statusControl ) {
+			statusControl.deferred.embedded.done( function() {
+				var radioNodes, statusElement;
 
-				radioNodes = control.container.find( 'input[type=radio][name]' );
-				element = new api.Element( radioNodes );
-				control.elements.push( element );
+				radioNodes = statusControl.container.find( 'input[type=radio][name]' );
+				statusElement = new api.Element( radioNodes );
+				statusControl.elements.push( statusElement );
 
-				element.sync( api.state( 'selectedChangesetStatus' ) );
-				element.set( api.state( 'selectedChangesetStatus' ).get() );
+				statusElement.sync( api.state( 'selectedChangesetStatus' ) );
+				statusElement.set( api.state( 'selectedChangesetStatus' ).get() );
 
 				api.control( 'changeset_scheduled_date', function( dateControl ) {
-					var toggleDateControl, publishWhenTime, timeInterval = 1000;
+					var toggleDateControl, publishWhenTime, pollInterval, updateTimeArrivedPoller, timeArrivedPollingInterval = 1000;
 
 					dateControl.notifications.alt = true;
 					dateControl.deferred.embedded.done( function() {
@@ -7080,48 +7029,81 @@
 					    api.state( 'selectedChangesetDate' ).set( dateControl.setting() );
 					} );
 
-					publishWhenTime = function( datetime ) {
-						if ( 'future' !== api.state( 'changesetStatus' ).get() || ! datetime ) {
-						    return;
+					publishWhenTime = function() {
+						var promise, publishSettingsSection;
+
+						api.state( 'selectedChangesetStatus' ).set( 'publish' );
+						publishSettingsSection = api.section( 'publish_settings' );
+						if ( publishSettingsSection ) {
+							publishSettingsSection.collapse();
 						}
 
-						dateControl.timeArrived( datetime, timeInterval ).done( function() {
-							var request, notification, code = 'scheduled_changeset_published';
+						promise = api.previewer.save();
 
-							request = api.requestChangesetUpdate( {}, {
-								force: true // Note that autosave is not true, so any pending changes will also get
-							} );
+						// @todo Handle case where changeset got published on the server before we had a chance to publish it punctually.
+						// 	request.done( function( resp ) {
+						// 		if ( 'trash' === resp.changeset_status || 'changeset_already_published' === resp.code ) {
+						// 			api.state( 'changesetStatus' ).set( '' );
+						// 			if ( resp.next_changeset_uuid ) {
+						// 				notification = new api.Notification( code, {
+						// 					message: api.l10n.changesetPublished,
+						// 					type: 'info',
+						// 					dismissible: true
+						// 				} );
+						// 				api.notifications.add( code, notification );
+						// 				api.settings.changeset.uuid = resp.next_changeset_uuid
+						// 			}
+						// 		}
+						// 	} );
+					};
 
-							request.done( function( resp ) {
-								if ( 'trash' === resp.changeset_status || 'changeset_already_published' === resp.code ) {
-									api.state( 'changesetStatus' ).set( '' );
-									if ( resp.next_changeset_uuid ) {
-										notification = new api.Notification( code, {
-											message: api.l10n.changesetPublished,
-											type: 'info',
-											dismissible: true
-										} );
-										api.notifications.add( code, notification );
-										api.settings.changeset.uuid = resp.next_changeset_uuid
-									}
+					// Start countdown for when the dateTime arrives, or clear interval when it is .
+					updateTimeArrivedPoller = function() {
+						var shouldPoll = (
+							'future' === api.state( 'changesetStatus' ).get() &&
+							'future' === api.state( 'selectedChangesetStatus' ).get() &&
+							api.state( 'changesetDate' ).get() &&
+							api.state( 'selectedChangesetDate' ).get() === api.state( 'changesetDate' ).get() &&
+							api.utils.getRemainingTime( api.state( 'changesetDate' ).get() ) >= 0
+						);
+
+						if ( shouldPoll && ! pollInterval ) {
+							pollInterval = setInterval( function() {
+								var remainingTime = api.utils.getRemainingTime( api.state( 'changesetDate' ).get() );
+								if ( remainingTime <= 0 ) {
+									clearInterval( pollInterval );
+									pollInterval = 0;
+									publishWhenTime();
 								}
-							} );
-						} );
+							}, timeArrivedPollingInterval );
+						} else if ( ! shouldPoll && pollInterval ) {
+							clearInterval( pollInterval );
+							pollInterval = 0;
+						}
 					};
 
-					publishWhenTime( api.state( 'changesetDate' ).get() );
-					api.state( 'changesetDate' ).bind( publishWhenTime );
+					api.state( 'changesetDate' ).bind( updateTimeArrivedPoller );
+					api.state( 'selectedChangesetDate' ).bind( updateTimeArrivedPoller );
+					api.state( 'changesetStatus' ).bind( updateTimeArrivedPoller );
+					api.state( 'selectedChangesetStatus' ).bind( updateTimeArrivedPoller );
+					updateTimeArrivedPoller();
 
+					// Ensure dateControl only appears when selected status is future.
 					dateControl.active.validate = function() {
-						return 'future' ===  element.get();
+						return 'future' === statusElement.get();
 					};
-
 					toggleDateControl = function( value ) {
-						dateControl.active.set( 'future' ===  value );
+						dateControl.active.set( 'future' === value );
 					};
+					toggleDateControl( statusElement.get() );
+					statusElement.bind( toggleDateControl );
 
-					toggleDateControl( element.get() );
-					element.bind( toggleDateControl );
+					// Show notification on date control when status is future but it isn't a future date.
+					api.state( 'saving' ).bind( function( isSaving ) {
+						if ( isSaving && 'future' === api.state( 'selectedChangesetStatus' ).get() ) {
+							dateControl.toggleFutureDateNotification( ! dateControl.isFutureDate() );
+						}
+					} );
 				} );
 			} );
 		} );
