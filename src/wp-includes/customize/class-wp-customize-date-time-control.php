@@ -115,16 +115,15 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 						<span class="screen-reader-text"><?php esc_html_e( 'Month' ); ?></span>
 							<select class="date-input month" data-component="month">
 								<# _.each( data.month_choices, function( choice ) {
-										if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
+									if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
 										text = choice.text;
 										value = choice.value;
-										}
-
-										selected = choice.value == data.month ? 'selected="selected"' : '';
-										#>
-								<option value="{{ value }}" {{selected}} >
-									{{ text }}
-								</option>
+									}
+									selected = choice.value == data.month ? 'selected="selected"' : '';
+									#>
+									<option value="{{ value }}" {{selected}} >
+										{{ text }}
+									</option>
 								<# } ); #>
 							</select>
 					</label>
@@ -135,7 +134,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 					<span class="time-special-char date-time-separator">,</span>
 					<label class="year-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Year' ); ?></span>
-						<#  data.maxYearLength = String( data.maxYear ).length; #>
+						<# data.maxYearLength = String( data.maxYear ).length; #>
 						<input type="number" size="4" maxlength="{{ data.maxYearLength }}" autocomplete="off" class="date-input year" data-component="year" min="{{ data.minYear }}" value="{{ data.year }}" max="{{ data.maxYear }}" />
 					</label>
 				</div>

@@ -1930,9 +1930,9 @@
 				section.container.toggleClass( 'open', isExpanded );
 				section.container.removeClass( 'busy' );
 				api.section.each( function( _section ) {
-				    if ( 'outer' === _section.params.type && _section.id !== section.id ) {
+					if ( 'outer' === _section.params.type && _section.id !== section.id ) {
 						_section.container.removeClass( 'open' );
-				    }
+					}
 				} );
 			} );
 
