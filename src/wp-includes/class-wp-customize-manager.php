@@ -3111,7 +3111,7 @@ final class WP_Customize_Manager {
 			if ( $dismissed > 0 ) {
 				wp_send_json_success( 'auto_draft_dismissed' );
 			} else {
-				wp_send_json_error( 'no_autosave_to_delete', 404 );
+				wp_send_json_error( 'no_auto_draft_to_delete', 404 );
 			}
 		} else {
 			$revision = wp_get_post_autosave( $changeset_post_id );
@@ -3127,7 +3127,7 @@ final class WP_Customize_Manager {
 					wp_send_json_success( 'autosave_revision_deleted' );
 				}
 			} else {
-				wp_send_json_error( 'no_autosave_to_delete', 404 );
+				wp_send_json_error( 'no_autosave_revision_to_delete', 404 );
 			}
 		}
 		wp_send_json_error( 'unknown_error', 500 );
