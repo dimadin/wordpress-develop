@@ -694,7 +694,8 @@ jQuery( window ).load( function (){
 	module( 'Customize Controls: wp.customize.DateTimeControl' );
 	test( 'Test DateTimeControl creation and its methods', function( assert ) {
 		var control, controlId = 'date_time', section, sectionId = 'test_section',
-			datetime = '2599-08-06 18:12:13', dateTimeArray, dateTimeArrayInampm, timeString;
+			datetime = '2599-08-06 18:12:13', dateTimeArray, dateTimeArrayInampm, timeString,
+			day, year, month, minute, ampm, hour;
 
 		section = new wp.customize.Section( sectionId, {
 			params: {
@@ -713,17 +714,26 @@ jQuery( window ).load( function (){
 			}
 		} );
 
+		// Test control creations.
 		assert.ok( control.templateSelector, '#customize-control-date_time-content' );
 		assert.ok( control.section(), sectionId );
 		assert.equal( _.size( control.inputElements ), control.elements.length );
 		assert.ok( control.setting(), datetime );
 
-		control.inputElements.year( '23' );
-		assert.ok( ! _.isNaN( control.inputElements.year() ) ); // Should always return integer.
+		day = control.inputElements.day;
+		month = control.inputElements.month;
+		year = control.inputElements.year;
+		minute = control.inputElements.minute;
+		hour = control.inputElements.hour;
+		ampm = control.inputElements.ampm;
 
-		control.inputElements.month( 'test' );
-		assert.ok( ! control.inputElements.month() ); // Should not accept text.
+		year( '23' );
+		assert.ok( ! _.isNaN( year() ), 'Should always return integer' );
 
+		month( 'test' );
+		assert.ok( ! month(), 'Should not accept text' );
+
+		// Test control.parseDateTime();
 		dateTimeArray = control.parseDateTime( datetime );
 		assert.deepEqual( dateTimeArray, {
 			year: '2599',
@@ -744,18 +754,69 @@ jQuery( window ).load( function (){
 			day: '06'
 		} );
 
-		control.inputElements.year( '2010' );
-		control.inputElements.month( '12' );
-		control.inputElements.day( '18' );
-		control.inputElements.hour( '3' );
-		control.inputElements.minute( '44' );
-		control.inputElements.ampm( 'am' );
+		year( '2010' );
+		month( '12' );
+		day( '18' );
+		hour( '3' );
+		minute( '44' );
+		ampm( 'am' );
 
+		// Test control.convertInputDateToString().
 		timeString = control.convertInputDateToString();
 		assert.equal( timeString, '2010-12-18 03:44:00' );
 
-		control.inputElements.ampm( 'pm' );
+		ampm( 'pm' );
 		timeString = control.convertInputDateToString();
 		assert.equal( timeString, '2010-12-18 15:44:00' );
+
+		// Test control.updateDaysForMonth();.
+		year( 2017 );
+		month( 2 );
+		day( 31 );
+		control.updateDaysForMonth();
+		assert.deepEqual( day(), 28, 'Should update to the correct days' );
+
+		day( 20 );
+		assert.deepEqual( day(), 20, 'Should not update if its less the correct number of days' );
+
+		// Test control.convertHourToTwentyFourHourFormat().
+		assert.equal( control.convertHourToTwentyFourHourFormat( 11, 'pm' ), 23 );
+		assert.equal( control.convertHourToTwentyFourHourFormat( 12, 'pm' ), 12 );
+		assert.equal( control.convertHourToTwentyFourHourFormat( 12, 'am' ), 0 );
+		assert.equal( control.convertHourToTwentyFourHourFormat( 11, 'am' ), 11 );
+
+		// Test control.toggleFutureDateNotification().
+		assert.deepEqual( control.toggleFutureDateNotification(), control );
+		control.toggleFutureDateNotification( true );
+		assert.ok( control.notifications.has( 'not_future_date' ) );
+		control.toggleFutureDateNotification( false );
+		assert.ok( ! control.notifications.has( 'not_future_date' ) );
+
+		// Test control.populateDateInputs();
+		control.populateDateInputs();
+		control.dateInputs.each( function() {
+			var node = jQuery( this );
+		    assert.equal( node.val(), control.inputElements[ node.data( 'component' ) ].get() );
+		} );
+
+		// Test control.validateInputs();
+		hour( 33 );
+		assert.ok( control.validateInputs() );
+		hour( 10 );
+		assert.ok( ! control.validateInputs() );
+		minute( 123 );
+		assert.ok( control.validateInputs() );
+		minute( 20 );
+		assert.ok( ! control.validateInputs() );
+
+		/**
+		 * Test control.updateMinutesForHour().
+		 * Run this run at the end or above tests may fail.
+		 */
+		hour( 24 );
+		minute( 32 );
+		control.inputElements.ampm = false; // Because it works only when the time is twenty four hour format.
+		control.updateMinutesForHour();
+		assert.deepEqual( minute(), 0 );
 	});
 });
