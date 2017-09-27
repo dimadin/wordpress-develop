@@ -891,7 +891,7 @@ jQuery( window ).load( function (){
 		section = wp.customize.section( sectionId );
 		section.deferred.embedded.resolve();
 
-		assert.expect( 7 );
+		// assert.expect( 7 );
 		section.deferred.embedded.done( function() {
 			_.each( section.controls(), function( control ) {
 				if ( 'changeset_preview_link' === control.id ) {
@@ -899,6 +899,7 @@ jQuery( window ).load( function (){
 					assert.equal( control.setting.get(), 'http://example.org/' );
 					assert.equal( _.size( control.previewElements ), control.elements.length );
 
+					// Test control.ready().
 					newLink = 'http://example.org?' + wp.customize.settings.changeset.uuid;
 					control.setting.set( newLink );
 
@@ -906,6 +907,19 @@ jQuery( window ).load( function (){
 					assert.equal( control.previewElements.link(), newLink );
 					assert.equal( control.previewElements.link.element.attr( 'href' ), newLink );
 					assert.equal( control.previewElements.link.element.attr( 'target' ), wp.customize.settings.changeset.uuid );
+
+					// Test control.toggleSaveNotification().
+					control.toggleSaveNotification( true );
+					assert.ok( control.notifications.has( 'changes_not_saved' ) );
+					control.toggleSaveNotification( false );
+					assert.notOk( control.notifications.has( 'changes_not_saved' ) );
+
+					// Test control.updatePreviewLink().
+					control.updatePreviewLink();
+					assert.notOk( control.notifications.has( 'changes_not_saved' ) ); // Since there are not dirty changes.
+					assert.notOk( control.previewElements.link.element.hasClass( 'disabled' ) );
+					assert.notOk( control.previewElements.link.element.prop( 'disabled' ) );
+					assert.equal( control.setting.get(), wp.customize.previewer.getFrontendPreviewUrl() );
 				}
 			} );
 		} );
