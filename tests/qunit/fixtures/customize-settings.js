@@ -106,6 +106,14 @@ window._wpCustomizeSettings = {
 			'title': 'Fixture section of custom type re-using default template',
 			'type': 'reusing-default-template'
 		},
+		'publish_settings': {
+			'active': true,
+			'description': '',
+			'instanceNumber': 6,
+			'priority': 20,
+			'title': 'Fixture section of custom type re-using default template',
+			'type': 'outer'
+		},
 		'fixture-section-without-params': {}
 	},
 	'settings': {

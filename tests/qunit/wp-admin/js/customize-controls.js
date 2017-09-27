@@ -693,17 +693,11 @@ jQuery( window ).load( function (){
 
 	module( 'Customize Controls: wp.customize.DateTimeControl' );
 	test( 'Test DateTimeControl creation and its methods', function( assert ) {
-		var control, controlId = 'date_time', section, sectionId = 'test_section',
+		var control, controlId = 'date_time', section, sectionId = 'fixture-section',
 			datetime = '2599-08-06 18:12:13', dateTimeArray, dateTimeArrayInampm, timeString,
 			day, year, month, minute, ampm, hour;
 
-		section = new wp.customize.Section( sectionId, {
-			params: {
-				content: '<li id="accordion-section" class="accordion-section control-section control-section-default"> <h3 class="accordion-section-title" tabindex="0"> Section Fixture <span class="screen-reader-text">Press return or enter to open</span> </h3> <ul class="accordion-section-content"> <li class="customize-section-description-container"> <div class="customize-section-title"> <button class="customize-section-back" tabindex="-1"> <span class="screen-reader-text">Back</span> </button> <h3> <span class="customize-action">Customizing &#9656; Fixture Panel</span> Section Fixture </h3> </div> </li> </ul> </li>',
-				type: 'default'
-			}
-		} );
-		wp.customize.section.add( sectionId, section );
+		section = wp.customize.section( sectionId );
 
 		control = new wp.customize.DateTimeControl( controlId, {
 			params: {
@@ -713,6 +707,8 @@ jQuery( window ).load( function (){
 				defaultValue: datetime
 			}
 		} );
+
+		wp.customize.control.add( controlId, control );
 
 		// Test control creations.
 		assert.ok( control.templateSelector, '#customize-control-date_time-content' );
@@ -850,26 +846,20 @@ jQuery( window ).load( function (){
 		assert.deepEqual( minute(), 0 );
 
 		// Tear Down.
-		wp.customize.section.remove( sectionId );
 		wp.customize.control.remove( controlId );
 	});
 
 	module( 'Customize Sections: wp.customize.OuterSection' );
 	test( 'Test OuterSection', function( assert ) {
 		var section, sectionId = 'test_outer_section', body = jQuery( 'body' ),
-			defaultSection, defaultSectionId = 'test_default_section';
+			defaultSection, defaultSectionId = 'fixture-section';
+
+		defaultSection = wp.customize.section( defaultSectionId );
 
 		section = new wp.customize.OuterSection( sectionId, {
 			params: {
-				content: '<li id="accordion-section" class="accordion-section control-section control-section-default"> <h3 class="accordion-section-title" tabindex="0"> Section Fixture <span class="screen-reader-text">Press return or enter to open</span> </h3> <ul class="accordion-section-content"> <li class="customize-section-description-container"> <div class="customize-section-title"> <button class="customize-section-back" tabindex="-1"> <span class="screen-reader-text">Back</span> </button> <h3> <span class="customize-action">Customizing &#9656; Fixture Panel</span> Section Fixture </h3> </div> </li> </ul> </li>',
+				content: defaultSection.params.content,
 				type: 'outer'
-			}
-		} );
-
-		defaultSection = new wp.customize.OuterSection( defaultSectionId, {
-			params: {
-				content: '<li id="accordion-section" class="accordion-section control-section control-section-default"> <h3 class="accordion-section-title" tabindex="0"> Section Fixture <span class="screen-reader-text">Press return or enter to open</span> </h3> <ul class="accordion-section-content"> <li class="customize-section-description-container"> <div class="customize-section-title"> <button class="customize-section-back" tabindex="-1"> <span class="screen-reader-text">Back</span> </button> <h3> <span class="customize-action">Customizing &#9656; Fixture Panel</span> Section Fixture </h3> </div> </li> </ul> </li>',
-				type: 'default'
 			}
 		} );
 
@@ -892,6 +882,18 @@ jQuery( window ).load( function (){
 
 		// Tear down
 		wp.customize.section.remove( sectionId );
-		wp.customize.section.remove( defaultSection );
+	});
+
+	module( 'Customize Controls: PreviewLinkControl' );
+	test( 'Test PreviewLinkControl creation and its methods', function( assert ) {
+		var control, section, sectionId = 'publish_settings';
+
+		section = wp.customize.section( sectionId );
+		section.deferred.embedded.resolve();
+
+		section.deferred.embedded.done( function() {
+		    control = section.controls()[0];
+			assert.ok( _.isObject( control ) );
+		} );
 	});
 });
