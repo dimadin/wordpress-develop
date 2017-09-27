@@ -6094,7 +6094,12 @@
 						}
 					} else if ( 'future' === selectedChangesetStatus() ) {
 						if ( saved() && selectedChangesetStatus() === changesetStatus() ) {
-							saveBtn.val( api.l10n.scheduled );
+							if ( changesetDate.get() !== selectedChangesetDate.get() ) {
+								saveBtn.val( api.l10n.schedule );
+								saveBtn.addClass( 'button-see-me' );
+							} else {
+								saveBtn.val( api.l10n.scheduled );
+							}
 						} else {
 							saveBtn.addClass( 'button-see-me' );
 							saveBtn.val( api.l10n.schedule );
