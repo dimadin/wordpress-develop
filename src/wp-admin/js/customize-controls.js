@@ -6287,12 +6287,10 @@
 				// Remove the notification once the user starts making changes.
 				onStateChange = function() {
 					api.notifications.remove( code );
-					api.state( 'saved' ).unbind( onStateChange );
-					api.state( 'saving' ).unbind( onStateChange );
+					api.unbind( 'change', onStateChange );
 					api.state( 'changesetStatus' ).unbind( onStateChange );
 				};
-				api.state( 'saved' ).bind( onStateChange );
-				api.state( 'saving' ).bind( onStateChange );
+				api.bind( 'change', onStateChange );
 				api.state( 'changesetStatus' ).bind( onStateChange );
 			}
 
