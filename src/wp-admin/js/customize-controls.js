@@ -5500,6 +5500,7 @@
 			title = $( '#customize-info .panel-title.site-title' ),
 			closeBtn = $( '.customize-controls-close' ),
 			saveBtn = $( '#save' ),
+			btnWrapper = $( '#customize-save-button-wrapper' ),
 			publishSettingsBtn = $( '#publish-settings' ),
 			footerActions = $( '#customize-footer-actions' );
 
@@ -6069,7 +6070,7 @@
 			state.bind( 'change', function() {
 				var canSave;
 
-				saveBtn.removeClass( 'button-see-me' );
+				btnWrapper.removeClass( 'button-see-me' );
 
 				if ( ! activated() ) {
 					saveBtn.val( api.l10n.activate );
@@ -6096,12 +6097,12 @@
 						if ( saved() && selectedChangesetStatus() === changesetStatus() ) {
 							if ( changesetDate.get() !== selectedChangesetDate.get() ) {
 								saveBtn.val( api.l10n.schedule );
-								saveBtn.addClass( 'button-see-me' );
+								btnWrapper.addClass( 'button-see-me' );
 							} else {
 								saveBtn.val( api.l10n.scheduled );
 							}
 						} else {
-							saveBtn.addClass( 'button-see-me' );
+							btnWrapper.addClass( 'button-see-me' );
 							saveBtn.val( api.l10n.schedule );
 						}
 					} else if ( ! api.settings.changeset.currentUserCanPublish ){
