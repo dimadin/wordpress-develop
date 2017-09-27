@@ -165,7 +165,10 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		$this->make_ajax_call( 'customize_save' );
 		$this->assertFalse( $this->_last_response_parsed['success'] );
 		$this->assertEquals( 'changeset_already_published', $this->_last_response_parsed['data']['code'] );
-		wp_update_post( array( 'ID' => $wp_customize->changeset_post_id(), 'post_status' => 'auto-draft' ) );
+		wp_update_post( array(
+			'ID' => $wp_customize->changeset_post_id(),
+			'post_status' => 'auto-draft',
+		) );
 
 		// User cannot edit.
 		$post_type_obj = get_post_type_object( 'customize_changeset' );
@@ -222,8 +225,10 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		$this->make_ajax_call( 'customize_save' );
 		$this->assertTrue( $this->_last_response_parsed['success'] );
 		$this->assertEquals( 'future', get_post_status( $wp_customize->changeset_post_id() ) );
-		wp_update_post( array( 'ID' => $wp_customize->changeset_post_id(), 'post_status' => 'auto-draft' ) );
-
+		wp_update_post( array(
+			'ID' => $wp_customize->changeset_post_id(),
+			'post_status' => 'auto-draft',
+		) );
 	}
 
 	/**
@@ -270,7 +275,6 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		$this->assertTrue( wp_is_uuid( $this->_last_response_parsed['data']['next_changeset_uuid'], 4 ) );
 		$this->assertEquals( 'Success Changeset', get_post( $wp_customize->changeset_post_id() )->post_title );
 		$this->assertEquals( 'Successful Site Title', get_option( 'blogname' ) );
-
 	}
 
 	/**
@@ -396,6 +400,46 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 		$this->assertEquals( 'changeset_already_published', $this->_last_response_parsed['data']['code'] );
 		$this->assertArrayHasKey( 'next_changeset_uuid', $this->_last_response_parsed['data'] );
 		$this->assertTrue( wp_is_uuid( $this->_last_response_parsed['data']['next_changeset_uuid'], 4 ) );
+	}
+
+	/**
+	 * Test WP_Customize_Manager::save().
+	 *
+	 * @ticket 39896
+	 * @covers WP_Customize_Manager::save()
+	 */
+	public function test_save_autosave() {
+		$uuid = wp_generate_uuid4();
+
+		$post_id = $this->factory()->post->create( array(
+			'post_name' => $uuid,
+			'post_type' => 'customize_changeset',
+			'post_status' => 'draft',
+			'post_content' => wp_json_encode( array(
+				'blogname' => array(
+					'value' => 'New Site Title',
+				),
+			) ),
+		) );
+		$this->set_up_valid_state( $uuid );
+
+		$this->assertFalse( wp_get_post_autosave( $post_id ) );
+
+		$_POST['customize_changeset_data'] = wp_json_encode( array(
+			'blogname' => array(
+				'value' => 'Autosaved Site Title',
+			),
+		) );
+
+		$_POST['customize_changeset_autosave'] = 'on';
+		$this->make_ajax_call( 'customize_save' );
+		$this->assertTrue( $this->_last_response_parsed['success'] );
+		$this->assertEquals( 'draft', $this->_last_response_parsed['data']['changeset_status'] );
+		$autosave_revision = wp_get_post_autosave( $post_id );
+		$this->assertInstanceOf( 'WP_Post', $autosave_revision );
+
+		$this->assertContains( 'New Site Title', get_post( $post_id )->post_content );
+		$this->assertContains( 'Autosaved Site Title', $autosave_revision->post_content );
 	}
 
 	/**
