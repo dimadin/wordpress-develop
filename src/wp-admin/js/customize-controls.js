@@ -1918,28 +1918,6 @@
 		},
 
 		/**
-		 * Overrides api.Section.prototype.attachEvents to add behaviors for outer accordion section.
-		 *
-		 * @since 4.9.0
-		 */
-		attachEvents: function() {
-			var section = this, body = $( 'body' );
-
-			section.expanded.bind( function( isExpanded ) {
-				body.toggleClass( 'outer-section-open', isExpanded );
-				section.container.toggleClass( 'open', isExpanded );
-				section.container.removeClass( 'busy' );
-				api.section.each( function( _section ) {
-				    if ( 'outer' === _section.params.type && _section.id !== section.id ) {
-						_section.container.removeClass( 'open' );
-				    }
-				} );
-			} );
-
-			return api.Section.prototype.attachEvents.apply( section, arguments );
-		},
-
-		/**
 		 * Overrides api.Section.prototype.onChangeExpanded to prevent collapse/expand effect
 		 * on other sections and panels.
 		 *
@@ -1957,7 +1935,17 @@
 				content = section.contentContainer,
 				backBtn = content.find( '.customize-section-back' ),
 				sectionTitle = section.headContainer.find( '.accordion-section-title' ).first(),
+				body = $( 'body' ),
 				expand, panel;
+
+			body.toggleClass( 'outer-section-open', expanded );
+			section.container.toggleClass( 'open', expanded );
+			section.container.removeClass( 'busy' );
+			api.section.each( function( _section ) {
+				if ( 'outer' === _section.params.type && _section.id !== section.id ) {
+					_section.container.removeClass( 'open' );
+				}
+			} );
 
 			if ( expanded && ! content.hasClass( 'open' ) ) {
 
@@ -4144,6 +4132,7 @@
 	/**
 	 * Class wp.customize.DateTimeControl.
 	 *
+	 * @since 4.9.0
 	 * @constructor
 	 * @augments wp.customize.Control
 	 * @augments wp.customize.Class
@@ -4197,6 +4186,7 @@
 		/**
 		 * Parse datetime string.
 		 *
+		 * @since 4.9.0
 		 * @param {string} datetime Date/Time string. Accepts Y-m-d H:i:s format.
 		 * @param {boolean} twelveHourFormat If twelve hour format array is required.
 		 * @returns {object|null} Returns object containing date components or null if parse error.
@@ -4236,6 +4226,7 @@
 		/**
 		 * Validates if input components have valid date and time.
 		 *
+		 * @since 4.9.0
 		 * @return {boolean} If date input fields has error.
 		 */
 		validateInputs: function validateInputs() {
@@ -4267,6 +4258,7 @@
 		/**
 		 * Updates number of days according to the month and year selected.
 		 *
+		 * @since 4.9.0
 		 * @return {void}
 		 */
 		updateDaysForMonth: function updateDaysForMonth() {
@@ -4289,6 +4281,7 @@
 		/**
 		 * Updates number of minutes according to the hour selected.
 		 *
+		 * @since 4.9.0
 		 * @return {void}
 		 */
 		updateMinutesForHour: function updateMinutesForHour() {
@@ -4314,6 +4307,7 @@
 		/**
 		 * Populate setting value from the inputs.
 		 *
+		 * @since 4.9.0
 		 * @returns {boolean} If setting updated.
 		 */
 		populateSetting: function populateSetting() {
@@ -4331,6 +4325,7 @@
 		/**
 		 * Converts input values to string in Y-m-d H:i:s format.
 		 *
+		 * @since 4.9.0
 		 * @return {string} Date string.
 		 */
 		convertInputDateToString: function convertInputDateToString() {
@@ -4368,20 +4363,9 @@
 		},
 
 		/**
-		 * Get timestamp of input date.
-		 *
-		 * @return {int} timestamp.
-		 */
-		getInputDateTimestamp: function getInputDateTimestamp() {
-			var control = this, dateObject, inputDateString;
-			inputDateString = control.convertInputDateToString();
-			dateObject = new Date( inputDateString.replace( /-/g, '/' ) );
-			return dateObject.getTime();
-		},
-
-		/**
 		 * Check if the date is in the future.
 		 *
+		 * @since 4.9.0
 		 * @returns {boolean} True if future date.
 		 */
 		isFutureDate: function isFutureDate() {
@@ -4392,6 +4376,7 @@
 		/**
 		 * Convert hour in twelve hour format to twenty four hour format.
 		 *
+		 * @since 4.9.0
 		 * @param {string} hourInTwelveHourFormat Hour in twelve hour format.
 		 * @param {string} ampm am/pm
 		 * @return {string} Hour in twenty four hour format.
@@ -4415,6 +4400,7 @@
 		/**
 		 * Populates date inputs in date fields.
 		 *
+		 * @since 4.9.0
 		 * @returns {boolean} Whether the inputs were populated.
 		 */
 		populateDateInputs: function populateDateInputs() {
@@ -4436,6 +4422,7 @@
 		/**
 		 * Toggle future date notification for date control.
 		 *
+		 * @since 4.9.0
 		 * @param {boolean} notify Add or remove the notification.
 		 * @return {wp.customize.DateTimeControl}
 		 */
@@ -4461,6 +4448,7 @@
 	/**
 	 * Class wp.customize.PreviewLinkControl.
 	 *
+	 * @since 4.9.0
 	 * @constructor
 	 * @augments wp.customize.Control
 	 * @augments wp.customize.Class
@@ -4533,6 +4521,7 @@
 		/**
 		 * Updates Preview Link
 		 *
+		 * @since 4.9.0
 		 * @return {void}
 		 */
 		updatePreviewLink: function updatePreviewLink() {
@@ -4551,6 +4540,7 @@
 		/**
 		 * Toggles save notification.
 		 *
+		 * @since 4.9.0
 		 * @param {boolean} notify Add or remove notification.
 		 * @return {void}
 		 */

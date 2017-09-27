@@ -115,13 +115,13 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 						<span class="screen-reader-text"><?php esc_html_e( 'Month' ); ?></span>
 							<select class="date-input month" data-component="month">
 								<# _.each( data.month_choices, function( choice ) {
-										if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
-										text = choice.text;
-										value = choice.value;
-										}
+									if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
+									text = choice.text;
+									value = choice.value;
+									}
 
-										selected = choice.value == data.month ? 'selected="selected"' : '';
-										#>
+									selected = choice.value == data.month ? 'selected="selected"' : '';
+								#>
 								<option value="{{ value }}" {{selected}} >
 									{{ text }}
 								</option>
@@ -135,8 +135,8 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 					<span class="time-special-char date-time-separator">,</span>
 					<label class="year-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Year' ); ?></span>
-						<#  data.maxYearLength = String( data.maxYear ).length; #>
-						<input type="number" size="4" maxlength="{{ data.maxYearLength }}" autocomplete="off" class="date-input year" data-component="year" min="{{ data.minYear }}" value="{{ data.year }}" max="{{ data.maxYear }}" />
+						<#  var maxYearLength = String( data.maxYear ).length; #>
+						<input type="number" size="4" maxlength="{{ maxYearLength }}" autocomplete="off" class="date-input year" data-component="year" min="{{ data.minYear }}" value="{{ data.year }}" max="{{ data.maxYear }}" />
 					</label>
 				</div>
 			</div>
@@ -145,8 +145,8 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 				<div class="time-fields clear">
 					<label class="hour-field">
 						<span class="screen-reader-text"><?php esc_html_e( 'Hour' ); ?></span>
-						<# data.maxHour = data.twelveHourFormat ? 12 : 24; #>
-						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="1" max="{{ data.maxHour }}" value="{{ data.hour }}" />
+						<# var maxHour = data.twelveHourFormat ? 12 : 24; #>
+						<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="1" max="{{ maxHour }}" value="{{ data.hour }}" />
 					</label>
 					<span class="time-special-char date-time-separator">:</span>
 					<label class="minute-field">
@@ -162,7 +162,7 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 						</select>
 					</label>
 					<# } #>
-					<span class="date-timezone" aria-label="<?php esc_attr_e( 'Timezone' ); ?>" title="<?php echo esc_attr( $timezone_info['description'] ); ?>"><?php echo esc_html( $timezone_info['abbr'] ); ?></span>
+					<abbr class="date-timezone" aria-label="<?php esc_attr_e( 'Timezone' ); ?>" title="<?php echo esc_attr( $timezone_info['description'] ); ?>"><?php echo esc_html( $timezone_info['abbr'] ); ?></abbr>
 				</div>
 			</div>
 		</div>
@@ -206,14 +206,24 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 		$timezone_info = array();
 
 		if ( $tz_string ) {
-			$tz = new DateTimezone( $tz_string );
-			$now = new DateTime( 'now', $tz );
-			$formatted_gmt_offset = sprintf( 'UTC%s', $this->format_gmt_offset( $tz->getOffset( $now ) / 3600 ) );
-			$tz_name = str_replace( '_', ' ', $tz->getName() );
-			$timezone_info['abbr'] = $now->format( 'T' );
+			try {
+				$tz = new DateTimezone( $tz_string );
+				$now = new DateTime( 'now', $tz );
+				$formatted_gmt_offset = sprintf( 'UTC%s', $this->format_gmt_offset( $tz->getOffset( $now ) / 3600 ) );
+				$tz_name = str_replace( '_', ' ', $tz->getName() );
+				$timezone_info['abbr'] = $now->format( 'T' );
+			} catch ( Exception $e ) {
+				$formatted_gmt_offset = '';
+				$tz_name = '';
+				$timezone_info['abbr'] = '';
+			}
 
-			/* translators: 1: timezone name, 2: timezone abbreviation, 3: gmt offset  */
-			$timezone_info['description'] = sprintf( __( 'Timezone is %1$s (%2$s), currently %3$s.' ), $tz_name, $timezone_info['abbr'], $formatted_gmt_offset );
+			if ( $formatted_gmt_offset && $tz_name && $timezone_info['abbr'] ) {
+				/* translators: 1: timezone name, 2: timezone abbreviation, 3: gmt offset  */
+				$timezone_info['description'] = sprintf( __( 'Timezone is %1$s (%2$s), currently %3$s.' ), $tz_name, $timezone_info['abbr'], $formatted_gmt_offset );
+			} else {
+				$timezone_info['description'] = '';
+			}
 		} else {
 			$formatted_gmt_offset = $this->format_gmt_offset( intval( get_option( 'gmt_offset', 0 ) ) );
 			$timezone_info['abbr'] = sprintf( 'UTC%s', $formatted_gmt_offset );
