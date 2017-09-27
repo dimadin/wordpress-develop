@@ -694,7 +694,7 @@ jQuery( window ).load( function (){
 	module( 'Customize Controls: wp.customize.DateTimeControl' );
 	test( 'Test DateTimeControl creation and its methods', function( assert ) {
 		var control, controlId = 'date_time', section, sectionId = 'test_section',
-			datetime = '2599-08-06 12:12:13';
+			datetime = '2599-08-06 18:12:13', dateTimeArray, dateTimeArrayInampm, timeString;
 
 		section = new wp.customize.Section( sectionId, {
 			params: {
@@ -713,7 +713,6 @@ jQuery( window ).load( function (){
 			}
 		} );
 
-		assert.ok( _.isObject( control ) );
 		assert.ok( control.templateSelector, '#customize-control-date_time-content' );
 		assert.ok( control.section(), sectionId );
 		assert.equal( _.size( control.inputElements ), control.elements.length );
@@ -724,5 +723,39 @@ jQuery( window ).load( function (){
 
 		control.inputElements.month( 'test' );
 		assert.ok( ! control.inputElements.month() ); // Should not accept text.
+
+		dateTimeArray = control.parseDateTime( datetime );
+		assert.deepEqual( dateTimeArray, {
+			year: '2599',
+			month: '08',
+			hour: '18',
+			minute: '12',
+			second: '13',
+			day: '06'
+		} );
+
+		dateTimeArrayInampm = control.parseDateTime( datetime, true );
+		assert.deepEqual( dateTimeArrayInampm, {
+			year: '2599',
+			month: '08',
+			hour: '6',
+			minute: '12',
+			ampm: 'pm',
+			day: '06'
+		} );
+
+		control.inputElements.year( '2010' );
+		control.inputElements.month( '12' );
+		control.inputElements.day( '18' );
+		control.inputElements.hour( '3' );
+		control.inputElements.minute( '44' );
+		control.inputElements.ampm( 'am' );
+
+		timeString = control.convertInputDateToString();
+		assert.equal( timeString, '2010-12-18 03:44:00' );
+
+		control.inputElements.ampm( 'pm' );
+		timeString = control.convertInputDateToString();
+		assert.equal( timeString, '2010-12-18 15:44:00' );
 	});
 });
