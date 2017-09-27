@@ -790,7 +790,7 @@ final class WP_Customize_Manager {
 	 */
 	public function changeset_uuid() {
 		if ( empty( $this->_changeset_uuid ) ) {
-			throw new Exception( 'Changeset UUID has not been set.' ); // @todo Replace this with a call to `WP_Customize_Manager::establish_loaded_changeset()` during 4.9-beta2.
+			$this->establish_loaded_changeset();
 		}
 		return $this->_changeset_uuid;
 	}

@@ -123,6 +123,11 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		$this->assertFalse( $wp_customize->autosaved() );
 		$this->assertTrue( $wp_customize->branching() );
 
+		$wp_customize = new WP_Customize_Manager( array(
+			'changeset_uuid' => null,
+		) );
+		$this->assertTrue( wp_is_uuid( $wp_customize->changeset_uuid(), 4 ) );
+
 		$theme = 'twentyfourteen';
 		$messenger_channel = 'preview-456';
 		$_REQUEST['theme'] = $theme;
@@ -135,7 +140,35 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		$_REQUEST['customize_theme'] = $theme;
 		$wp_customize = new WP_Customize_Manager();
 		$this->assertEquals( $theme, $wp_customize->get_stylesheet() );
-		$this->assertNotEmpty( $wp_customize->changeset_uuid() );
+		$this->assertTrue( wp_is_uuid( $wp_customize->changeset_uuid(), 4 ) );
+	}
+
+	/**
+	 * Test constructor when deferring UUID.
+	 *
+	 * @ticket 39896
+	 * @covers WP_Customize_Manager::establish_loaded_changeset()
+	 * @covers WP_Customize_Manager::__construct()
+	 */
+	public function test_constructor_deferred_changeset_uuid() {
+		$data = array(
+			'blogname' => array(
+				'value' => 'Test',
+			),
+		);
+		$uuid = wp_generate_uuid4();
+		$post_id = $this->factory()->post->create( array(
+			'post_type' => 'customize_changeset',
+			'post_name' => $uuid,
+			'post_status' => 'draft',
+			'post_content' => wp_json_encode( $data ),
+		) );
+		$wp_customize = new WP_Customize_Manager( array(
+			'changeset_uuid' => false, // Cause UUID to be deferred.
+			'branching' => false, // To cause drafted changeset to be autoloaded.
+		) );
+		$this->assertEquals( $uuid, $wp_customize->changeset_uuid() );
+		$this->assertEquals( $post_id, $wp_customize->changeset_post_id() );
 	}
 
 	/**
