@@ -675,4 +675,54 @@ jQuery( window ).load( function (){
 			jQuery.ajaxSetup( { beforeSend: originalBeforeSetup } );
 		} );
 	} );
+
+	module( 'Customize Controls: wp.customize.utils.getRemainingTime()' );
+	test( 'utils.getRemainingTime calculates time correctly', function( assert ) {
+		var datetime = '2599-08-06 12:12:13', timeRemaining, timeRemainingWithDateInstance, timeRemaingingWithTimestamp;
+
+		timeRemaining = wp.customize.utils.getRemainingTime( datetime );
+		timeRemainingWithDateInstance = wp.customize.utils.getRemainingTime( new Date( datetime.replace( /-/g, '/' ) ) );
+		timeRemaingingWithTimestamp = wp.customize.utils.getRemainingTime( ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime() );
+
+		assert.ok( ! _.isNaN( timeRemaining ), timeRemaining );
+		assert.ok( ! _.isNaN( timeRemainingWithDateInstance ), timeRemaining );
+		assert.ok( ! _.isNaN( timeRemaingingWithTimestamp ), timeRemaining );
+		assert.deepEqual( timeRemaining, timeRemainingWithDateInstance );
+		assert.deepEqual( timeRemaining, timeRemaingingWithTimestamp );
+	});
+
+	module( 'Customize Controls: wp.customize.DateTimeControl' );
+	test( 'Test DateTimeControl creation and its methods', function( assert ) {
+		var control, controlId = 'date_time', section, sectionId = 'test_section',
+			datetime = '2599-08-06 12:12:13';
+
+		section = new wp.customize.Section( sectionId, {
+			params: {
+				content: '<li id="accordion-section" class="accordion-section control-section control-section-default"> <h3 class="accordion-section-title" tabindex="0"> Section Fixture <span class="screen-reader-text">Press return or enter to open</span> </h3> <ul class="accordion-section-content"> <li class="customize-section-description-container"> <div class="customize-section-title"> <button class="customize-section-back" tabindex="-1"> <span class="screen-reader-text">Back</span> </button> <h3> <span class="customize-action">Customizing &#9656; Fixture Panel</span> Section Fixture </h3> </div> </li> </ul> </li>',
+				type: 'default'
+			}
+		} );
+		wp.customize.section.add( 'test_section', section );
+
+		control = new wp.customize.DateTimeControl( controlId, {
+			params: {
+				section: section.id,
+				type: 'date_time',
+				content: '<li id="customize-control-' + controlId + '" class="customize-control"></li>',
+				defaultValue: datetime
+			}
+		} );
+
+		assert.ok( _.isObject( control ) );
+		assert.ok( control.templateSelector, '#customize-control-date_time-content' );
+		assert.ok( control.section(), sectionId );
+		assert.equal( _.size( control.inputElements ), control.elements.length );
+		assert.ok( control.setting(), datetime );
+
+		control.inputElements.year( '23' );
+		assert.ok( ! _.isNaN( control.inputElements.year() ) ); // Should always return integer.
+
+		control.inputElements.month( 'test' );
+		assert.ok( ! control.inputElements.month() ); // Should not accept text.
+	});
 });
