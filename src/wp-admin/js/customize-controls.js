@@ -5466,6 +5466,7 @@
 		'selectedChangesetDate',
 		'changesetStatus',
 		'selectedChangesetStatus',
+		'remainingTimeToPublish',
 		'previewerAlive',
 		'editShortcutVisibility'
 	], function( name ) {
@@ -7052,8 +7053,8 @@
 
 					if ( shouldPoll && ! pollInterval ) {
 						pollInterval = setInterval( function() {
-							var remainingTime = api.utils.getRemainingTime( api.state( 'changesetDate' ).get() );
-							if ( remainingTime <= 0 ) {
+							api.state( 'remainingTimeToPublish' ).set( api.utils.getRemainingTime( api.state( 'changesetDate' ).get() ) );
+							if ( api.state( 'remainingTimeToPublish' ).get() <= 0 ) {
 								clearInterval( pollInterval );
 								pollInterval = 0;
 								publishWhenTime();
