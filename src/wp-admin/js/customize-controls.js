@@ -7009,9 +7009,9 @@
 		/**
 		 * Publish settings section and controls.
 		 */
-		api.control( 'changeset_status', function( statusControl ) {
-			statusControl.deferred.embedded.done( function() {
-				var radioNodes, statusElement;
+		api.control( 'changeset_status', 'changeset_scheduled_date', function( statusControl, dateControl ) {
+			$.when( statusControl.deferred.embedded, dateControl.deferred.embedded ).done( function() {
+				var radioNodes, statusElement, toggleDateControl, publishWhenTime, pollInterval, updateTimeArrivedPoller, timeArrivedPollingInterval = 1000;
 
 				radioNodes = statusControl.container.find( 'input[type=radio][name]' );
 				statusElement = new api.Element( radioNodes );
@@ -7020,90 +7020,86 @@
 				statusElement.sync( api.state( 'selectedChangesetStatus' ) );
 				statusElement.set( api.state( 'selectedChangesetStatus' ).get() );
 
-				api.control( 'changeset_scheduled_date', function( dateControl ) {
-					var toggleDateControl, publishWhenTime, pollInterval, updateTimeArrivedPoller, timeArrivedPollingInterval = 1000;
+				dateControl.notifications.alt = true;
+				dateControl.deferred.embedded.done( function() {
+					api.state( 'selectedChangesetDate' ).sync( dateControl.setting );
+				    api.state( 'selectedChangesetDate' ).set( dateControl.setting() );
+				} );
 
-					dateControl.notifications.alt = true;
-					dateControl.deferred.embedded.done( function() {
-						api.state( 'selectedChangesetDate' ).sync( dateControl.setting );
-					    api.state( 'selectedChangesetDate' ).set( dateControl.setting() );
-					} );
+				publishWhenTime = function() {
+					var promise, publishSettingsSection;
 
-					publishWhenTime = function() {
-						var promise, publishSettingsSection;
+					api.state( 'selectedChangesetStatus' ).set( 'publish' );
+					publishSettingsSection = api.section( 'publish_settings' );
+					if ( publishSettingsSection ) {
+						publishSettingsSection.collapse();
+					}
 
-						api.state( 'selectedChangesetStatus' ).set( 'publish' );
-						publishSettingsSection = api.section( 'publish_settings' );
-						if ( publishSettingsSection ) {
-							publishSettingsSection.collapse();
-						}
+					promise = api.previewer.save();
 
-						promise = api.previewer.save();
+					// @todo Handle case where changeset got published on the server before we had a chance to publish it punctually.
+					// 	request.done( function( resp ) {
+					// 		if ( 'trash' === resp.changeset_status || 'changeset_already_published' === resp.code ) {
+					// 			api.state( 'changesetStatus' ).set( '' );
+					// 			if ( resp.next_changeset_uuid ) {
+					// 				notification = new api.Notification( code, {
+					// 					message: api.l10n.changesetPublished,
+					// 					type: 'info',
+					// 					dismissible: true
+					// 				} );
+					// 				api.notifications.add( code, notification );
+					// 				api.settings.changeset.uuid = resp.next_changeset_uuid
+					// 			}
+					// 		}
+					// 	} );
+				};
 
-						// @todo Handle case where changeset got published on the server before we had a chance to publish it punctually.
-						// 	request.done( function( resp ) {
-						// 		if ( 'trash' === resp.changeset_status || 'changeset_already_published' === resp.code ) {
-						// 			api.state( 'changesetStatus' ).set( '' );
-						// 			if ( resp.next_changeset_uuid ) {
-						// 				notification = new api.Notification( code, {
-						// 					message: api.l10n.changesetPublished,
-						// 					type: 'info',
-						// 					dismissible: true
-						// 				} );
-						// 				api.notifications.add( code, notification );
-						// 				api.settings.changeset.uuid = resp.next_changeset_uuid
-						// 			}
-						// 		}
-						// 	} );
-					};
+				// Start countdown for when the dateTime arrives, or clear interval when it is .
+				updateTimeArrivedPoller = function() {
+					var shouldPoll = (
+						'future' === api.state( 'changesetStatus' ).get() &&
+						'future' === api.state( 'selectedChangesetStatus' ).get() &&
+						api.state( 'changesetDate' ).get() &&
+						api.state( 'selectedChangesetDate' ).get() === api.state( 'changesetDate' ).get() &&
+						api.utils.getRemainingTime( api.state( 'changesetDate' ).get() ) >= 0
+					);
 
-					// Start countdown for when the dateTime arrives, or clear interval when it is .
-					updateTimeArrivedPoller = function() {
-						var shouldPoll = (
-							'future' === api.state( 'changesetStatus' ).get() &&
-							'future' === api.state( 'selectedChangesetStatus' ).get() &&
-							api.state( 'changesetDate' ).get() &&
-							api.state( 'selectedChangesetDate' ).get() === api.state( 'changesetDate' ).get() &&
-							api.utils.getRemainingTime( api.state( 'changesetDate' ).get() ) >= 0
-						);
+					if ( shouldPoll && ! pollInterval ) {
+						pollInterval = setInterval( function() {
+							var remainingTime = api.utils.getRemainingTime( api.state( 'changesetDate' ).get() );
+							if ( remainingTime <= 0 ) {
+								clearInterval( pollInterval );
+								pollInterval = 0;
+								publishWhenTime();
+							}
+						}, timeArrivedPollingInterval );
+					} else if ( ! shouldPoll && pollInterval ) {
+						clearInterval( pollInterval );
+						pollInterval = 0;
+					}
+				};
 
-						if ( shouldPoll && ! pollInterval ) {
-							pollInterval = setInterval( function() {
-								var remainingTime = api.utils.getRemainingTime( api.state( 'changesetDate' ).get() );
-								if ( remainingTime <= 0 ) {
-									clearInterval( pollInterval );
-									pollInterval = 0;
-									publishWhenTime();
-								}
-							}, timeArrivedPollingInterval );
-						} else if ( ! shouldPoll && pollInterval ) {
-							clearInterval( pollInterval );
-							pollInterval = 0;
-						}
-					};
+				api.state( 'changesetDate' ).bind( updateTimeArrivedPoller );
+				api.state( 'selectedChangesetDate' ).bind( updateTimeArrivedPoller );
+				api.state( 'changesetStatus' ).bind( updateTimeArrivedPoller );
+				api.state( 'selectedChangesetStatus' ).bind( updateTimeArrivedPoller );
+				updateTimeArrivedPoller();
 
-					api.state( 'changesetDate' ).bind( updateTimeArrivedPoller );
-					api.state( 'selectedChangesetDate' ).bind( updateTimeArrivedPoller );
-					api.state( 'changesetStatus' ).bind( updateTimeArrivedPoller );
-					api.state( 'selectedChangesetStatus' ).bind( updateTimeArrivedPoller );
-					updateTimeArrivedPoller();
+				// Ensure dateControl only appears when selected status is future.
+				dateControl.active.validate = function() {
+					return 'future' === statusElement.get();
+				};
+				toggleDateControl = function( value ) {
+					dateControl.active.set( 'future' === value );
+				};
+				toggleDateControl( statusElement.get() );
+				statusElement.bind( toggleDateControl );
 
-					// Ensure dateControl only appears when selected status is future.
-					dateControl.active.validate = function() {
-						return 'future' === statusElement.get();
-					};
-					toggleDateControl = function( value ) {
-						dateControl.active.set( 'future' === value );
-					};
-					toggleDateControl( statusElement.get() );
-					statusElement.bind( toggleDateControl );
-
-					// Show notification on date control when status is future but it isn't a future date.
-					api.state( 'saving' ).bind( function( isSaving ) {
-						if ( isSaving && 'future' === api.state( 'selectedChangesetStatus' ).get() ) {
-							dateControl.toggleFutureDateNotification( ! dateControl.isFutureDate() );
-						}
-					} );
+				// Show notification on date control when status is future but it isn't a future date.
+				api.state( 'saving' ).bind( function( isSaving ) {
+					if ( isSaving && 'future' === api.state( 'selectedChangesetStatus' ).get() ) {
+						dateControl.toggleFutureDateNotification( ! dateControl.isFutureDate() );
+					}
 				} );
 			} );
 		} );
