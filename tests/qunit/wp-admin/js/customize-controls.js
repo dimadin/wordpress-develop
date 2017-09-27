@@ -703,7 +703,7 @@ jQuery( window ).load( function (){
 				type: 'default'
 			}
 		} );
-		wp.customize.section.add( 'test_section', section );
+		wp.customize.section.add( sectionId, section );
 
 		control = new wp.customize.DateTimeControl( controlId, {
 			params: {
@@ -841,12 +841,57 @@ jQuery( window ).load( function (){
 
 		/**
 		 * Test control.updateMinutesForHour().
-		 * Run this run at the end or above tests may fail.
+		 * Run this at the end or else the above tests may fail.
 		 */
 		hour( 24 );
 		minute( 32 );
 		control.inputElements.ampm = false; // Because it works only when the time is twenty four hour format.
 		control.updateMinutesForHour();
 		assert.deepEqual( minute(), 0 );
+
+		// Tear Down.
+		wp.customize.section.remove( sectionId );
+		wp.customize.control.remove( controlId );
+	});
+
+	module( 'Customize Sections: wp.customize.OuterSection' );
+	test( 'Test OuterSection', function( assert ) {
+		var section, sectionId = 'test_outer_section', body = jQuery( 'body' ),
+			defaultSection, defaultSectionId = 'test_default_section';
+
+		section = new wp.customize.OuterSection( sectionId, {
+			params: {
+				content: '<li id="accordion-section" class="accordion-section control-section control-section-default"> <h3 class="accordion-section-title" tabindex="0"> Section Fixture <span class="screen-reader-text">Press return or enter to open</span> </h3> <ul class="accordion-section-content"> <li class="customize-section-description-container"> <div class="customize-section-title"> <button class="customize-section-back" tabindex="-1"> <span class="screen-reader-text">Back</span> </button> <h3> <span class="customize-action">Customizing &#9656; Fixture Panel</span> Section Fixture </h3> </div> </li> </ul> </li>',
+				type: 'outer'
+			}
+		} );
+
+		defaultSection = new wp.customize.OuterSection( defaultSectionId, {
+			params: {
+				content: '<li id="accordion-section" class="accordion-section control-section control-section-default"> <h3 class="accordion-section-title" tabindex="0"> Section Fixture <span class="screen-reader-text">Press return or enter to open</span> </h3> <ul class="accordion-section-content"> <li class="customize-section-description-container"> <div class="customize-section-title"> <button class="customize-section-back" tabindex="-1"> <span class="screen-reader-text">Back</span> </button> <h3> <span class="customize-action">Customizing &#9656; Fixture Panel</span> Section Fixture </h3> </div> </li> </ul> </li>',
+				type: 'default'
+			}
+		} );
+
+		wp.customize.section.add( sectionId, section );
+		wp.customize.section.add( defaultSectionId, section );
+
+		assert.equal( section.containerPaneParent, '.customize-outer-pane-parent' );
+		assert.equal( section.containerParent.selector, '#customize-outer-theme-controls' );
+
+		defaultSection.expand();
+		section.expand();
+		assert.ok( body.hasClass( 'outer-section-open' ) );
+		assert.ok( section.container.hasClass( 'open' ) );
+		assert.ok( defaultSection.expanded() ); // Ensure it does not affect other sections state.
+
+		section.collapse();
+		assert.ok( ! body.hasClass( 'outer-section-open' ) );
+		assert.ok( ! section.container.hasClass( 'open' ) ); // Ensure it does not affect other sections state.
+		assert.ok( defaultSection.expanded() );
+
+		// Tear down
+		wp.customize.section.remove( sectionId );
+		wp.customize.section.remove( defaultSection );
 	});
 });
