@@ -2557,6 +2557,20 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		$this->assertEquals( $autofocus, $data['autofocus'] );
 		$this->assertArrayHasKey( 'save', $data['nonce'] );
 		$this->assertArrayHasKey( 'preview', $data['nonce'] );
+
+		$this->assertEqualSets(
+			array(
+				'branching',
+				'autosaved',
+				'hasAutosaveRevision',
+				'latestAutoDraftUuid',
+				'status',
+				'uuid',
+				'currentUserCanPublish',
+				'publishDate',
+			),
+			array_keys( $data['changeset'] )
+		);
 	}
 
 	/**
