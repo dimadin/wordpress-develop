@@ -206,17 +206,16 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 		if ( $tz_string ) {
 			try {
 				$tz = new DateTimezone( $tz_string );
+			} catch ( Exception $e ) {
+				$tz = '';
+			}
+
+			if ( $tz ) {
 				$now = new DateTime( 'now', $tz );
 				$formatted_gmt_offset = sprintf( 'UTC%s', $this->format_gmt_offset( $tz->getOffset( $now ) / 3600 ) );
 				$tz_name = str_replace( '_', ' ', $tz->getName() );
 				$timezone_info['abbr'] = $now->format( 'T' );
-			} catch ( Exception $e ) {
-				$formatted_gmt_offset = '';
-				$tz_name = '';
-				$timezone_info['abbr'] = '';
-			}
 
-			if ( $formatted_gmt_offset && $tz_name && $timezone_info['abbr'] ) {
 				/* translators: 1: timezone name, 2: timezone abbreviation, 3: gmt offset  */
 				$timezone_info['description'] = sprintf( __( 'Timezone is %1$s (%2$s), currently %3$s.' ), $tz_name, $timezone_info['abbr'], $formatted_gmt_offset );
 			} else {
