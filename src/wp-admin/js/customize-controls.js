@@ -1894,7 +1894,7 @@
 	});
 
 	/**
-	 * wp.customize.OuterSection
+	 * Class wp.customize.OuterSection.
 	 *
 	 * Creates section outside of the sidebar, there is no ui to trigger collapse/expand so
 	 * it would require custom handling.
@@ -1908,9 +1908,13 @@
 	api.OuterSection = api.Section.extend({
 
 		/**
+		 * Initialize.
+		 *
 		 * @since 4.9.0
+		 *
+		 * @returns {void}
 		 */
-		initialize: function () {
+		initialize: function() {
 			var section = this;
 			section.containerParent = '#customize-outer-theme-controls';
 			section.containerPaneParent = '.customize-outer-pane-parent';
@@ -4453,7 +4457,7 @@
 	 * @augments wp.customize.Control
 	 * @augments wp.customize.Class
 	 */
-	var PreviewLinkControl = api.Control.extend({
+	api.PreviewLinkControl = api.Control.extend({
 
 		previewElements: {},
 
@@ -5509,7 +5513,7 @@
 		api.section( 'publish_settings', function( section ) {
 			var updateButtonsState, previewLinkControl, previewLinkControlId = 'changeset_preview_link';
 
-			previewLinkControl = new PreviewLinkControl( previewLinkControlId, {
+			previewLinkControl = new api.PreviewLinkControl( previewLinkControlId, {
 				params: {
 					section: section.id,
 					active: true,
@@ -6105,7 +6109,7 @@
 							btnWrapper.addClass( 'button-see-me' );
 							saveBtn.val( api.l10n.schedule );
 						}
-					} else if ( ! api.settings.changeset.currentUserCanPublish ){
+					} else if ( ! api.settings.changeset.currentUserCanPublish ) {
 						selectedChangesetStatus( 'draft' );
 					} else {
 						saveBtn.val( api.l10n.publish );
