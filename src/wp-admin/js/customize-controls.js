@@ -5546,6 +5546,12 @@
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
 				publishSettingsBtn.toggleClass( 'active', isExpanded );
 			} );
+
+			api.state( 'changesetStatus' ).bind( function( status ) {
+			    if ( 'publish' === status ) {
+					section.collapse();
+			    }
+			} );
 		} );
 
 		// Prevent the form from saving when enter is pressed on an input or select element.
@@ -7053,8 +7059,9 @@
 
 					if ( shouldPoll && ! pollInterval ) {
 						pollInterval = setInterval( function() {
-							api.state( 'remainingTimeToPublish' ).set( api.utils.getRemainingTime( api.state( 'changesetDate' ).get() ) );
-							if ( api.state( 'remainingTimeToPublish' ).get() <= 0 ) {
+							var remainingTime = api.utils.getRemainingTime( api.state( 'changesetDate' ).get() );
+							api.state( 'remainingTimeToPublish' ).set( remainingTime );
+							if ( remainingTime <= 0 ) {
 								clearInterval( pollInterval );
 								pollInterval = 0;
 								publishWhenTime();
