@@ -676,7 +676,7 @@ jQuery( window ).load( function (){
 		} );
 	} );
 
-	module( 'Customize Controls: wp.customize.utils.getRemainingTime()' );
+	module( 'Customize Utils: wp.customize.utils.getRemainingTime()' );
 	test( 'utils.getRemainingTime calculates time correctly', function( assert ) {
 		var datetime = '2599-08-06 12:12:13', timeRemaining, timeRemainingWithDateInstance, timeRemaingingWithTimestamp;
 
@@ -689,6 +689,13 @@ jQuery( window ).load( function (){
 		assert.equal( typeof timeRemaingingWithTimestamp, 'number', timeRemaining );
 		assert.deepEqual( timeRemaining, timeRemainingWithDateInstance );
 		assert.deepEqual( timeRemaining, timeRemaingingWithTimestamp );
+	});
+
+	module( 'Customize Utils: wp.customize.utils.getCurrentTimestamp()' );
+	test( 'utils.getCurrentTimestamp returns timestamp', function( assert ) {
+		var currentTimeStamp;
+		currentTimeStamp = wp.customize.utils.getCurrentTimestamp();
+		assert.equal( typeof currentTimeStamp, 'number' );
 	});
 
 	module( 'Customize Controls: wp.customize.DateTimeControl' );
@@ -891,12 +898,11 @@ jQuery( window ).load( function (){
 		section = wp.customize.section( sectionId );
 		section.deferred.embedded.resolve();
 
-		// assert.expect( 7 );
+		assert.expect( 9 );
 		section.deferred.embedded.done( function() {
 			_.each( section.controls(), function( control ) {
 				if ( 'changeset_preview_link' === control.id ) {
 					assert.equal( control.templateSelector, 'customize-preview-link-control' );
-					assert.equal( control.setting.get(), 'http://example.org/' );
 					assert.equal( _.size( control.previewElements ), control.elements.length );
 
 					// Test control.ready().
@@ -916,9 +922,6 @@ jQuery( window ).load( function (){
 
 					// Test control.updatePreviewLink().
 					control.updatePreviewLink();
-					assert.notOk( control.notifications.has( 'changes_not_saved' ) ); // Since there are not dirty changes.
-					assert.notOk( control.previewElements.link.element.hasClass( 'disabled' ) );
-					assert.notOk( control.previewElements.link.element.prop( 'disabled' ) );
 					assert.equal( control.setting.get(), wp.customize.previewer.getFrontendPreviewUrl() );
 				}
 			} );
