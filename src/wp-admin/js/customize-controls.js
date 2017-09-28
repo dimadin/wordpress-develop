@@ -4162,22 +4162,36 @@
 				control.setting = new api.Value();
 			}
 
+			// @todo Should this be? Default should be on client. The default value should be in the setting itself.
 			if ( ! control.setting.get() && control.params.defaultValue ) {
 				control.setting.set( control.params.defaultValue );
 			}
 
-			control.dateInputs.each( function() {
+			control.container.find( '.date-input' ).each( function() {
 				var input = $( this ), component, element;
 				component = input.data( 'component' );
 				element = new api.Element( input );
-				element.validate = function( value ) {
-					return _.contains( [ 'am', 'pm' ], value ) ? value : parseInt( value, 10 );
-				};
+				if ( 'ampm' === component ) {
+					element.validate = function( value ) {
+						if ( 'am' !== value && 'pm' !== value ) {
+							return null;
+						}
+						return value;
+					};
+				} else {
+					element.validate = function( value ) {
+						var val = parseInt( value, 10 );
+						if ( isNaN( val ) ) {
+							return null;
+						}
+						return val;
+					};
+				}
+				element.bind( control.populateSetting );
 				control.inputElements[ component ] = element;
 				control.elements.push( element );
 			} );
 
-			control.dateInputs.on( 'input', control.populateSetting );
 			control.inputElements.month.bind( control.updateDaysForMonth );
 			control.inputElements.year.bind( control.updateDaysForMonth );
 			control.inputElements.hour.bind( control.updateMinutesForHour );
@@ -4389,6 +4403,9 @@
 			var hourInTwentyFourHourFormat, hour, midDayHour = 12;
 
 			hour = parseInt( hourInTwelveHourFormat, 10 );
+			if ( isNaN( hour ) ) {
+				return '';
+			}
 
 			if ( 'pm' === ampm && hour < midDayHour ) {
 				hourInTwentyFourHourFormat = hour + midDayHour;
