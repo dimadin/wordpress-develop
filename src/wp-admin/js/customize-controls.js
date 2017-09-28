@@ -4152,11 +4152,10 @@
 		ready: function ready() {
 			var control = this;
 
-			_.bindAll( control, 'populateSetting', 'updateDaysForMonth', 'updateMinutesForHour' );
 			control.inputElements = {};
 			control.invalidDate = false;
 
-			control.dateInputs = control.container.find( '.date-input' );
+			_.bindAll( control, 'populateSetting', 'updateDaysForMonth', 'updateMinutesForHour', 'populateDateInputs' );
 
 			// @todo This needs https://core.trac.wordpress.org/ticket/37964
 			if ( ! control.setting ) {
@@ -4183,6 +4182,7 @@
 			control.inputElements.year.bind( control.updateDaysForMonth );
 			control.inputElements.hour.bind( control.updateMinutesForHour );
 			control.populateDateInputs();
+			control.setting.bind( control.populateDateInputs );
 		},
 
 		/**
