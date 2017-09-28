@@ -4143,10 +4143,6 @@
 	 */
 	api.DateTimeControl = api.Control.extend({
 
-		dateInputs: {},
-		inputElements: {},
-		invalidDate: false,
-
 		/**
 		 * Initialize behaviors.
 		 *
@@ -4157,6 +4153,8 @@
 			var control = this;
 
 			_.bindAll( control, 'populateSetting', 'updateDaysForMonth', 'updateMinutesForHour' );
+			control.inputElements = {};
+			control.invalidDate = false;
 
 			control.dateInputs = control.container.find( '.date-input' );
 
