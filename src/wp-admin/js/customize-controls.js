@@ -4250,7 +4250,9 @@
 					errorMessage = control.invalidDate ? api.l10n.invalid + ' ' + component : '';
 
 					el.setCustomValidity( errorMessage );
-					_.result( el, 'reportValidity' );
+					if ( ! control.section() || api.section.has( control.section() ) && api.section( control.section() ).expanded() ) {
+						_.result( el, 'reportValidity' );
+					}
 				}
 			} );
 
