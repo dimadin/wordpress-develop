@@ -6238,6 +6238,7 @@
 		'saved',
 		'autosaved',
 		'saving',
+		'trashing',
 		'activated',
 		'processing',
 		'paneVisible',
@@ -6308,6 +6309,9 @@
 				if ( ! api.state( 'activated' ).get() ) {
 					return false;
 				}
+				if ( api.state( 'trashing' ).get() || 'trash' === api.state( 'changesetStatus' ).get() ) {
+					return false;
+				}
 				if ( '' === api.state( 'changesetStatus' ).get() && api.state( 'saved' ).get() ) {
 					return false;
 				}
@@ -6320,6 +6324,7 @@
 				section.active.set( isSectionActive() );
 			};
 			api.state( 'activated' ).bind( updateSectionActive );
+			api.state( 'trashing' ).bind( updateSectionActive );
 			api.state( 'saved' ).bind( updateSectionActive );
 			api.state( 'changesetStatus' ).bind( updateSectionActive );
 			updateSectionActive();
@@ -6846,6 +6851,7 @@
 		(function( state ) {
 			var saved = state.instance( 'saved' ),
 				saving = state.instance( 'saving' ),
+				trashing = state.instance( 'trashing' ),
 				activated = state.instance( 'activated' ),
 				processing = state.instance( 'processing' ),
 				paneVisible = state.instance( 'paneVisible' ),
@@ -6907,7 +6913,7 @@
 				 * Save (publish) button should be enabled if saving is not currently happening,
 				 * and if the theme is not active or the changeset exists but is not published.
 				 */
-				canSave = ! saving() && ( ! activated() || ! saved() || ( changesetStatus() !== selectedChangesetStatus() && '' !== changesetStatus() ) || ( 'future' === selectedChangesetStatus() && changesetDate.get() !== selectedChangesetDate.get() ) );
+				canSave = ! saving() && ! trashing() && ( ! activated() || ! saved() || ( changesetStatus() !== selectedChangesetStatus() && '' !== changesetStatus() ) || ( 'future' === selectedChangesetStatus() && changesetDate.get() !== selectedChangesetDate.get() ) );
 
 				saveBtn.prop( 'disabled', ! canSave );
 			});
@@ -6958,6 +6964,9 @@
 
 			saving.bind( function( isSaving ) {
 				body.toggleClass( 'saving', isSaving );
+			} );
+			trashing.bind( function( isTrashing ) {
+				body.toggleClass( 'trashing', isTrashing );
 			} );
 
 			api.bind( 'saved', function( response ) {
