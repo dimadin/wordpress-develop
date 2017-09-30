@@ -2219,58 +2219,12 @@
 		 * @since 4.7.0
 		 * @access public
 		 *
+		 * @deprecated
 		 * @param {string} themeId Theme ID.
 		 * @returns {jQuery.promise} Promise.
 		 */
 		loadThemePreview: function( themeId ) {
-			var deferred = $.Deferred(), onceProcessingComplete, overlay, urlParser;
-
-			urlParser = document.createElement( 'a' );
-			urlParser.href = location.href;
-			urlParser.search = $.param( _.extend(
-				api.utils.parseQueryString( urlParser.search.substr( 1 ) ),
-				{
-					theme: themeId,
-					changeset_uuid: api.settings.changeset.uuid
-				}
-			) );
-
-			overlay = $( '.wp-full-overlay' );
-			overlay.addClass( 'customize-loading' );
-
-			onceProcessingComplete = function() {
-				var request;
-				if ( api.state( 'processing' ).get() > 0 ) {
-					return;
-				}
-
-				api.state( 'processing' ).unbind( onceProcessingComplete );
-
-				request = api.requestChangesetUpdate( {}, { autosave: true } );
-				request.done( function() {
-					$( window ).off( 'beforeunload.customize-confirm' );
-
-					// Include autosaved param to load autosave revision without prompting user to restore it.
-					if ( ! api.state( 'saved' ).get() ) {
-						urlParser.search += '&customize_autosaved=on';
-					}
-
-					top.location.href = urlParser.href;
-					deferred.resolve();
-				} );
-				request.fail( function() {
-					overlay.removeClass( 'customize-loading' );
-					deferred.reject();
-				} );
-			};
-
-			if ( 0 === api.state( 'processing' ).get() ) {
-				onceProcessingComplete();
-			} else {
-				api.state( 'processing' ).bind( onceProcessingComplete );
-			}
-
-			return deferred.promise();
+			return api.ThemesPanel.prototype.loadThemePreview.call( this, themeId );
 		},
 
 		/**
@@ -2919,17 +2873,24 @@
 		 * @returns {jQuery.promise} Promise.
 		 */
 		loadThemePreview: function( themeId ) {
-			var deferred = $.Deferred(), onceProcessingComplete, overlay, urlParser;
+			var deferred = $.Deferred(), onceProcessingComplete, overlay, urlParser, queryParams;
 
 			urlParser = document.createElement( 'a' );
 			urlParser.href = location.href;
-			urlParser.search = $.param( _.extend(
+			queryParams = _.extend(
 				api.utils.parseQueryString( urlParser.search.substr( 1 ) ),
 				{
 					theme: themeId,
 					changeset_uuid: api.settings.changeset.uuid
 				}
-			) );
+			);
+
+			// Include autosaved param to load autosave revision without prompting user to restore it.
+			if ( ! api.state( 'saved' ).get() ) {
+				queryParams.customize_autosaved = 'on';
+			}
+
+			urlParser.search = $.param( queryParams );
 
 			// Update loading message. Everything else is handled by reloading the page.
 			$( '#customize-themes-loading-container span' ).hide();
@@ -2946,11 +2907,11 @@
 
 				api.state( 'processing' ).unbind( onceProcessingComplete );
 
-				request = api.requestChangesetUpdate();
+				request = api.requestChangesetUpdate( {}, { autosave: true } );
 				request.done( function() {
 					deferred.resolve();
 					$( window ).off( 'beforeunload.customize-confirm' );
-					window.location.href = urlParser.href;
+					window.location.href = urlParser.href; // @todo Use location.replace()?
 				} );
 				request.fail( function() {
 					overlay.removeClass( 'customize-loading' );
