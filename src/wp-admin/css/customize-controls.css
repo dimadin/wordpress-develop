@@ -29,11 +29,13 @@ body {
 	margin-top: 9px;
 }
 
+body:not(.ready) #customize-save-button-wrapper .save {
+	visibility: hidden;
+}
 #customize-save-button-wrapper .save {
 	float: left;
 	border-radius: 3px;
 	box-shadow: none; /* @todo Adjust box shadow based on the disable states of paired button. */
-	display: none; /* Shown when ready. */
 	margin-top: 0;
 }
 #customize-save-button-wrapper .save.has-next-sibling {
@@ -106,10 +108,15 @@ body.outer-section-open .wp-full-overlay.expanded .wp-full-overlay-main {
 	font-size: 14px;
 	width: 30px;
 	float: left;
-	display: none; /* Shown when ready. */
 	-webkit-transform: none;
 	transform: none;
 	margin-top: 0;
+}
+
+body:not(.ready) #publish-settings,
+body.trashing #customize-save-button-wrapper .save,
+body.trashing #publish-settings {
+	display: none;
 }
 
 #customize-header-actions .spinner {
@@ -117,7 +124,8 @@ body.outer-section-open .wp-full-overlay.expanded .wp-full-overlay-main {
 	margin-right: 4px;
 }
 
-.saving #customize-header-actions .spinner {
+.saving #customize-header-actions .spinner,
+.trashing #customize-header-actions .spinner {
 	visibility: visible;
 }
 
@@ -1673,8 +1681,6 @@ p.customize-section-description {
 	transition: .18s bottom ease-in-out;
 }
 
-.in-themes-panel:not(.animating) #customize-header-actions .save,
-.in-themes-panel:not(.animating) #customize-header-actions #publish-settings,
 .in-themes-panel:not(.animating) #customize-header-actions .spinner,
 .in-themes-panel:not(.animating) #customize-header-actions .customize-controls-preview-toggle,
 .in-themes-panel:not(.animating) #customize-preview,

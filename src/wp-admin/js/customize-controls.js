@@ -6279,8 +6279,6 @@
 			publishSettingsBtn = $( '#publish-settings' ),
 			footerActions = $( '#customize-footer-actions' );
 
-		saveBtn.show();
-
 		api.section( 'publish_settings', function( section ) {
 			var updateButtonsState, previewLinkControl, previewLinkControlId = 'changeset_preview_link', updateSectionActive, isSectionActive;
 
@@ -6301,7 +6299,7 @@
 			 * @return {boolean} Is section active.
 			 */
 			isSectionActive = function() {
-				if ( ! api.state( 'activated' ) ) {
+				if ( ! api.state( 'activated' ).get() ) {
 					return false;
 				}
 				if ( '' === api.state( 'changesetStatus' ).get() && api.state( 'saved' ).get() ) {
@@ -6552,14 +6550,10 @@
 					 */
 					request = wp.ajax.post( 'customize_save', query );
 
-					// Disable save button during the save request.
-					saveBtn.prop( 'disabled', true );
-
 					api.trigger( 'save', request );
 
 					request.always( function () {
 						api.state( 'saving' ).set( false );
-						saveBtn.prop( 'disabled', false );
 						api.unbind( 'change', captureSettingModifiedDuringSave );
 					} );
 
@@ -6863,7 +6857,6 @@
 				if ( ! activated() ) {
 					saveBtn.val( api.l10n.activate );
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
-					publishSettingsBtn.prop( 'disabled', false );
 
 				} else if ( '' === changesetStatus.get() && saved() ) {
 					if ( api.settings.changeset.currentUserCanPublish ) {
@@ -6871,7 +6864,6 @@
 					} else {
 						saveBtn.val( api.l10n.saved );
 					}
-					publishSettingsBtn.prop( 'disabled', true );
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
 				} else {
@@ -6899,7 +6891,6 @@
 						saveBtn.val( api.l10n.publish );
 					}
 					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
-					publishSettingsBtn.prop( 'disabled', false );
 				}
 
 				/*
@@ -8049,6 +8040,7 @@
 			}
 		} );
 
+		body.addClass( 'ready' );
 		api.trigger( 'ready' );
 	});
 
