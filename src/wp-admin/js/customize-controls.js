@@ -368,6 +368,12 @@
 		var deferred, request, submittedChanges = {}, data, submittedArgs;
 		deferred = new $.Deferred();
 
+		// Prevent attempting changeset update while request is being made.
+		if ( 0 !== api.state( 'processing' ).get() ) {
+			deferred.reject( 'already_processing' );
+			return deferred.promise();
+		}
+
 		submittedArgs = _.extend( {
 			title: null,
 			date: null,
@@ -6549,10 +6555,12 @@
 					 * due to dependencies on other settings.
 					 */
 					request = wp.ajax.post( 'customize_save', query );
+					api.state( 'processing' ).set( api.state( 'processing' ).get() + 1 );
 
 					api.trigger( 'save', request );
 
 					request.always( function () {
+						api.state( 'processing' ).set( api.state( 'processing' ).get() - 1 );
 						api.state( 'saving' ).set( false );
 						api.unbind( 'change', captureSettingModifiedDuringSave );
 					} );
