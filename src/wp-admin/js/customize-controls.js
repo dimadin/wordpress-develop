@@ -6638,7 +6638,9 @@
 						previewer.send( 'saved', response );
 
 						api.state( 'changesetStatus' ).set( response.changeset_status );
-						api.state( 'changesetDate' ).set( response.changeset_date );
+						if ( response.changeset_date ) {
+							api.state( 'changesetDate' ).set( response.changeset_date );
+						}
 
 						if ( 'publish' === response.changeset_status ) {
 
