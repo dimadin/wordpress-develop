@@ -2925,7 +2925,7 @@
 		 * @returns {jQuery.promise} Promise.
 		 */
 		loadThemePreview: function( themeId ) {
-			var deferred = $.Deferred(), onceProcessingComplete, overlay, urlParser, queryParams;
+			var deferred = $.Deferred(), onceProcessingComplete, urlParser, queryParams;
 
 			urlParser = document.createElement( 'a' );
 			urlParser.href = location.href;
