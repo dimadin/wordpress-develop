@@ -1817,7 +1817,7 @@
 			// Parameters for every API query. Additional params are set in PHP.
 			page = Math.ceil( section.loaded / 100 ) + 1;
 			params = {
-				'switch-themes-nonce': api.settings.nonce['switch-themes'],
+				'nonce': api.settings.nonce.switch_themes,
 				'wp_customize': 'on',
 				'theme_action': section.params.action,
 				'customized_theme': api.settings.theme.stylesheet,
@@ -1834,7 +1834,7 @@
 			section.headContainer.closest( '.wp-full-overlay' ).addClass( 'loading' );
 			section.loading = true;
 			section.container.find( '.no-themes' ).hide();
-			request = wp.ajax.post( 'customize-load-themes', params );
+			request = wp.ajax.post( 'customize_load_themes', params );
 			request.done(function( data ) {
 				var themes = data.themes, themeControl, newThemeControls;
 
@@ -7225,7 +7225,7 @@
 
 						// Handle dismissal of notice.
 						li.find( '.notice-dismiss' ).on( 'click', function() {
-							wp.ajax.post( 'dismiss_customize_changeset_autosave', {
+							wp.ajax.post( 'customize_dismiss_autosave', {
 								wp_customize: 'on',
 								customize_theme: api.settings.theme.stylesheet,
 								customize_changeset_uuid: api.settings.changeset.uuid,
@@ -7691,7 +7691,7 @@
 					if ( '' === api.state( 'changesetStatus' ).get() ) {
 						clearedToClose.resolve();
 					} else {
-						wp.ajax.send( 'dismiss_customize_changeset_autosave', {
+						wp.ajax.send( 'customize_dismiss_autosave', {
 							timeout: 500, // Don't wait too long.
 							data: {
 								wp_customize: 'on',

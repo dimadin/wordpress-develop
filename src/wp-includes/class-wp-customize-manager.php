@@ -374,11 +374,11 @@ final class WP_Customize_Manager {
 		remove_action( 'admin_init', '_maybe_update_plugins' );
 		remove_action( 'admin_init', '_maybe_update_themes' );
 
-		add_action( 'wp_ajax_customize_save',           array( $this, 'save' ) );
-		add_action( 'wp_ajax_customize_trash',          array( $this, 'handle_changeset_trash_request' ) );
-		add_action( 'wp_ajax_customize_refresh_nonces', array( $this, 'refresh_nonces' ) );
-		add_action( 'wp_ajax_customize-load-themes',    array( $this, 'load_themes_ajax' ) );
-		add_action( 'wp_ajax_dismiss_customize_changeset_autosave', array( $this, 'handle_dismiss_changeset_autosave_request' ) );
+		add_action( 'wp_ajax_customize_save',             array( $this, 'save' ) );
+		add_action( 'wp_ajax_customize_trash',            array( $this, 'handle_changeset_trash_request' ) );
+		add_action( 'wp_ajax_customize_refresh_nonces',   array( $this, 'refresh_nonces' ) );
+		add_action( 'wp_ajax_customize_load_themes',      array( $this, 'handle_load_themes_request' ) );
+		add_action( 'wp_ajax_customize_dismiss_autosave', array( $this, 'handle_dismiss_autosave_request' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
@@ -3162,12 +3162,12 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.9.0
 	 */
-	public function handle_dismiss_changeset_autosave_request() {
+	public function handle_dismiss_autosave_request() {
 		if ( ! $this->is_preview() ) {
 			wp_send_json_error( 'not_preview', 400 );
 		}
 
-		if ( ! check_ajax_referer( 'dismiss_customize_changeset_autosave', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'customize_dismiss_autosave', 'nonce', false ) ) {
 			wp_send_json_error( 'invalid_nonce', 403 );
 		}
 
@@ -3964,8 +3964,8 @@ final class WP_Customize_Manager {
 		$nonces = array(
 			'save' => wp_create_nonce( 'save-customize_' . $this->get_stylesheet() ),
 			'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() ),
-			'switch-themes' => wp_create_nonce( 'switch-themes' ),
-			'dismiss_autosave' => wp_create_nonce( 'dismiss_customize_changeset_autosave' ),
+			'switch_themes' => wp_create_nonce( 'switch_themes' ),
+			'dismiss_autosave' => wp_create_nonce( 'customize_dismiss_autosave' ),
 			'trash' => wp_create_nonce( 'trash_customize_changeset' ),
 		);
 
@@ -4789,8 +4789,8 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.9.0
 	 */
-	public function load_themes_ajax() {
-		check_ajax_referer( 'switch-themes', 'switch-themes-nonce' );
+	public function handle_load_themes_request() {
+		check_ajax_referer( 'switch_themes', 'nonce' );
 
 		if ( ! current_user_can( 'switch_themes' ) ) {
 			wp_die( -1 );
