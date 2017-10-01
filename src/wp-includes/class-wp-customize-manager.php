@@ -3636,6 +3636,9 @@ final class WP_Customize_Manager {
 				</label>
 			</div>
 		</script>
+		<script type="text/html" id="tmpl-customize-trash-changeset-control">
+			<button type="button" class="button-link button-link-delete"><?php _e( 'Trash unpublished changes' ); ?></button>
+		</script>
 		<?php
 	}
 
@@ -4220,6 +4223,7 @@ final class WP_Customize_Manager {
 
 		$this->add_control( 'changeset_status', array(
 			'section' => 'publish_settings',
+			'priority' => 10,
 			'settings' => array(),
 			'type' => 'radio',
 			'label' => __( 'Action' ),
@@ -4234,6 +4238,7 @@ final class WP_Customize_Manager {
 		}
 		$this->add_control( new WP_Customize_Date_Time_Control( $this, 'changeset_scheduled_date', array(
 			'section' => 'publish_settings',
+			'priority' => 20,
 			'settings' => array(),
 			'type' => 'date_time',
 			'min_year' => date( 'Y' ),

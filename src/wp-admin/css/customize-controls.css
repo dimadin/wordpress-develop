@@ -155,6 +155,23 @@ body.trashing #publish-settings {
 	padding-right: 12px;
 }
 
+#customize-control-trash_changeset {
+	margin-top: 20px;
+}
+#customize-control-trash_changeset button {
+	position: relative;
+	padding-left: 24px;
+	display: inline-block;
+}
+#customize-control-trash_changeset button:before {
+	content: "\f182";
+	font: normal 22px dashicons;
+	text-decoration: none;
+	position: absolute;
+	left: 0;
+	top: -2px;
+}
+
 #customize-controls .date-input:invalid {
 	border-color: red;
 }
