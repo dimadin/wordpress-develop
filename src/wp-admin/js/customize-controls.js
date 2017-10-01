@@ -2909,7 +2909,7 @@
 
 				api.notifications.add( 'theme_installing', new api.OverlayNotification( 'theme_installing', {
 					message: api.l10n.themeDownloading,
-					type: 'notice',
+					type: 'info',
 					loading: true
 				} ) );
 			}
@@ -2946,7 +2946,7 @@
 			// Update loading message. Everything else is handled by reloading the page.
 			api.notifications.add( 'theme_previewing', new api.OverlayNotification( 'theme_previewing', {
 				message: api.l10n.themePreviewWait,
-				type: 'notice',
+				type: 'info',
 				loading: true
 			} ) );
 
@@ -6764,7 +6764,7 @@
 					nonce: api.settings.nonce.trash
 				} );
 				api.notifications.add( 'changeset_trashing', new api.OverlayNotification( 'changeset_trashing', {
-					type: 'notice',
+					type: 'info',
 					message: api.l10n.revertingChanges,
 					loading: true
 				} ) );
