@@ -7502,15 +7502,20 @@
 				isInsideIframe = true;
 			});
 
-			// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
-			$( window ).on( 'beforeunload.customize-confirm', function() {
-				if ( ! isCleanState() ) {
-					setTimeout( function() {
-						overlay.removeClass( 'customize-loading' );
-					}, 1 );
-					return api.l10n.saveAlert;
-				}
-			});
+			function startPromptingBeforeUnload() {
+				api.unbind( 'change', startPromptingBeforeUnload );
+
+				// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
+				$( window ).on( 'beforeunload.customize-confirm', function() {
+					if ( ! isCleanState() ) {
+						setTimeout( function() {
+							overlay.removeClass( 'customize-loading' );
+						}, 1 );
+						return api.l10n.saveAlert;
+					}
+				});
+			}
+			api.bind( 'change', startPromptingBeforeUnload );
 
 			closeBtn.on( 'click.customize-controls-close', function( event ) {
 				var clearedToClose = $.Deferred();
@@ -7957,8 +7962,10 @@
 		} );
 
 		// Autosave changeset.
-		( function() {
+		function startAutosaving() {
 			var timeoutId, updateChangesetWithReschedule, scheduleChangesetUpdate, updatePending = false;
+
+			api.unbind( 'change', startAutosaving ); // Ensure startAutosaving only fires once.
 
 			api.state( 'saved' ).bind( function( isSaved ) {
 				if ( ! isSaved && ! api.settings.changeset.autosaved ) {
@@ -8010,7 +8017,8 @@
 			$( window ).on( 'beforeunload.wp-customize-changeset-update', function() {
 				updateChangesetWithReschedule();
 			} );
-		} ());
+		}
+		api.bind( 'change', startAutosaving );
 
 		// Make sure TinyMCE dialogs appear above Customizer UI.
 		$( document ).one( 'wp-before-tinymce-init', function() {
