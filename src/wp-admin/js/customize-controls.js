@@ -2909,7 +2909,6 @@
 
 				api.notifications.add( 'theme_installing', new api.OverlayNotification( 'theme_installing', {
 					message: api.l10n.themeDownloading,
-					dismissible: true,
 					type: 'notice',
 					loading: true
 				} ) );
@@ -2947,7 +2946,6 @@
 			// Update loading message. Everything else is handled by reloading the page.
 			api.notifications.add( 'theme_previewing', new api.OverlayNotification( 'theme_previewing', {
 				message: api.l10n.themePreviewWait,
-				dismissible: false,
 				type: 'notice',
 				loading: true
 			} ) );
