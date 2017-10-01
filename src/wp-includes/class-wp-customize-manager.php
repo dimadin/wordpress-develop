@@ -2853,19 +2853,19 @@ final class WP_Customize_Manager {
 
 		$changeset_post_id = $this->changeset_post_id();
 
-		if ( $changeset_post_id && ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
-			wp_send_json_error( array(
-				'code' => 'changeset_trash_unauthorized',
-				'message' => __( 'Unable to trash changes.' ),
-			) );
-		}
-
 		if ( ! $changeset_post_id ) {
 			wp_send_json_error( array(
 				'message' => __( 'No changes saved yet, so there is nothing to trash.' ),
 				'code' => 'non_existent_changeset',
 			) );
 			return;
+		}
+
+		if ( $changeset_post_id && ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
+			wp_send_json_error( array(
+				'code' => 'changeset_trash_unauthorized',
+				'message' => __( 'Unable to trash changes.' ),
+			) );
 		}
 
 		if ( 'trash' === get_post_status( $changeset_post_id ) ) {
