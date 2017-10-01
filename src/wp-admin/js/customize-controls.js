@@ -3,6 +3,41 @@
 	var Container, focus, normalizedTransitionendEventName, api = wp.customize;
 
 	/**
+	 * A notification that is displayed in a full-screen overlay.
+	 *
+	 * @since 4.9.0
+	 * @class
+	 * @augments wp.customize.Notification
+	 */
+	api.OverlayNotification = api.Notification.extend({
+
+		/**
+		 * Whether the notification should show a loading spinner.
+		 *
+		 * @since 4.9.0
+		 * @var {boolean}
+		 */
+		loading: false,
+
+		/**
+		 * Initialize.
+		 *
+		 * @since 4.9.0
+		 *
+		 * @param {string} code - Code.
+		 * @param {object} params - Params.
+		 */
+		initialize: function( code, params ) {
+			var notification = this;
+			api.Notification.prototype.initialize.call( notification, code, params );
+			notification.classes += ' notification-overlay';
+			if ( notification.loading ) {
+				notification.classes += ' notification-loading';
+			}
+		}
+	});
+
+	/**
 	 * A collection of observable notifications.
 	 *
 	 * @since 4.9.0
@@ -145,7 +180,7 @@
 		 */
 		render: function() {
 			var collection = this,
-				notifications,
+				notifications, hadOverlayNotification = false, hasOverlayNotification,
 				previousNotificationsByCode = {},
 				listElement;
 
@@ -178,11 +213,29 @@
 
 			// Add all notifications in the sorted order.
 			_.each( notifications, function( notification ) {
+				var notificationContainer;
 				if ( wp.a11y && ( ! previousNotificationsByCode[ notification.code ] || ! _.isEqual( notification.message, previousNotificationsByCode[ notification.code ].message ) ) ) {
 					wp.a11y.speak( notification.message, 'assertive' );
 				}
-				listElement.append( $( notification.render() ) ); // @todo Consider slideDown() as enhancement.
+				notificationContainer = $( notification.render() );
+				listElement.append( notificationContainer ); // @todo Consider slideDown() as enhancement.
+
+				// @todo Constraing focus in notificationContainer if notification.extended( api.OverlayNotification ).
 			});
+
+			hasOverlayNotification = Boolean( _.find( notifications, function( notification ) {
+				return notification.extended( api.OverlayNotification );
+			} ) );
+			if ( collection.previousNotifications ) {
+				hadOverlayNotification = Boolean( _.find( collection.previousNotifications, function( notification ) {
+					return notification.extended( api.OverlayNotification );
+				} ) );
+			}
+
+			if ( hasOverlayNotification !== hadOverlayNotification ) {
+				$( document.body ).toggleClass( 'customize-loading', hasOverlayNotification );
+				collection.container.toggleClass( 'has-overlay-notifications', hasOverlayNotification );
+			}
 
 			collection.previousNotifications = notifications;
 			collection.previousContainer = collection.container;
@@ -1578,12 +1631,7 @@
 
 			// Preview installed themes.
 			section.container.on( 'click', '.theme-actions .preview-theme', function() {
-				var themeId = $( this ).data( 'slug' );
-
-				$( '.wp-full-overlay' ).addClass( 'customize-loading' );
-				api.panel( 'themes' ).loadThemePreview( themeId ).fail( function() {
-					$( '.wp-full-overlay' ).removeClass( 'customize-loading' );
-				} );
+				api.panel( 'themes' ).loadThemePreview( $( this ).data( 'slug' ) );
 			});
 
 			// Theme navigation in details view.
@@ -2804,10 +2852,9 @@
 			$( document ).one( 'wp-theme-install-success', function( event, response ) {
 				var theme = false, customizeId, themeControl;
 				if ( preview ) {
+					api.notifications.remove( 'theme_installing' );
 
-					panel.loadThemePreview( slug ).fail( function() {
-						$( '.wp-full-overlay' ).removeClass( 'customize-loading' );
-					} );
+					panel.loadThemePreview( slug );
 
 				} else {
 					api.control.each( function( control ) {
@@ -2859,8 +2906,13 @@
 			// Also preview the theme as the event is triggered on Install & Preview.
 			if ( $( event.target ).hasClass( 'preview' ) ) {
 				preview = true;
-				$( '.wp-full-overlay' ).addClass( 'customize-loading' );
-				wp.a11y.speak( $( '#customize-themes-loading-container .customize-loading-text-installing-theme' ).text() );
+
+				api.notifications.add( 'theme_installing', new api.OverlayNotification( 'theme_installing', {
+					message: api.l10n.themeDownloading,
+					dismissible: true,
+					type: 'notice',
+					loading: true
+				} ) );
 			}
 		},
 
@@ -2893,11 +2945,12 @@
 			urlParser.search = $.param( queryParams );
 
 			// Update loading message. Everything else is handled by reloading the page.
-			$( '#customize-themes-loading-container span' ).hide();
-			$( '#customize-themes-loading-container .customize-loading-text' ).css( 'display', 'block' );
-			wp.a11y.speak( $( '#customize-themes-loading-container .customize-loading-text' ).text() );
-			overlay = $( '.wp-full-overlay' );
-			overlay.addClass( 'customize-loading' );
+			api.notifications.add( 'theme_previewing', new api.OverlayNotification( 'theme_previewing', {
+				message: api.l10n.themePreviewWait,
+				dismissible: false,
+				type: 'notice',
+				loading: true
+			} ) );
 
 			onceProcessingComplete = function() {
 				var request;
@@ -2914,7 +2967,10 @@
 					window.location.href = urlParser.href; // @todo Use location.replace()?
 				} );
 				request.fail( function() {
-					overlay.removeClass( 'customize-loading' );
+
+					// @todo Show notification regarding failure.
+					api.notifications.remove( 'theme_previewing' );
+
 					deferred.reject();
 				} );
 			};

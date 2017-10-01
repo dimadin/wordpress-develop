@@ -1134,6 +1134,42 @@ p.customize-section-description {
 	margin-top: 1px;
 }
 
+@-webkit-keyframes customize-fade-in {
+	0%   { opacity: 0; }
+	100% { opacity: 1; }
+}
+
+@keyframes customize-fade-in {
+	0%   { opacity: 0; }
+	100% { opacity: 1; }
+}
+
+#customize-controls .notice.notification-overlay,
+#customize-controls #customize-notifications-area .notice.notification-overlay {
+	margin: 0;
+}
+
+#customize-controls .customize-control-notifications-container.has-overlay-notifications {
+	-webkit-animation: customize-fade-in 0.5s;
+	animation: customize-fade-in 0.5s;
+	z-index: 30;
+}
+
+/* Note: Styles for this are also defined in themes.css */
+#customize-controls #customize-notifications-area .notice.notification-overlay .notification-message {
+	clear: both;
+	color: #191e23;
+	font-size: 18px;
+	font-style: normal;
+	margin: 0;
+	padding: 2em 0;
+	text-align: center;
+	width: 100%;
+	display: block;
+	top: 50%;
+	position: relative;
+}
+
 /* Style for custom settings */
 
 /**
@@ -1557,40 +1593,6 @@ p.customize-section-description {
 /**
  * Themes
  */
-
-@-webkit-keyframes customize-reload {
-	0%   { opacity: 0; }
-	100% { opacity: 1; }
-}
-
-@keyframes customize-reload {
-	0%   { opacity: 0; }
-	100% { opacity: 1; }
-}
-
-.wp-customizer .customize-loading #customize-themes-loading-container {
-	display: block;
-	-webkit-animation: customize-reload .5s; /* Can't use `transition` because `display` changes here. */
-	animation: customize-reload .5s;
-}
-
-.customize-loading #customize-themes-loading-container span {
-	clear: both;
-	color: #191e23;
-	font-size: 18px;
-	font-style: normal;
-	margin: 0;
-	padding: 2em 0;
-	text-align: center;
-	width: 100%;
-	display: block;
-	top: 50%;
-	position: relative;
-}
-
-.customize-loading #customize-themes-loading-container .customize-loading-text {
-	display: none;
-}
 
 #customize-theme-controls .control-panel-themes {
 	border-bottom: none;
