@@ -6197,7 +6197,6 @@
 	api.state = new api.Values();
 	_.each( [
 		'saved',
-		'autosaved',
 		'saving',
 		'trashing',
 		'activated',
