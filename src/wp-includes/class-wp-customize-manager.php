@@ -375,6 +375,7 @@ final class WP_Customize_Manager {
 		remove_action( 'admin_init', '_maybe_update_themes' );
 
 		add_action( 'wp_ajax_customize_save',           array( $this, 'save' ) );
+		add_action( 'wp_ajax_customize_trash',          array( $this, 'handle_changeset_trash_request' ) );
 		add_action( 'wp_ajax_customize_refresh_nonces', array( $this, 'refresh_nonces' ) );
 		add_action( 'wp_ajax_customize-load-themes',    array( $this, 'load_themes_ajax' ) );
 		add_action( 'wp_ajax_dismiss_customize_changeset_autosave', array( $this, 'handle_dismiss_changeset_autosave_request' ) );
@@ -2830,6 +2831,65 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Handle request to trash a changeset.
+	 *
+	 * @since 4.9.0
+	 */
+	public function handle_changeset_trash_request() {
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( 'unauthenticated' );
+		}
+
+		if ( ! $this->is_preview() ) {
+			wp_send_json_error( 'not_preview' );
+		}
+
+		if ( ! check_ajax_referer( 'trash_customize_changeset', 'nonce', false ) ) {
+			wp_send_json_error( array(
+				'code' => 'invalid_nonce',
+				'message' => __( 'There was an authentication problem. Please reload and try again.' ),
+			) );
+		}
+
+		$changeset_post_id = $this->changeset_post_id();
+
+		if ( $changeset_post_id && ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
+			wp_send_json_error( array(
+				'code' => 'changeset_trash_unauthorized',
+				'message' => __( 'Unable to trash changes.' ),
+			) );
+		}
+
+		if ( ! $changeset_post_id ) {
+			wp_send_json_error( array(
+				'message' => __( 'No changes saved yet, so there is nothing to trash.' ),
+				'code' => 'non_existent_changeset',
+			) );
+			return;
+		}
+
+		if ( 'trash' === get_post_status( $changeset_post_id ) ) {
+			wp_send_json_error( array(
+				'message' => __( 'Changes have already been trashed.' ),
+				'code' => 'changeset_already_trashed',
+			) );
+			return;
+		}
+
+		$r = wp_trash_post( $changeset_post_id );
+		if ( ! ( $r instanceof WP_Post ) ) {
+			wp_send_json_error( array(
+				'code' => 'changeset_trash_failure',
+				'message' => __( 'Unable to trash changes.' ),
+			) );
+		}
+
+		wp_send_json_success( array(
+			'message' => __( 'Changes trashed successfully.' ),
+		) );
+	}
+
+	/**
 	 * Re-map 'edit_post' meta cap for a customize_changeset post to be the same as 'customize' maps.
 	 *
 	 * There is essentially a "meta meta" cap in play here, where 'edit_post' meta cap maps to
@@ -3903,6 +3963,7 @@ final class WP_Customize_Manager {
 			'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() ),
 			'switch-themes' => wp_create_nonce( 'switch-themes' ),
 			'dismiss_autosave' => wp_create_nonce( 'dismiss_customize_changeset_autosave' ),
+			'trash' => wp_create_nonce( 'trash_customize_changeset' ),
 		);
 
 		/**

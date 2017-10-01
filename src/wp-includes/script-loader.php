@@ -573,6 +573,7 @@ function wp_default_scripts( &$scripts ) {
 		'serverSaveError'    => __( 'Failed connecting to the server. Please try saving again.' ),
 		'themeDownloading'   => __( 'Downloading your new theme&hellip;' ),
 		'themePreviewWait'   => __( 'Setting up your live preview. This may take a bit.' ),
+		'revertingChanges'   => __( 'Reverting unpublished changes&hellip;' ),
 		/* translators: %s: URL to the Customizer to load the autosaved version */
 		'autosaveNotice'     => __( 'There is a more recent autosave of your changes than the one you are previewing. <a href="%s">Restore the autosave</a>' ),
 		'videoHeaderNotice'  => __( 'This theme doesn\'t support video headers on this page. Navigate to the front page or another page that supports video headers.' ),
