@@ -70,7 +70,7 @@ $wp_file_descriptions = array(
  * @since 1.5.0
  *
  * @global array $wp_file_descriptions Theme file descriptions.
- * @global array $allowed_files        List of allowed files. 
+ * @global array $allowed_files        List of allowed files.
  * @param string $file Filesystem path or filename
  * @return string Description of file from $wp_file_descriptions or basename of $file if description doesn't exist.
  *                Appends 'Page Template' to basename of $file if the file is a page template
@@ -126,11 +126,13 @@ function get_home_path() {
  * @return bool|array False on failure, Else array of files
  */
 function list_files( $folder = '', $levels = 100 ) {
-	if ( empty($folder) )
+	if ( empty( $folder ) ) {
 		return false;
+	}
 
-	if ( ! $levels )
+	if ( ! $levels ) {
 		return false;
+	}
 
 	/**
 	 * Filters the array of excluded directories and files while scanning the folder.
@@ -143,19 +145,22 @@ function list_files( $folder = '', $levels = 100 ) {
 
 	$files = array();
 	if ( $dir = @opendir( $folder ) ) {
-		while (($file = readdir( $dir ) ) !== false ) {
-			if ( in_array($file, array('.', '..') ) )
+		while ( ( $file = readdir( $dir ) ) !== false ) {
+			if ( in_array( $file, array( '.', '..' ), true ) ) {
 				continue;
+			}
 
-			if ( '.' == $file[0] || in_array( $file, $exclusions, true ) )
+			if ( '.' === $file[0] || in_array( $file, $exclusions, true ) ) {
 				continue;
+			}
 
 			if ( is_dir( $folder . '/' . $file ) ) {
-				$files2 = list_files( $folder . '/' . $file, $levels - 1);
-				if ( $files2 )
-					$files = array_merge($files, $files2 );
-				else
+				$files2 = list_files( $folder . '/' . $file, $levels - 1 );
+				if ( $files2 ) {
+					$files = array_merge( $files, $files2 );
+				} else {
 					$files[] = $folder . '/' . $file . '/';
+				}
 			} else {
 				$files[] = $folder . '/' . $file;
 			}

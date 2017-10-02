@@ -190,26 +190,26 @@ function _get_plugin_data_markup_translate( $plugin_file, $plugin_data, $markup 
  * @param string $plugin Path to the main plugin file from plugins directory.
  * @return array List of files relative to the plugin root.
  */
-function get_plugin_files($plugin) {
+function get_plugin_files( $plugin ) {
 	$plugin_file = WP_PLUGIN_DIR . '/' . $plugin;
-	$dir = dirname($plugin_file);
+	$dir = dirname( $plugin_file );
 
-	$data = get_plugin_data($plugin_file);
-	$label = isset($data['Version']) ? 'list_files_cache_' . $dir . '-' . $data['Version'] : 'list_files_cache_' . $dir;
+	$data = get_plugin_data( $plugin_file );
+	$label = isset( $data['Version'] ) ? 'list_files_cache_' . $dir . '-' . $data['Version'] : 'list_files_cache_' . $dir;
 
 	$plugin_files = get_transient( $label );
-	if ( ! empty( $plugin_files ) )
+	if ( ! empty( $plugin_files ) ) {
 		return $plugin_files;
+	}
 
-	$plugin_files = array($plugin);
-	if ( is_dir($dir) && $dir != WP_PLUGIN_DIR ) {
+	$plugin_files = array( $plugin );
+	if ( is_dir( $dir ) && WP_PLUGIN_DIR !== $dir ) {
 
 		$list_files = list_files( $dir );
 		$list_files = array_map( 'plugin_basename', $list_files );
 
 		$plugin_files += $list_files;
 		$plugin_files = array_unique( $plugin_files );
-
 	}
 
 	set_transient( $label, $plugin_files, HOUR_IN_SECONDS );

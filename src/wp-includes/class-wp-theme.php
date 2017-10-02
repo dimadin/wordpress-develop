@@ -985,25 +985,28 @@ final class WP_Theme implements ArrayAccess {
 	 */
 	public function get_files( $type = null, $depth = 0, $search_parent = false ) {
 		// get and cache all theme files to start with.
-		$label = 'list_files_cache_' . $this->get('Name') . '-' . $this->get('Version');
+		$label = 'list_files_cache_' . $this->get( 'Name' ) . '-' . $this->get( 'Version' );
 		$all_files = get_transient( $label );
 		if ( empty( $all_files ) ) {
 			$all_files = (array) self::scandir( $this->get_stylesheet_directory(), null, -1 );
 
-			if ( $search_parent && $this->parent() )
+			if ( $search_parent && $this->parent() ) {
 				$all_files += (array) self::scandir( $this->get_template_directory(), null, -1 );
+			}
 
 			set_transient( $label, $all_files, HOUR_IN_SECONDS );
 		}
 
-		// Filter $all_files by $type & $depth
+		// Filter $all_files by $type & $depth.
 		$files = array();
 		if ( $type ) {
 			$type = (array) $type;
 			$_extensions = implode( '|', $type );
 		}
-		foreach ($all_files as $key => $file) {
-			if ( -1 != $depth && substr_count($key,'/') > $depth ) continue; // Filter by depth.
+		foreach ( $all_files as $key => $file ) {
+			if ( $depth >= 0 && substr_count( $key, '/' ) > $depth ) {
+				continue; // Filter by depth.
+			}
 			if ( ! $type || preg_match( '~\.(' . $_extensions . ')$~', $file ) ) { // Filter by type.
 				$files[ $key ] = $file;
 			}
