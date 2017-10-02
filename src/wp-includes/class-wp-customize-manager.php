@@ -2948,6 +2948,23 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Check locked changeset while the user is on customizer.
+	 * @todo Check what happens when user is on the changeset post edit screen and changeset post listing screen.
+	 *
+	 * @since 4.9.0
+	 * @param array  $response  The Heartbeat response.
+	 * @param array  $data      The $_POST data sent.
+	 * @param string $screen_id The screen id.
+	 * @return array The Heartbeat response.
+	 */
+	public function check_locked_changeset( $response, $data, $screen_id ) {
+
+		// @todo Check locked changeset.
+
+		return $response;
+	}
+
+	/**
 	 * Render template for changeset locked notice.
 	 *
 	 * @since 4.9.0
@@ -2963,7 +2980,7 @@ final class WP_Customize_Manager {
 						<p class="currently-editing wp-tab-first" tabindex="0">
 							<?php
 							/* translators: %s: User name for the person who is editing the customizer. */
-							printf( esc_html__( '%s is already customizing this site. Do you want to take over?' ) );
+							printf( esc_html__( '%s is already customizing this site. Do you want to take over?' ), '' );
 							?>
 						</p>
 						<p>
@@ -2976,23 +2993,6 @@ final class WP_Customize_Manager {
 			</div>
 		</script>
 		<?php
-	}
-
-	/**
-	 * Check locked changeset while the user is on customizer.
-	 * @todo Check what happens when user is on the changeset post edit screen and changeset post listing screen.
-	 *
-	 * @since 4.9.0
-	 * @param array  $response  The Heartbeat response.
-	 * @param array  $data      The $_POST data sent.
-	 * @param string $screen_id The screen id.
-	 * @return array The Heartbeat response.
-	 */
-	public function check_locked_changeset( $response, $data, $screen_id ) {
-
-		// @todo Check locked changeset.
-
-		return $response;
 	}
 
 	/**

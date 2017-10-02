@@ -20,6 +20,24 @@ body {
 	text-align: center;
 }
 
+.customize-changeset-locked-message {
+	margin: 25px;
+}
+
+.customize-changeset-locked-avatar {
+	float: left;
+	margin: 0 20px 20px 0;
+}
+
+.customize-changeset-locked-message .wp-tab-first {
+	outline: 0;
+}
+
+.wp-core-ui.wp-customizer .customize-changeset-locked-message a.button {
+	margin-right: 10px;
+	margin-top: 0;
+}
+
 #customize-controls .description {
 	color: #555d66;
 }

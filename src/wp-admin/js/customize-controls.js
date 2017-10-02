@@ -7151,6 +7151,24 @@
 		(function() {
 
 			/**
+			 * Checks and shows changeset lock notifications.
+			 */
+			function checkChangestLock() {
+				var template, renderPopup, body;
+				body = $( 'body' );
+				template = wp.template( 'customize-changeset-locked-notice' );
+
+				// @todo $( document ).on( 'heartbeat-send', function ( event, data ).
+				renderPopup = function() {
+					body.append( template() );
+				};
+				renderPopup();
+			}
+
+			// @todo This is temporary, just to work on the UI.
+			checkChangestLock();
+
+			/**
 			 * Obtain the URL to restore the autosave.
 			 *
 			 * @returns {string} Customizer URL.
