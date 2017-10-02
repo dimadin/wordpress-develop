@@ -132,11 +132,24 @@ function list_files( $folder = '', $levels = 100 ) {
 	if ( ! $levels )
 		return false;
 
+	/**
+	 * Filters the array of excluded directories and files while scanning the folder.
+	 *
+	 * @since 4.9
+	 *
+	 * @param array $exclusions Array of excluded directories and files.
+	 */
+	$exclusions = (array) apply_filters( 'list_files_exclusions', array( 'CVS', 'node_modules' ) );
+
 	$files = array();
 	if ( $dir = @opendir( $folder ) ) {
 		while (($file = readdir( $dir ) ) !== false ) {
 			if ( in_array($file, array('.', '..') ) )
 				continue;
+
+			if ( '.' == $file[0] || in_array( $file, $exclusions, true ) )
+				continue;
+
 			if ( is_dir( $folder . '/' . $file ) ) {
 				$files2 = list_files( $folder . '/' . $file, $levels - 1);
 				if ( $files2 )

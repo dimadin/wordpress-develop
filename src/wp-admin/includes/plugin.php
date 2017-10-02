@@ -193,31 +193,26 @@ function _get_plugin_data_markup_translate( $plugin_file, $plugin_data, $markup 
 function get_plugin_files($plugin) {
 	$plugin_file = WP_PLUGIN_DIR . '/' . $plugin;
 	$dir = dirname($plugin_file);
+
+	$data = get_plugin_data($plugin_file);
+	$label = isset($data['Version']) ? 'list_files_cache_' . $dir . '-' . $data['Version'] : 'list_files_cache_' . $dir;
+
+	$plugin_files = get_transient( $label );
+	if ( ! empty( $plugin_files ) )
+		return $plugin_files;
+
 	$plugin_files = array($plugin);
 	if ( is_dir($dir) && $dir != WP_PLUGIN_DIR ) {
-		$plugins_dir = @ opendir( $dir );
-		if ( $plugins_dir ) {
-			while (($file = readdir( $plugins_dir ) ) !== false ) {
-				if ( substr($file, 0, 1) == '.' )
-					continue;
-				if ( is_dir( $dir . '/' . $file ) ) {
-					$plugins_subdir = @ opendir( $dir . '/' . $file );
-					if ( $plugins_subdir ) {
-						while (($subfile = readdir( $plugins_subdir ) ) !== false ) {
-							if ( substr($subfile, 0, 1) == '.' )
-								continue;
-							$plugin_files[] = plugin_basename("$dir/$file/$subfile");
-						}
-						@closedir( $plugins_subdir );
-					}
-				} else {
-					if ( plugin_basename("$dir/$file") != $plugin )
-						$plugin_files[] = plugin_basename("$dir/$file");
-				}
-			}
-			@closedir( $plugins_dir );
-		}
+
+		$list_files = list_files( $dir );
+		$list_files = array_map( 'plugin_basename', $list_files );
+
+		$plugin_files += $list_files;
+		$plugin_files = array_unique( $plugin_files );
+
 	}
+
+	set_transient( $label, $plugin_files, HOUR_IN_SECONDS );
 
 	return $plugin_files;
 }
