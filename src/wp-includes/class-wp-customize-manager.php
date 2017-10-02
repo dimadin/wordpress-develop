@@ -379,6 +379,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_refresh_nonces',   array( $this, 'refresh_nonces' ) );
 		add_action( 'wp_ajax_customize_load_themes',      array( $this, 'handle_load_themes_request' ) );
 		add_action( 'wp_ajax_customize_dismiss_autosave', array( $this, 'handle_dismiss_autosave_request' ) );
+		add_filter( 'heartbeat_received',                 array( 'check_locked_changeset' ), 10, 3 );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
@@ -395,6 +396,9 @@ final class WP_Customize_Manager {
 
 		// Export the settings to JS via the _wpCustomizeSettings variable.
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'customize_pane_settings' ), 1000 );
+
+		// Render changeset locked notice template.
+		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_changeset_locked_notice_template' ) );
 
 		// Add theme update notices.
 		if ( current_user_can( 'install_themes' ) || current_user_can( 'update_themes' ) ) {
@@ -2916,6 +2920,79 @@ final class WP_Customize_Manager {
 			$caps = map_meta_cap( $post_type_obj->cap->$cap, $user_id );
 		}
 		return $caps;
+	}
+
+	/**
+	 * Marks the changeset post as being currently edited by the current user.
+	 *
+	 * @since 4.9.0
+	 *
+	 * @param int $changeset_post_id Changeset post id.
+	 */
+	public function set_changeset_lock( $changeset_post_id ) {
+
+		// @todo Update changeset post meta key.
+		// @see wp_set_post_lock
+		// update_post_meta( $changeset_post_id, '_edit_lock', $lock );
+	}
+
+	/**
+	 * Removes changeset lock.
+	 *
+	 * @since 4.9.0
+	 * @param int $changeset_post_id Changeset post id.
+	 */
+	public function remove_changeset_lock( $changeset_post_id ) {
+
+		// @todo Remove changeset lock when another user takes over.
+	}
+
+	/**
+	 * Render template for changeset locked notice.
+	 *
+	 * @since 4.9.0
+	 */
+	public function render_changeset_locked_notice_template() {
+		?>
+		<script type="text/html" id="tmpl-customize-changeset-locked-notice">
+			<div id="customize-changeset-lock-dialog" class="notification-dialog-wrap">
+				<div class="notification-dialog-background"></div>
+				<div class="notification-dialog">
+					<div class="customize-changeset-locked-message">
+						<div class="customize-changeset-locked-avatar"><img alt="" src="http://1.gravatar.com/avatar/d82b29e40bc6da94683ed3086b49034f?s=64&amp;d=mm&amp;r=g" srcset="http://1.gravatar.com/avatar/d82b29e40bc6da94683ed3086b49034f?s=128&amp;d=mm&amp;r=g 2x" class="avatar avatar-64 photo" height="64" width="64"></div>
+						<p class="currently-editing wp-tab-first" tabindex="0">
+							<?php
+							/* translators: %s: User name for the person who is editing the customizer. */
+							printf( esc_html__( '%s is already customizing this site. Do you want to take over?' ) );
+							?>
+						</p>
+						<p>
+							<a class="button" href="#"><?php esc_html_e( 'Go back' ); ?></a>
+							<a class="button" href="#"><?php esc_html_e( 'Preview' ); ?></a>
+							<a class="button button-primary wp-tab-last" href="#"><?php esc_html_e( 'Take over' ); ?></a>
+						</p>
+					</div>
+				</div>
+			</div>
+		</script>
+		<?php
+	}
+
+	/**
+	 * Check locked changeset while the user is on customizer.
+	 * @todo Check what happens when user is on the changeset post edit screen and changeset post listing screen.
+	 *
+	 * @since 4.9.0
+	 * @param array  $response  The Heartbeat response.
+	 * @param array  $data      The $_POST data sent.
+	 * @param string $screen_id The screen id.
+	 * @return array The Heartbeat response.
+	 */
+	public function check_locked_changeset( $response, $data, $screen_id ) {
+
+		// @todo Check locked changeset.
+
+		return $response;
 	}
 
 	/**
