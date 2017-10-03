@@ -237,6 +237,14 @@ final class WP_Customize_Manager {
 	private $_changeset_data;
 
 	/**
+	 * Changeset take over action.
+	 *
+	 * @since 4.9.0
+	 * @var string
+	 */
+	private $_changeset_take_ver_action = 'customize_take_over_changeset';
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 3.4.0
@@ -406,6 +414,7 @@ final class WP_Customize_Manager {
 			add_action( 'customize_controls_print_footer_scripts', 'wp_print_admin_notice_templates' );
 		}
 
+		$this->take_over_changeset_on_request();
 		$this->set_changeset_lock( $this->changeset_post_id() );
 	}
 
@@ -2931,27 +2940,23 @@ final class WP_Customize_Manager {
 	 *
 	 * @param int $changeset_post_id Changeset post id.
 	 */
-	public function set_changeset_lock( $changeset_post_id ) {
+	public function set_changeset_lock( $changeset_post_id, $override = false ) {
 		if ( $changeset_post_id ) {
-			$lock = sprintf( '%s:%s', time(), get_current_user_id() );
-			update_post_meta( $changeset_post_id, '_edit_lock', $lock );
+			$can_update = ! (bool) get_post_meta( $changeset_post_id, '_edit_lock', true );
+
+			if ( $override ) {
+				$can_update = true;
+			}
+
+			if ( $can_update ) {
+				$lock = sprintf( '%s:%s', time(), get_current_user_id() );
+				update_post_meta( $changeset_post_id, '_edit_lock', $lock );
+			}
 		}
 	}
 
 	/**
-	 * Removes changeset lock.
-	 *
-	 * @since 4.9.0
-	 * @param int $changeset_post_id Changeset post id.
-	 */
-	public function remove_changeset_lock( $changeset_post_id ) {
-
-		// @todo Remove changeset lock when another user takes over.
-	}
-
-	/**
 	 * Check locked changeset while the user is on customizer.
-	 * @todo Check what happens when user is on the changeset post edit screen and changeset post listing screen.
 	 *
 	 * @since 4.9.0
 	 * @param array  $response  The Heartbeat response.
@@ -2967,28 +2972,131 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Check to see if the changeset is currently being edited by another user.
+	 *
+	 * @since 4.9.0
+	 *
+	 * @return int|false ID of the user with lock. False if the post does not exist, post is not locked,
+	 *                   the user with lock does not exist, or the post is locked by current user.
+	 */
+	public function check_changeset_lock() {
+		$changeset_post_id = $this->changeset_post_id();
+
+		if ( ! $changeset_post_id ) {
+			return false;
+		}
+
+		$lock = get_post_meta( $changeset_post_id, '_edit_lock', true );
+
+		if ( ! $lock ) {
+		    return false;
+		}
+
+		$lock = explode( ':', $lock );
+		$user_id = isset( $lock[1] ) ? intval( $lock[1] ) : false;
+
+		if ( ! $user_id || ! get_userdata( $user_id ) ) {
+			return false;
+		}
+
+		// @todo Consider time window ?
+		if ( $user_id !== get_current_user_id() ) {
+			return $user_id;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Removes changeset lock when take over request is sent.
+	 *
+	 * @since 4.9.0
+	 */
+	public function take_over_changeset_on_request() {
+		if ( ! isset( $_GET['action'] ) || $this->_changeset_take_ver_action !== $_GET['action'] ) {
+			return;
+		}
+
+		if ( ! is_user_logged_in() ) {
+			$this->wp_die( -1, __( 'Sorry, You are not authorized to take over.' ) );
+		}
+
+		if ( ! isset( $_GET['changeset_uuid'] ) ) {
+			$this->wp_die( -1, __( 'Missing changeset uuid' ) );
+		}
+
+		check_ajax_referer( $this->_changeset_take_ver_action, 'nonce' );
+
+		$changeset_uuid = wp_unslash( $_GET['changeset_uuid'] );
+		$changeset_post_id = $this->find_changeset_post_id( $changeset_uuid );
+
+		if ( ! $changeset_post_id ) {
+			$this->wp_die( -1, __( 'Non-existent changeset UUID' ) );
+		}
+
+		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
+			$this->wp_die( -1, __( 'Sorry, you do not have permission to edit changeset' ) );
+		}
+
+		$this->set_changeset_lock( $changeset_post_id, true );
+		$query_args = array_merge( array(
+			'changeset_uuid' => $changeset_uuid,
+		), $this->get_autofocus() );
+
+		if ( isset( $_GET['return'] ) ) {
+			$query_args['return'] = $_GET['return'];
+		}
+
+		$redirect_url = add_query_arg( $query_args, admin_url( 'customize.php' ) );
+		wp_redirect( $redirect_url );
+		exit();
+	}
+
+	/**
 	 * Render template for changeset locked notice.
 	 *
 	 * @since 4.9.0
 	 */
 	public function render_changeset_locked_notice_template() {
+		$user_id = $this->check_changeset_lock();
+		$user_name = '';
+		$user_avatar = '';
+		$hidden_class = 'hidden';
+		$query_args = array_merge( array(
+			'changeset_uuid' => $this->changeset_uuid(),
+			'action' => $this->_changeset_take_ver_action,
+			'nonce' => wp_create_nonce( $this->_changeset_take_ver_action ),
+		), $this->get_autofocus() );
+
+		if ( isset( $_GET['return'] ) ) {
+			$query_args['return'] = $_GET['return'];
+		}
+
+		$take_over = add_query_arg( $query_args, admin_url( 'customize.php' ) );
+		$preview_url = add_query_arg( 'customize_changeset_uuid', $this->changeset_uuid(), $this->get_preview_url() );
+
+		if ( $user_id ) {
+			$user = get_userdata( $user_id );
+			$user_name = $user->display_name;
+			$user_avatar = get_avatar( $user->ID, 64 );
+			$hidden_class = '';
+		}
 		?>
 		<script type="text/html" id="tmpl-customize-changeset-locked-notice">
-			<div id="customize-changeset-lock-dialog" class="notification-dialog-wrap">
+			<div id="customize-changeset-lock-dialog" class="notification-dialog-wrap <?php echo $hidden_class; ?>">
 				<div class="notification-dialog-background"></div>
 				<div class="notification-dialog">
 					<div class="customize-changeset-locked-message">
-						<div class="customize-changeset-locked-avatar"><img alt="" src="http://1.gravatar.com/avatar/d82b29e40bc6da94683ed3086b49034f?s=64&amp;d=mm&amp;r=g" srcset="http://1.gravatar.com/avatar/d82b29e40bc6da94683ed3086b49034f?s=128&amp;d=mm&amp;r=g 2x" class="avatar avatar-64 photo" height="64" width="64"></div>
+						<div class="customize-changeset-locked-avatar"><?php echo $user_avatar; ?></div>
 						<p class="currently-editing wp-tab-first" tabindex="0">
-							<?php
-							/* translators: %s: User name for the person who is editing the customizer. */
-							printf( esc_html__( '%s is already customizing this site. Do you want to take over?' ), '' );
-							?>
+							<?php printf( '<span id="customize-notice-user-name">%s</span> %s', $user_name, esc_html__( 'is already customizing this site. Do you want to take over?' ) ); ?>
 						</p>
 						<p>
-							<a class="button" href="#"><?php esc_html_e( 'Go back' ); ?></a>
-							<a class="button" href="#"><?php esc_html_e( 'Preview' ); ?></a>
-							<a class="button button-primary wp-tab-last" href="#"><?php esc_html_e( 'Take over' ); ?></a>
+							<?php if ( $this->get_preview_url() !== $this->get_return_url() ) { ?>
+								<a id="customize-notice-go-back-button" class="button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
+							<?php } ?>
+							<a id="customize-notice-preview-button" class="button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
+							<a id="customize-notice-take-over-button" class="button button-primary wp-tab-last" href="<?php echo $take_over; ?>"><?php esc_html_e( 'Take over' ); ?></a>
 						</p>
 					</div>
 				</div>
