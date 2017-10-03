@@ -3061,7 +3061,7 @@ final class WP_Customize_Manager {
 		}
 
 		/** This filter is documented in wp-admin/includes/ajax-actions.php */
-		$time_window = apply_filters( 'wp_check_post_lock_window', 150 );
+		$time_window = apply_filters( 'wp_check_post_lock_window', 150 ); // @todo Create another filter for changeset? Or do not use filter here?
 
 		if ( $time && $time > time() - $time_window && $user_id !== get_current_user_id() ) {
 			$user = get_userdata( $user_id );
