@@ -631,6 +631,7 @@ final class WP_Customize_Manager {
 					'posts_per_page' => 1,
 					'order' => 'DESC',
 					'orderby' => 'date',
+					'author' => 'any',
 				) );
 				$unpublished_changeset_post = array_shift( $unpublished_changeset_posts );
 				if ( ! empty( $unpublished_changeset_post ) && wp_is_uuid( $unpublished_changeset_post->post_name ) ) {
@@ -2957,15 +2958,38 @@ final class WP_Customize_Manager {
 	 */
 	public function set_changeset_lock( $changeset_post_id, $take_over = false ) {
 		if ( $changeset_post_id ) {
-			$can_update = ! (bool) get_post_meta( $changeset_post_id, '_edit_lock', true );
+			$can_override = ! (bool) get_post_meta( $changeset_post_id, '_edit_lock', true );
 
 			if ( $take_over ) {
-				$can_update = true;
+				$can_override = true;
 			}
 
-			if ( $can_update ) {
+			if ( $can_override ) {
 				$lock = sprintf( '%s:%s', time(), get_current_user_id() );
 				update_post_meta( $changeset_post_id, '_edit_lock', $lock );
+			} else {
+				$this->refresh_changeset_lock( $changeset_post_id );
+			}
+		}
+	}
+
+	/**
+	 * Refreshes changeset lock with the current time if current user edited the changeset before.
+	 *
+	 * @param int $changeset_post_id Changeset post id.
+	 */
+	public function refresh_changeset_lock( $changeset_post_id ) {
+		if ( $changeset_post_id ) {
+			$lock = get_post_meta( $changeset_post_id, '_edit_lock', true );
+			$lock = explode( ':', $lock );
+
+			if ( $lock && isset( $lock[1] ) ) {
+				$user_id = intval( $lock[1] );
+				$current_user_id = get_current_user_id();
+				if ( $current_user_id && $user_id === $current_user_id ) {
+					$lock = sprintf( '%s:%s', time(), $user_id );
+					update_post_meta( $changeset_post_id, '_edit_lock', $lock );
+				}
 			}
 		}
 	}
@@ -3029,14 +3053,17 @@ final class WP_Customize_Manager {
 		}
 
 		$lock = explode( ':', $lock );
+		$time = intval( $lock[0] );
 		$user_id = isset( $lock[1] ) ? intval( $lock[1] ) : false;
 
 		if ( ! $user_id || ! get_userdata( $user_id ) ) {
 			return false;
 		}
 
-		// @todo Consider time window ?
-		if ( $user_id !== get_current_user_id() ) {
+		/** This filter is documented in wp-admin/includes/ajax-actions.php */
+		$time_window = apply_filters( 'wp_check_post_lock_window', 150 );
+
+		if ( $time && $time > time() - $time_window && $user_id !== get_current_user_id() ) {
 			$user = get_userdata( $user_id );
 			return array(
 				'user_id' => $user_id,
