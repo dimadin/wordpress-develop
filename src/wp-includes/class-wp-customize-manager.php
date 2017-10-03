@@ -2336,6 +2336,15 @@ final class WP_Customize_Manager {
 			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
 				wp_send_json_error( 'cannot_edit_changeset_post' );
 			}
+
+			$user = $this->check_changeset_lock();
+			if ( $user ) {
+				wp_send_json_error( array(
+					'message' => __( 'Changeset is being edited by other user.' ),
+					'code' => 'changeset_locked_by_other_user',
+					'user_data' => $user,
+				) );
+			}
 		}
 
 		if ( ! empty( $_POST['customize_changeset_data'] ) ) {
@@ -2429,6 +2438,10 @@ final class WP_Customize_Manager {
 			$response['changeset_status'] = $changeset_post->post_status;
 			if ( $is_publish && 'trash' === $response['changeset_status'] ) {
 				$response['changeset_status'] = 'publish';
+			}
+
+			if ( 'publish' !== $response['changeset_status'] ) {
+				$this->set_changeset_lock( $changeset_post->ID );
 			}
 
 			if ( 'future' === $response['changeset_status'] ) {

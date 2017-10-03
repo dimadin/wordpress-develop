@@ -6672,6 +6672,12 @@
 							parent.send( 'changeset-uuid', api.settings.changeset.uuid );
 							api.previewer.send( 'changeset-uuid', api.settings.changeset.uuid );
 						}
+
+						if ( 'changeset_locked_by_other_user' === response.code && response.user_data ) {
+							$( document ).trigger( 'heartbeat-tick', {
+								changeset_locked_data: response.user_data
+							} );
+						}
 					} );
 
 					request.done( function( response ) {
