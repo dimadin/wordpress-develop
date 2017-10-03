@@ -3026,6 +3026,9 @@ final class WP_Customize_Manager {
 			if ( $user ) {
 				$response['changeset_locked_data'] = $user;
 			}
+
+			// Refreshing time will ensure that the user is sitting on customizer and has not closed the customizer tab.
+			$this->refresh_changeset_lock( $this->changeset_post_id() );
 		}
 
 		return $response;
