@@ -416,7 +416,6 @@ final class WP_Customize_Manager {
 		}
 
 		$this->take_over_changeset_on_request();
-		$this->set_changeset_lock( $this->changeset_post_id() );
 	}
 
 	/**
@@ -646,6 +645,8 @@ final class WP_Customize_Manager {
 
 			$this->_changeset_uuid = $changeset_uuid;
 		}
+
+		$this->set_changeset_lock( $this->changeset_post_id() );
 	}
 
 	/**
