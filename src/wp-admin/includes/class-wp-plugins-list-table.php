@@ -432,9 +432,9 @@ class WP_Plugins_List_Table extends WP_List_Table {
 			}
 
 			if ( 'search' !== $type ) {
-				$status_links[$type] = sprintf( "<a href='%s' %s>%s</a>",
+				$status_links[$type] = sprintf( "<a href='%s'%s>%s</a>",
 					add_query_arg('plugin_status', $type, 'plugins.php'),
-					( $type === $status ) ? ' class="current"' : '',
+					( $type === $status ) ? ' class="current" aria-current="page"' : '',
 					sprintf( $text, number_format_i18n( $count ) )
 					);
 			}
@@ -751,9 +751,17 @@ class WP_Plugins_List_Table extends WP_List_Table {
 					echo "<th scope='row' class='check-column'>$checkbox</th>";
 					break;
 				case 'name':
-					echo "<td class='plugin-title column-primary'><strong>$plugin_name</strong>";
-					echo $this->row_actions( $actions, true );
-					echo "</td>";
+					$icon = '<span class="dashicons dashicons-admin-plugins"></span>';
+					if ( ! empty( $plugin_data['icons']['default'] ) ) {
+						$icon = '<img src="' . esc_url( $plugin_data['icons']['default'] ) . '" alt="" />';
+					}
+					?>
+					<td class="plugin-title column-primary">
+						<?php echo $icon; ?>
+						<strong><?php echo $plugin_name; ?></strong>
+						<?php echo $this->row_actions( $actions, true ); ?>
+					</td>
+					<?php
 					break;
 				case 'description':
 					$classes = 'column-description desc';
