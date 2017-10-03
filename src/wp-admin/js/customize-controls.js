@@ -7154,7 +7154,7 @@
 		}( api.state ) );
 
 		/**
-		 * Checks and shows changeset lock dialog.
+		 * Checks if changeset is being edited by other user and display dialog.
 		 *
 		 * @since 4.9.0
 		 */

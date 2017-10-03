@@ -242,7 +242,7 @@ final class WP_Customize_Manager {
 	 * @since 4.9.0
 	 * @var string
 	 */
-	private $_changeset_take_ver_action = 'customize_take_over_changeset';
+	private $_changeset_take_over_action = 'customize_take_over_changeset';
 
 	/**
 	 * Constructor.
@@ -3054,7 +3054,7 @@ final class WP_Customize_Manager {
 	 * @since 4.9.0
 	 */
 	public function take_over_changeset_on_request() {
-		if ( ! isset( $_GET['action'] ) || $this->_changeset_take_ver_action !== $_GET['action'] ) {
+		if ( ! isset( $_GET['action'] ) || $this->_changeset_take_over_action !== $_GET['action'] ) {
 			return;
 		}
 
@@ -3066,7 +3066,7 @@ final class WP_Customize_Manager {
 			$this->wp_die( -1, __( 'Missing changeset uuid' ) );
 		}
 
-		check_ajax_referer( $this->_changeset_take_ver_action, 'nonce' );
+		check_ajax_referer( $this->_changeset_take_over_action, 'nonce' );
 
 		$changeset_uuid = wp_unslash( $_GET['changeset_uuid'] );
 		$changeset_post_id = $this->find_changeset_post_id( $changeset_uuid );
@@ -3105,8 +3105,8 @@ final class WP_Customize_Manager {
 		$hidden_class = 'hidden';
 		$query_args = array_merge( array(
 			'changeset_uuid' => $this->changeset_uuid(),
-			'action' => $this->_changeset_take_ver_action,
-			'nonce' => wp_create_nonce( $this->_changeset_take_ver_action ),
+			'action' => $this->_changeset_take_over_action,
+			'nonce' => wp_create_nonce( $this->_changeset_take_over_action ),
 		), $this->get_autofocus() );
 
 		if ( isset( $_GET['return'] ) ) {
