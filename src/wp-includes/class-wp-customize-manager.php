@@ -379,7 +379,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_refresh_nonces',   array( $this, 'refresh_nonces' ) );
 		add_action( 'wp_ajax_customize_load_themes',      array( $this, 'handle_load_themes_request' ) );
 		add_action( 'wp_ajax_customize_dismiss_autosave', array( $this, 'handle_dismiss_autosave_request' ) );
-		add_filter( 'heartbeat_received',                 array( 'check_locked_changeset' ), 10, 3 );
+		add_filter( 'heartbeat_received',                 array( $this, 'check_locked_changeset' ), 10, 3 );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
@@ -405,6 +405,8 @@ final class WP_Customize_Manager {
 			require_once ABSPATH . '/wp-admin/includes/update.php';
 			add_action( 'customize_controls_print_footer_scripts', 'wp_print_admin_notice_templates' );
 		}
+
+		$this->set_changeset_lock( $this->changeset_post_id() );
 	}
 
 	/**
@@ -2930,10 +2932,10 @@ final class WP_Customize_Manager {
 	 * @param int $changeset_post_id Changeset post id.
 	 */
 	public function set_changeset_lock( $changeset_post_id ) {
-
-		// @todo Update changeset post meta key.
-		// @see wp_set_post_lock
-		// update_post_meta( $changeset_post_id, '_edit_lock', $lock );
+		if ( $changeset_post_id ) {
+			$lock = sprintf( '%s:%s', time(), get_current_user_id() );
+			update_post_meta( $changeset_post_id, '_edit_lock', $lock );
+		}
 	}
 
 	/**
