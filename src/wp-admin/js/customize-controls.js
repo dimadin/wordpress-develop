@@ -7147,26 +7147,34 @@
 			}
 		}( api.state ) );
 
+		/**
+		 * Checks and shows changeset lock dialog.
+		 *
+		 * @since 4.9.0
+		 */
+		(function showChangesetLockDialog() {
+			var template, body;
+			body = $( 'body' );
+			template = $( wp.template( 'customize-changeset-locked-notice' )() );
+			body.append( template );
+
+			$( document ).on( 'heartbeat-send', function ( event, data ) {
+				data.check_changeset_lock = true;
+			});
+
+			$( document ).on( 'heartbeat-tick', function ( event, data ) {
+				if ( data.changeset_locked_data && data.changeset_locked_data.user_id ) {
+					template.find( '.customize-changeset-locked-avatar' ).html( data.changeset_locked_data.user_avatar );
+					template.find( '.customize-notice-user-name' ).text( data.changeset_locked_data.user_name );
+					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage );
+					template.find( '.customize-notice-take-over-button' ).remove();
+					template.removeClass( 'hidden' );
+				}
+			} );
+		})();
+
 		// Set up initial notifications.
 		(function() {
-
-			/**
-			 * Checks and shows changeset lock notifications.
-			 */
-			function checkChangestLock() {
-				var template, renderPopup, body;
-				body = $( 'body' );
-				template = wp.template( 'customize-changeset-locked-notice' );
-
-				// @todo $( document ).on( 'heartbeat-send', function ( event, data ).
-				renderPopup = function() {
-					body.append( template() );
-				};
-				renderPopup();
-			}
-
-			// @todo This is temporary, just to work on the UI.
-			checkChangestLock();
 
 			/**
 			 * Obtain the URL to restore the autosave.

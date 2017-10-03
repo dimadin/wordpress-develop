@@ -387,7 +387,8 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_refresh_nonces',   array( $this, 'refresh_nonces' ) );
 		add_action( 'wp_ajax_customize_load_themes',      array( $this, 'handle_load_themes_request' ) );
 		add_action( 'wp_ajax_customize_dismiss_autosave', array( $this, 'handle_dismiss_autosave_request' ) );
-		add_filter( 'heartbeat_received',                 array( $this, 'check_locked_changeset' ), 10, 3 );
+		add_filter( 'heartbeat_settings',                 array( $this, 'wp_heartbeat_settings_customizer_filter' ) );
+		add_filter( 'heartbeat_received',                 array( $this, 'check_changeset_lock_with_heartbeat' ), 10, 3 );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
@@ -2939,12 +2940,13 @@ final class WP_Customize_Manager {
 	 * @since 4.9.0
 	 *
 	 * @param int $changeset_post_id Changeset post id.
+	 * @param boolean $take_over Take over the changeset, default false.
 	 */
-	public function set_changeset_lock( $changeset_post_id, $override = false ) {
+	public function set_changeset_lock( $changeset_post_id, $take_over = false ) {
 		if ( $changeset_post_id ) {
 			$can_update = ! (bool) get_post_meta( $changeset_post_id, '_edit_lock', true );
 
-			if ( $override ) {
+			if ( $take_over ) {
 				$can_update = true;
 			}
 
@@ -2956,7 +2958,24 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Check locked changeset while the user is on customizer.
+	 * Filter heartbeat settings for the Customizer.
+	 *
+	 * @since 4.9.0
+	 * @param array $settings  Current settings to filter.
+	 * @return array
+	 */
+	public function wp_heartbeat_settings_customizer_filter( $settings ) {
+		global $pagenow;
+		if ( 'customize.php' !== $pagenow ) {
+			return $settings;
+		}
+
+		$settings['screenId'] = 'customize';
+		return $settings;
+	}
+
+	/**
+	 * Check locked changeset with heartbeat api.
 	 *
 	 * @since 4.9.0
 	 * @param array  $response  The Heartbeat response.
@@ -2964,9 +2983,13 @@ final class WP_Customize_Manager {
 	 * @param string $screen_id The screen id.
 	 * @return array The Heartbeat response.
 	 */
-	public function check_locked_changeset( $response, $data, $screen_id ) {
-
-		// @todo Check locked changeset.
+	public function check_changeset_lock_with_heartbeat( $response, $data, $screen_id ) {
+		if ( array_key_exists( 'check_changeset_lock', $data ) && 'customize' === $screen_id && current_user_can( 'customize' ) ) {
+			$user = $this->check_changeset_lock();
+			if ( $user ) {
+				$response['changeset_locked_data'] = $user;
+			}
+		}
 
 		return $response;
 	}
@@ -2976,8 +2999,8 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.9.0
 	 *
-	 * @return int|false ID of the user with lock. False if the post does not exist, post is not locked,
-	 *                   the user with lock does not exist, or the post is locked by current user.
+	 * @return array|false User data of the user with lock. False if the changeset does not exist, changeset is not locked,
+	 *                   the user with lock does not exist, or the changeset is locked by current user.
 	 */
 	public function check_changeset_lock() {
 		$changeset_post_id = $this->changeset_post_id();
@@ -3001,7 +3024,12 @@ final class WP_Customize_Manager {
 
 		// @todo Consider time window ?
 		if ( $user_id !== get_current_user_id() ) {
-			return $user_id;
+			$user = get_userdata( $user_id );
+			return array(
+				'user_id' => $user_id,
+				'user_name' => $user->display_name,
+				'user_avatar' => get_avatar( $user->ID, 64 ),
+			);
 		}
 
 		return false;
@@ -3058,7 +3086,7 @@ final class WP_Customize_Manager {
 	 * @since 4.9.0
 	 */
 	public function render_changeset_locked_notice_template() {
-		$user_id = $this->check_changeset_lock();
+		$user = $this->check_changeset_lock();
 		$user_name = '';
 		$user_avatar = '';
 		$hidden_class = 'hidden';
@@ -3075,11 +3103,10 @@ final class WP_Customize_Manager {
 		$take_over = add_query_arg( $query_args, admin_url( 'customize.php' ) );
 		$preview_url = add_query_arg( 'customize_changeset_uuid', $this->changeset_uuid(), $this->get_preview_url() );
 
-		if ( $user_id ) {
-			$user = get_userdata( $user_id );
-			$user_name = $user->display_name;
-			$user_avatar = get_avatar( $user->ID, 64 );
+		if ( $user ) {
 			$hidden_class = '';
+			$user_name = $user['user_name'];
+			$user_avatar = $user['user_avatar'];
 		}
 		?>
 		<script type="text/html" id="tmpl-customize-changeset-locked-notice">
@@ -3089,14 +3116,14 @@ final class WP_Customize_Manager {
 					<div class="customize-changeset-locked-message">
 						<div class="customize-changeset-locked-avatar"><?php echo $user_avatar; ?></div>
 						<p class="currently-editing wp-tab-first" tabindex="0">
-							<?php printf( '<span id="customize-notice-user-name">%s</span> %s', $user_name, esc_html__( 'is already customizing this site. Do you want to take over?' ) ); ?>
+							<?php printf( '<span class="customize-notice-user-name">%s</span> <span class="customize-take-over-message">%s</span>', $user_name, esc_html__( 'is already customizing this site. Do you want to take over?' ) ); ?>
 						</p>
 						<p>
 							<?php if ( $this->get_preview_url() !== $this->get_return_url() ) { ?>
-								<a id="customize-notice-go-back-button" class="button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
+								<a class="button customize-notice-go-back-button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
 							<?php } ?>
-							<a id="customize-notice-preview-button" class="button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
-							<a id="customize-notice-take-over-button" class="button button-primary wp-tab-last" href="<?php echo $take_over; ?>"><?php esc_html_e( 'Take over' ); ?></a>
+							<a class="button customize-notice-preview-button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
+							<a class="button button-primary wp-tab-last customize-notice-take-over-button" href="<?php echo $take_over; ?>"><?php esc_html_e( 'Take over' ); ?></a>
 						</p>
 					</div>
 				</div>
