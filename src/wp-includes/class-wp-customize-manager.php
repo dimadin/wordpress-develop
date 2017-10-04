@@ -4024,10 +4024,26 @@ final class WP_Customize_Manager {
 			}
 		}
 
+		/* Publish Settings Controls */
+		$status_choices = array(
+			'publish' => __( 'Publish' ),
+			'draft' => __( 'Save Draft' ),
+			'future' => __( 'Schedule' ),
+		);
+		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts ) ) {
+			unset( $status_choices['publish'] );
+		}
+
 		// Prepare Customizer settings to pass to JavaScript.
 		$changeset_post = null;
 		if ( $changeset_post_id ) {
 			$changeset_post = get_post( $changeset_post_id );
+		}
+
+		if ( $this->changeset_post_id() && 'future' === get_post_status( $this->changeset_post_id() ) ) {
+			$initial_date = get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() );
+		} else {
+			$initial_date = current_time( 'mysql', false );
 		}
 
 		$settings = array(
@@ -4039,9 +4055,11 @@ final class WP_Customize_Manager {
 				'latestAutoDraftUuid' => $autosave_autodraft_post ? $autosave_autodraft_post->post_name : null,
 				'status' => $changeset_post ? $changeset_post->post_status : '',
 				'currentUserCanPublish' => current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts ),
-				'publishDate' => $changeset_post ? $changeset_post->post_date : '', // @todo Only if future status? Rename to just date?
+				'publishDate' => $initial_date,
+				'statusChoices' => $status_choices,
 			),
 			'initialServerDate' => current_time( 'mysql', false ),
+			'timeFormat' => get_option( 'time_format' ),
 			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
 			'initialClientTimestamp' => -1, // To be set with JS below.
 			'timeouts' => array(
@@ -4213,6 +4231,7 @@ final class WP_Customize_Manager {
 			'active_callback' => array( $this, 'is_theme_active' ),
 		) );
 
+
 		/* Publish Settings Controls */
 		$status_choices = array(
 			'publish' => __( 'Publish' ),
@@ -4234,25 +4253,17 @@ final class WP_Customize_Manager {
 			'capability' => 'customize',
 		) );
 
-		if ( $this->changeset_post_id() && 'future' === get_post_status( $this->changeset_post_id() ) ) {
-			$initial_date = get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() );
-		} else {
-			$initial_date = current_time( 'mysql', false );
-		}
-
-		$this->add_control( new WP_Customize_Date_Time_Control( $this, 'changeset_scheduled_date', array(
-			'section' => 'publish_settings',
-			'priority' => 20,
-			'settings' => array(),
-			'type' => 'date_time',
-			'min_year' => date( 'Y' ),
-			'allow_past_date' => false,
-			'include_time' => true,
-			'twelve_hour_format' => false !== stripos( get_option( 'time_format' ), 'a' ),
-			'description' => __( 'Schedule your customization changes to publish ("go live") at a future date.' ),
-			'capability' => 'customize',
-			'default_value' => $initial_date,
-		) ) );
+//		$this->add_control( new WP_Customize_Date_Time_Control( $this, 'changeset_scheduled_date', array(
+//			'priority' => 20,
+//			'settings' => array(),
+//			'type' => 'date_time',
+//			'min_year' => date( 'Y' ),
+//			'allow_past_date' => false,
+//			'include_time' => true,
+//			'twelve_hour_format' => false !== stripos( get_option( 'time_format' ), 'a' ),
+//			'description' => __( 'Schedule your customization changes to publish ("go live") at a future date.' ),
+//			'capability' => 'customize',
+//		) ) );
 
 		/* Themes (controls are loaded via ajax) */
 
