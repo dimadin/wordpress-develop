@@ -2718,6 +2718,7 @@ final class WP_Customize_Manager {
 					array(
 						'type' => $setting->type,
 						'user_id' => $args['user_id'],
+						'date_modified_gmt' => current_time( 'mysql', true ),
 					)
 				);
 
