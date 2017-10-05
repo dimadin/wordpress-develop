@@ -281,8 +281,8 @@ if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 <br class="clear" />
 </div>
 <?php
-$hide_notice = get_user_meta( get_current_user_id(), 'hide_plugin_editor_notice', true );
-if ( empty( $hide_notice ) ) :
+$dismissed_pointers = explode( ',', (string) get_user_meta( get_current_user_id(), 'dismissed_wp_pointers', true ) );
+if ( ! in_array( 'plugin_editor_notice', $dismissed_pointers, true ) ) :
 ?>
 <div id="file-editor-warning" class="notification-dialog-wrap file-editor-warning hide-if-no-js">
 	<div class="notification-dialog-background"></div>

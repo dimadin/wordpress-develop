@@ -65,7 +65,6 @@ $core_actions_post = array(
 	'generate-password', 'save-wporg-username', 'delete-plugin', 'search-plugins',
 	'search-install-plugins', 'activate-plugin', 'update-theme', 'delete-theme', 'install-theme',
 	'get-post-thumbnail-html', 'get-community-events', 'edit-theme-plugin-file',
-	'edit-theme-plugin-warning-dismissed',
 );
 
 // Deprecated

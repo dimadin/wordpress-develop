@@ -76,14 +76,15 @@ wp.themePluginEditor = (function( $ ) {
 
 	/**
 	 * Dismiss the warning modal.
+	 *
+	 * @since 4.9.0
+	 * @returns {void}
 	 */
 	component.dismissWarning = function() {
 
-		// update user meta
-		var request = wp.ajax.post( 'edit-theme-plugin-warning-dismissed', {
-			_ajax_nonce: wp.themePluginEditor.nonce,
-			dismissed:   wp.themePluginEditor.themeOrPlugin
-		} );
+		wp.ajax.post( 'dismiss-wp-pointer', {
+			pointer: component.themeOrPlugin + '_editor_notice'
+		});
 
 		// hide modal
 		component.warning.remove();
@@ -91,7 +92,7 @@ wp.themePluginEditor = (function( $ ) {
 
 		// return focus - is this a trap?
 		component.instance.codemirror.focus();
-	}
+	};
 
 	/**
 	 * Callback for when a change happens.
