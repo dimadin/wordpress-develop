@@ -85,8 +85,6 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'wp-a11y', "/wp-includes/js/wp-a11y$suffix.js", array( 'jquery' ), false, 1 );
 
-	$scripts->add( 'wp-hooks', "/wp-includes/js/wp-hooks$suffix.js", array(), false, 1 );
-
 	$scripts->add( 'sack', "/wp-includes/js/tw-sack$suffix.js", array(), '1.6.1', 1 );
 
 	$scripts->add( 'quicktags', "/wp-includes/js/quicktags$suffix.js", array(), false, 1 );
@@ -471,11 +469,14 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'htmlhint', '/wp-includes/js/codemirror/htmlhint.js', array(), '0.9.14-xwp' );
 	$scripts->add( 'htmlhint-kses', '/wp-includes/js/codemirror/htmlhint-kses.js', array( 'htmlhint' ) );
 	$scripts->add( 'code-editor', "/wp-admin/js/code-editor$suffix.js", array( 'jquery', 'wp-codemirror' ) );
-	$scripts->add( 'wp-theme-plugin-editor', "/wp-admin/js/theme-plugin-editor$suffix.js", array( 'code-editor', 'jquery', 'jquery-ui-core', 'wp-a11y', 'underscore' ) );
-	did_action( 'init' ) && $scripts->add_inline_script( 'wp-theme-plugin-editor', sprintf( 'wp.themePluginEditor.l10n = %s;', wp_json_encode( wp_array_slice_assoc(
-		/* translators: %d: error count */
-		_n_noop( 'There is %d error which must be fixed before you can save.', 'There are %d errors which must be fixed before you can save.' ),
-		array( 'singular', 'plural' )
+	$scripts->add( 'wp-theme-plugin-editor', "/wp-admin/js/theme-plugin-editor$suffix.js", array( 'wp-util', 'jquery', 'jquery-ui-core', 'wp-a11y', 'underscore' ) );
+	did_action( 'init' ) && $scripts->add_inline_script( 'wp-theme-plugin-editor', sprintf( 'wp.themePluginEditor.l10n = %s;', wp_json_encode( array(
+		'saveAlert' => __( 'The changes you made will be lost if you navigate away from this page.' ),
+		'lintError' => wp_array_slice_assoc(
+			/* translators: %d: error count */
+			_n_noop( 'There is %d error which must be fixed before you can update this file.', 'There are %d errors which must be fixed before you can update this file.' ),
+			array( 'singular', 'plural' )
+		),
 	) ) ) );
 
 	$scripts->add( 'wp-playlist', "/wp-includes/js/mediaelement/wp-playlist$suffix.js", array( 'wp-util', 'backbone', 'mediaelement' ), false, 1 );
@@ -564,6 +565,8 @@ function wp_default_scripts( &$scripts ) {
 		'cancel'             => __( 'Cancel' ),
 		'close'              => __( 'Close' ),
 		'takenOverMessage'   => __( 'has taken over and is currently editing.' ),
+		'action'             => __( 'Action' ),
+		'discardChanges'     => __( 'Discard changes' ),
 		'cheatin'            => __( 'Cheatin&#8217; uh?' ),
 		'notAllowed'         => __( 'Sorry, you are not allowed to customize this site.' ),
 		'previewIframeTitle' => __( 'Site Preview' ),
@@ -592,6 +595,7 @@ function wp_default_scripts( &$scripts ) {
 			_n_noop( 'Unable to save due to %s invalid setting.', 'Unable to save due to %s invalid settings.' ),
 			array( 'singular', 'plural' )
 		),
+		'scheduleDescription' => __( 'Schedule your customization changes to publish ("go live") at a future date.' ),
 	) );
 	$scripts->add( 'customize-selective-refresh', "/wp-includes/js/customize-selective-refresh$suffix.js", array( 'jquery', 'wp-util', 'customize-preview' ), false, 1 );
 

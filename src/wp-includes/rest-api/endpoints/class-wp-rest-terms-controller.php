@@ -188,6 +188,16 @@ class WP_REST_Terms_Controller extends WP_REST_Controller {
 			}
 		}
 
+		if ( isset( $prepared_args['orderby'] ) && isset( $request['orderby'] ) ) {
+			$orderby_mappings = array(
+				'include_slugs' => 'slug__in',
+			);
+
+			if ( isset( $orderby_mappings[ $request['orderby'] ] ) ) {
+				$prepared_args['orderby'] = $orderby_mappings[ $request['orderby'] ];
+			}
+		}
+
 		if ( isset( $registered['offset'] ) && ! empty( $request['offset'] ) ) {
 			$prepared_args['offset'] = $request['offset'];
 		} else {
@@ -405,6 +415,7 @@ class WP_REST_Terms_Controller extends WP_REST_Controller {
 			if ( $term_id = $term->get_error_data( 'term_exists' ) ) {
 				$existing_term = get_term( $term_id, $this->taxonomy );
 				$term->add_data( $existing_term->term_id, 'term_exists' );
+				$term->add_data( array( 'status' => 409 ) );
 			}
 
 			return $term;
@@ -804,7 +815,7 @@ class WP_REST_Terms_Controller extends WP_REST_Controller {
 	 */
 	public function get_item_schema() {
 		$schema = array(
-			'$schema'    => 'http://json-schema.org/schema#',
+			'$schema'    => 'http://json-schema.org/draft-04/schema#',
 			'title'      => 'post_tag' === $this->taxonomy ? 'tag' : $this->taxonomy,
 			'type'       => 'object',
 			'properties' => array(
@@ -931,6 +942,7 @@ class WP_REST_Terms_Controller extends WP_REST_Controller {
 				'include',
 				'name',
 				'slug',
+				'include_slugs',
 				'term_group',
 				'description',
 				'count',

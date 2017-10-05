@@ -156,7 +156,7 @@ body.trashing #publish-settings {
 	margin-bottom: 15px;
 }
 
-#customize-control-changeset_status label,
+#customize-control-changeset_status .customize-inside-control-row,
 #customize-control-changeset_preview_link input {
 	background-color: #ffffff;
 	border-bottom: 1px solid #ddd;
@@ -170,12 +170,12 @@ body.trashing #publish-settings {
 #customize-control-trash_changeset {
 	margin-top: 20px;
 }
-#customize-control-trash_changeset button {
+#customize-control-trash_changeset .button-link {
 	position: relative;
 	padding-left: 24px;
 	display: inline-block;
 }
-#customize-control-trash_changeset button:before {
+#customize-control-trash_changeset .button-link:before {
 	content: "\f182";
 	font: normal 22px dashicons;
 	text-decoration: none;
@@ -188,13 +188,13 @@ body.trashing #publish-settings {
 	border-color: #dc3232;
 }
 
-#customize-control-changeset_status label {
+#customize-control-changeset_status .customize-inside-control-row {
 	padding-top: 10px;
 	padding-bottom: 10px;
 	font-weight: 500;
 }
 
-#customize-control-changeset_status label:first-of-type {
+#customize-control-changeset_status .customize-inside-control-row:first-of-type {
 	border-top: 1px solid #ddd;
 }
 
@@ -575,9 +575,14 @@ body.trashing #publish-settings {
 	border-bottom-color: #ddd;
 }
 
-#customize-theme-controls .control-panel-content .control-section:nth-child(2),
-#customize-theme-controls .control-panel-nav_menus .control-section:nth-child(3) {
+#customize-theme-controls .control-panel-content:not(.control-panel-nav_menus) .control-section:nth-child(2),
+#customize-theme-controls .control-panel-nav_menus .control-section-nav_menu,
+#customize-theme-controls .control-section-nav_menu_locations .accordion-section-title {
 	border-top: 1px solid #ddd;
+}
+
+#customize-theme-controls .control-panel-nav_menus .control-section-nav_menu + .control-section-nav_menu {
+	border-top: none;
 }
 
 #customize-theme-controls > ul {
@@ -679,7 +684,8 @@ body.trashing #publish-settings {
 	position: static;
 }
 
-.customize-section-description-container {
+.customize-section-description-container,
+.control-section-nav_menu .customize-section-description-container {
 	margin-bottom: 15px;
 }
 
@@ -947,9 +953,7 @@ p.customize-section-description {
 	line-height: 28px;
 }
 
-.customize-control-radio label,
-.customize-control-checkbox label,
-.customize-control-nav_menu_auto_add label {
+.customize-control .customize-inside-control-row {
 	line-height: 20px;
 	display: block;
 	margin-left: 24px;
@@ -2688,9 +2692,9 @@ body.adding-widget .add-new-widget:before,
 		display: inline;
 	}
 
-	.customize-control-radio label,
-	.customize-control-checkbox label,
-	.customize-control-nav_menu_auto_add label {
+	.customize-control-radio .customize-inside-control-row,
+	.customize-control-checkbox .customize-inside-control-row,
+	.customize-control-nav_menu_auto_add .customize-inside-control-row {
 		margin-left: 32px;
 	}
 
@@ -2829,7 +2833,7 @@ body.adding-widget .add-new-widget:before,
 		height: 31px;
 	}
 
-	#customize-control-changeset_status label {
+	#customize-control-changeset_status .customize-inside-control-row {
 		padding-top: 15px;
 	}
 

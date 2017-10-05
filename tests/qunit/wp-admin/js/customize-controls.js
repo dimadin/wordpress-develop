@@ -306,13 +306,13 @@ jQuery( window ).load( function (){
 			type: 'default',
 			content: null,
 			active: true,
-			instanceNumber: null,
 			customizeAction: ''
 		};
 		jQuery.each( defaultParams, function ( key, value ) {
 			ok( 'undefined' !== typeof section.params[ key ] );
 			equal( value, section.params[ key ] );
 		} );
+		ok( _.isNumber( section.params.instanceNumber ) );
 	} );
 
 
@@ -417,13 +417,13 @@ jQuery( window ).load( function (){
 			priority: 100,
 			type: 'default',
 			content: null,
-			active: true,
-			instanceNumber: null
+			active: true
 		};
 		jQuery.each( defaultParams, function ( key, value ) {
 			ok( 'undefined' !== typeof panel.params[ key ] );
 			equal( value, panel.params[ key ] );
 		} );
+		ok( _.isNumber( panel.params.instanceNumber ) );
 	} );
 
 	module( 'Dynamically-created Customizer Setting Model' );
@@ -710,9 +710,9 @@ jQuery( window ).load( function (){
 			params: {
 				section: section.id,
 				type: 'date_time',
+				setting: new wp.customize.Value( datetime ),
 				includeTime: true,
-				content: '<li id="customize-control-' + controlId + '" class="customize-control"></li>',
-				defaultValue: datetime
+				content: '<li id="customize-control-' + controlId + '" class="customize-control"></li>'
 			}
 		} );
 

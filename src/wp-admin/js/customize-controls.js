@@ -30,9 +30,9 @@
 		initialize: function( code, params ) {
 			var notification = this;
 			api.Notification.prototype.initialize.call( notification, code, params );
-			notification.classes += ' notification-overlay';
+			notification.containerClasses += ' notification-overlay';
 			if ( notification.loading ) {
-				notification.classes += ' notification-loading';
+				notification.containerClasses += ' notification-loading';
 			}
 		}
 	});
@@ -105,17 +105,25 @@
 		 * Add notification to the collection.
 		 *
 		 * @since 4.9.0
-		 * @param {string} code - Notification code.
-		 * @param {object} params - Notification params.
-		 * @return {api.Notification} Added instance (or existing instance if it was already added).
+		 *
+		 * @param {string|wp.customize.Notification} - Notification object to add. Alternatively code may be supplied, and in that case the second notificationObject argument must be supplied.
+		 * @param {wp.customize.Notification} [notificationObject] - Notification to add when first argument is the code string.
+		 * @returns {wp.customize.Notification} Added notification (or existing instance if it was already added).
 		 */
-		add: function( code, params ) {
-			var collection = this;
+		add: function( notification, notificationObject ) {
+			var collection = this, code, instance;
+			if ( 'string' === typeof notification ) {
+				code = notification;
+				instance = notificationObject;
+			} else {
+				code = notification.code;
+				instance = notification;
+			}
 			if ( ! collection.has( code ) ) {
 				collection._addedIncrement += 1;
 				collection._addedOrder[ code ] = collection._addedIncrement;
 			}
-			return api.Values.prototype.add.call( this, code, params );
+			return api.Values.prototype.add.call( collection, code, instance );
 		},
 
 		/**
@@ -269,7 +277,7 @@
 			setting.id = id;
 			setting.transport = setting.transport || 'refresh';
 			setting._dirty = options.dirty || false;
-			setting.notifications = new api.Values({ defaultConstructor: api.Notification });
+			setting.notifications = new api.Notifications();
 
 			// Whenever the setting's value changes, refresh the preview.
 			setting.bind( setting.preview );
@@ -745,27 +753,35 @@
 		 *
 		 * @param {string}         id - The ID for the container.
 		 * @param {object}         options - Object containing one property: params.
-		 * @param {object}         options.params - Object containing the following properties.
-		 * @param {string}         options.params.title - Title shown when panel is collapsed and expanded.
-		 * @param {string=}        [options.params.description] - Description shown at the top of the panel.
-		 * @param {number=100}     [options.params.priority] - The sort priority for the panel.
-		 * @param {string=default} [options.params.type] - The type of the panel. See wp.customize.panelConstructor.
-		 * @param {string=}        [options.params.content] - The markup to be used for the panel container. If empty, a JS template is used.
-		 * @param {boolean=true}   [options.params.active] - Whether the panel is active or not.
+		 * @param {string}         options.title - Title shown when panel is collapsed and expanded.
+		 * @param {string=}        [options.description] - Description shown at the top of the panel.
+		 * @param {number=100}     [options.priority] - The sort priority for the panel.
+		 * @param {string}         [options.templateId] - Template selector for container.
+		 * @param {string=default} [options.type] - The type of the panel. See wp.customize.panelConstructor.
+		 * @param {string=}        [options.content] - The markup to be used for the panel container. If empty, a JS template is used.
+		 * @param {boolean=true}   [options.active] - Whether the panel is active or not.
+		 * @param {object}         [options.params] - Deprecated wrapper for the above properties.
 		 */
 		initialize: function ( id, options ) {
 			var container = this;
 			container.id = id;
-			options = options || {};
 
-			options.params = _.defaults(
-				options.params || {},
-				container.defaults
-			);
+			if ( ! Container.instanceCounter ) {
+				Container.instanceCounter = 0;
+			}
+			Container.instanceCounter++;
 
-			$.extend( container, options );
+			$.extend( container, {
+				params: _.defaults(
+					options.params || options, // Passing the params is deprecated.
+					container.defaults
+				)
+			} );
+			if ( ! container.params.instanceNumber ) {
+				container.params.instanceNumber = Container.instanceCounter;
+			}
 			container.notifications = new api.Notifications();
-			container.templateSelector = 'customize-' + container.containerType + '-' + container.params.type;
+			container.templateSelector = container.params.templateId || 'customize-' + container.containerType + '-' + container.params.type;
 			container.container = $( container.params.content );
 			if ( 0 === container.container.length ) {
 				container.container = $( container.getContainer() );
@@ -1206,20 +1222,33 @@
 		 * @since 4.1.0
 		 *
 		 * @param {string}         id - The ID for the section.
-		 * @param {object}         options - Object containing one property: params.
-		 * @param {object}         options.params - Object containing the following properties.
-		 * @param {string}         options.params.title - Title shown when section is collapsed and expanded.
-		 * @param {string=}        [options.params.description] - Description shown at the top of the section.
-		 * @param {number=100}     [options.params.priority] - The sort priority for the section.
-		 * @param {string=default} [options.params.type] - The type of the section. See wp.customize.sectionConstructor.
-		 * @param {string=}        [options.params.content] - The markup to be used for the section container. If empty, a JS template is used.
-		 * @param {boolean=true}   [options.params.active] - Whether the section is active or not.
-		 * @param {string}         options.params.panel - The ID for the panel this section is associated with.
-		 * @param {string=}        [options.params.customizeAction] - Additional context information shown before the section title when expanded.
+		 * @param {object}         options - Options.
+		 * @param {string}         options.title - Title shown when section is collapsed and expanded.
+		 * @param {string=}        [options.description] - Description shown at the top of the section.
+		 * @param {number=100}     [options.priority] - The sort priority for the section.
+		 * @param {string=default} [options.type] - The type of the section. See wp.customize.sectionConstructor.
+		 * @param {string=}        [options.content] - The markup to be used for the section container. If empty, a JS template is used.
+		 * @param {boolean=true}   [options.active] - Whether the section is active or not.
+		 * @param {string}         options.panel - The ID for the panel this section is associated with.
+		 * @param {string=}        [options.customizeAction] - Additional context information shown before the section title when expanded.
+		 * @param {object}         [options.params] - Deprecated wrapper for the above properties.
 		 */
 		initialize: function ( id, options ) {
-			var section = this;
-			Container.prototype.initialize.call( section, id, options );
+			var section = this, params;
+			params = options.params || options;
+
+			// Look up the type if one was not supplied.
+			if ( ! params.type ) {
+				_.find( api.sectionConstructor, function( Constructor, type ) {
+					if ( Constructor === section.constructor ) {
+						params.type = type;
+						return true;
+					}
+					return false;
+				} );
+			}
+
+			Container.prototype.initialize.call( section, id, params );
 
 			section.id = id;
 			section.panel = new api.Value();
@@ -1838,7 +1867,7 @@
 			section.container.find( '.no-themes' ).hide();
 			request = wp.ajax.post( 'customize_load_themes', params );
 			request.done(function( data ) {
-				var themes = data.themes, themeControl, newThemeControls;
+				var themes = data.themes, newThemeControls;
 
 				// Stop and try again if the term changed while loading.
 				if ( '' !== section.nextTerm || '' !== section.nextTags ) {
@@ -1860,20 +1889,14 @@
 
 					// Add controls for each theme.
 					_.each( themes, function( theme ) {
-						var customizeId = section.params.action + '_theme_' + theme.id;
-						themeControl = new api.controlConstructor.theme( customizeId, {
-							params: {
-								type: 'theme',
-								content: '<li id="customize-control-theme-' + section.params.action + '_' + theme.id + '" class="customize-control customize-control-theme"></li>',
-								section: section.params.id,
-								active: true,
-								theme: theme,
-								priority: section.loaded + 1
-							},
-							previewer: api.previewer
+						var themeControl = new api.controlConstructor.theme( section.params.action + '_theme_' + theme.id, {
+							type: 'theme',
+							section: section.params.id,
+							theme: theme,
+							priority: section.loaded + 1
 						} );
 
-						api.control.add( customizeId, themeControl );
+						api.control.add( themeControl );
 						newThemeControls.push( themeControl );
 						section.loaded = section.loaded + 1;
 					});
@@ -2198,19 +2221,22 @@
 		 *
 		 * @since 4.2.0
 		 *
-		 * @returns {object|boolean} Next theme.
+		 * @returns {wp.customize.ThemeControl|boolean} Next theme.
 		 */
 		getNextTheme: function () {
-			var section = this, control, next;
-			control = api.control( section.params.action + '_theme_' + this.currentTheme );
-			next = control.container.next( 'li.customize-control-theme' );
-			if ( ! next.length ) {
+			var section = this, control, nextControl, sectionControls, i;
+			control = api.control( section.params.action + '_theme_' + section.currentTheme );
+			sectionControls = section.controls();
+			i = _.indexOf( sectionControls, control );
+			if ( -1 === i ) {
 				return false;
 			}
-			next = next[0].id.replace( 'customize-control-theme-' + section.params.action, section.params.action + '_theme' );
-			control = api.control( next );
 
-			return control.params.theme;
+			nextControl = sectionControls[ i + 1 ];
+			if ( ! nextControl ) {
+				return false;
+			}
+			return nextControl.params.theme;
 		},
 
 		/**
@@ -2232,19 +2258,22 @@
 		 * Get the previous theme model.
 		 *
 		 * @since 4.2.0
-		 * @returns {object|boolean} Previous theme.
+		 * @returns {wp.customize.ThemeControl|boolean} Previous theme.
 		 */
 		getPreviousTheme: function () {
-			var section = this, control, previous;
-			control = api.control( section.params.action + '_theme_' + this.currentTheme );
-			previous = control.container.prev( 'li.customize-control-theme' );
-			if ( ! previous.length ) {
+			var section = this, control, nextControl, sectionControls, i;
+			control = api.control( section.params.action + '_theme_' + section.currentTheme );
+			sectionControls = section.controls();
+			i = _.indexOf( sectionControls, control );
+			if ( -1 === i ) {
 				return false;
 			}
-			previous = previous[0].id.replace( 'customize-control-theme-' + section.params.action, section.params.action + '_theme' );
-			control = api.control( previous );
 
-			return control.params.theme;
+			nextControl = sectionControls[ i - 1 ];
+			if ( ! nextControl ) {
+				return false;
+			}
+			return nextControl.params.theme;
 		},
 
 		/**
@@ -2482,17 +2511,31 @@
 		 *
 		 * @param {string}         id - The ID for the panel.
 		 * @param {object}         options - Object containing one property: params.
-		 * @param {object}         options.params - Object containing the following properties.
-		 * @param {string}         options.params.title - Title shown when panel is collapsed and expanded.
-		 * @param {string=}        [options.params.description] - Description shown at the top of the panel.
-		 * @param {number=100}     [options.params.priority] - The sort priority for the panel.
-		 * @param {string=default} [options.params.type] - The type of the panel. See wp.customize.panelConstructor.
-		 * @param {string=}        [options.params.content] - The markup to be used for the panel container. If empty, a JS template is used.
-		 * @param {boolean=true}   [options.params.active] - Whether the panel is active or not.
+		 * @param {string}         options.title - Title shown when panel is collapsed and expanded.
+		 * @param {string=}        [options.description] - Description shown at the top of the panel.
+		 * @param {number=100}     [options.priority] - The sort priority for the panel.
+		 * @param {string=default} [options.type] - The type of the panel. See wp.customize.panelConstructor.
+		 * @param {string=}        [options.content] - The markup to be used for the panel container. If empty, a JS template is used.
+		 * @param {boolean=true}   [options.active] - Whether the panel is active or not.
+		 * @param {object}         [options.params] - Deprecated wrapper for the above properties.
 		 */
 		initialize: function ( id, options ) {
-			var panel = this;
-			Container.prototype.initialize.call( panel, id, options );
+			var panel = this, params;
+			params = options.params || options;
+
+			// Look up the type if one was not supplied.
+			if ( ! params.type ) {
+				_.find( api.panelConstructor, function( Constructor, type ) {
+					if ( Constructor === panel.constructor ) {
+						params.type = type;
+						return true;
+					}
+					return false;
+				} );
+			}
+
+			Container.prototype.initialize.call( panel, id, params );
+
 			panel.embed();
 			panel.deferred.embedded.done( function () {
 				panel.ready();
@@ -2856,7 +2899,7 @@
 			wp.updates.maybeRequestFilesystemCredentials( event );
 
 			$( document ).one( 'wp-theme-install-success', function( event, response ) {
-				var theme = false, customizeId, themeControl;
+				var theme = false, themeControl;
 				if ( preview ) {
 					api.notifications.remove( 'theme_installing' );
 
@@ -2877,21 +2920,15 @@
 
 					// Add theme control to installed section.
 					theme.type = 'installed';
-					customizeId = 'installed_theme_' + theme.id;
-					themeControl = new api.controlConstructor.theme( customizeId, {
-						params: {
-							type: 'theme',
-							content: $( '<li class="customize-control customize-control-theme"></li>' ).attr( 'id', 'customize-control-theme-installed_' + theme.id ).prop( 'outerHTML' ),
-							section: 'installed_themes',
-							active: true,
-							theme: theme,
-							priority: 0 // Add all newly-installed themes to the top.
-						},
-						previewer: api.previewer
+					themeControl = new api.controlConstructor.theme( 'installed_theme_' + theme.id, {
+						type: 'theme',
+						section: 'installed_themes',
+						theme: theme,
+						priority: 0 // Add all newly-installed themes to the top.
 					} );
 
-					api.control.add( customizeId, themeControl );
-					api.control( customizeId ).container.trigger( 'render-screenshot' );
+					api.control.add( themeControl );
+					api.control( themeControl.id ).container.trigger( 'render-screenshot' );
 
 					// Close the details modal if it's open to the installed theme.
 					api.section.each( function( section ) {
@@ -2913,7 +2950,7 @@
 			if ( $( event.target ).hasClass( 'preview' ) ) {
 				preview = true;
 
-				api.notifications.add( 'theme_installing', new api.OverlayNotification( 'theme_installing', {
+				api.notifications.add( new api.OverlayNotification( 'theme_installing', {
 					message: api.l10n.themeDownloading,
 					type: 'info',
 					loading: true
@@ -2950,7 +2987,7 @@
 			urlParser.search = $.param( queryParams );
 
 			// Update loading message. Everything else is handled by reloading the page.
-			api.notifications.add( 'theme_previewing', new api.OverlayNotification( 'theme_previewing', {
+			api.notifications.add( new api.OverlayNotification( 'theme_previewing', {
 				message: api.l10n.themePreviewWait,
 				type: 'info',
 				loading: true
@@ -3076,33 +3113,101 @@
 	 * @class
 	 * @augments wp.customize.Class
 	 *
-	 * @param {string} id                              Unique identifier for the control instance.
-	 * @param {object} options                         Options hash for the control instance.
-	 * @param {object} options.params
-	 * @param {object} options.params.type             Type of control (e.g. text, radio, dropdown-pages, etc.)
-	 * @param {string} options.params.content          The HTML content for the control.
-	 * @param {string} options.params.priority         Order of priority to show the control within the section.
-	 * @param {string} options.params.active
-	 * @param {string} options.params.section          The ID of the section the control belongs to.
-	 * @param {string} options.params.settings.default The ID of the setting the control relates to.
-	 * @param {string} options.params.settings.data
-	 * @param {string} options.params.label
-	 * @param {string} options.params.description
-	 * @param {string} options.params.instanceNumber Order in which this instance was created in relation to other instances.
+	 * @param {string} id                       - Unique identifier for the control instance.
+	 * @param {object} options                  - Options hash for the control instance.
+	 * @param {object} options.type             - Type of control (e.g. text, radio, dropdown-pages, etc.)
+	 * @param {string} [options.content]        - The HTML content for the control or at least its container. This should normally be left blank and instead supplying a templateId.
+	 * @param {string} [options.templateId]     - Template ID for control's content.
+	 * @param {string} [options.priority=10]    - Order of priority to show the control within the section.
+	 * @param {string} [options.active=true]    - Whether the control is active.
+	 * @param {string} options.section          - The ID of the section the control belongs to.
+	 * @param {mixed}  [options.setting]        - The ID of the main setting or an instance of this setting.
+	 * @param {mixed}  options.settings         - An object with keys (e.g. default) that maps to setting IDs or Setting/Value objects, or an array of setting IDs or Setting/Value objects.
+	 * @param {mixed}  options.settings.default - The ID of the setting the control relates to.
+	 * @param {string} options.settings.data    - @todo Is this used?
+	 * @param {string} options.label            - Label.
+	 * @param {string} options.description      - Description.
+	 * @param {number} [options.instanceNumber] - Order in which this instance was created in relation to other instances.
+	 * @param {object} [options.params]         - Deprecated wrapper for the above properties.
 	 */
 	api.Control = api.Class.extend({
 		defaultActiveArguments: { duration: 'fast', completeCallback: $.noop },
 
-		initialize: function( id, options ) {
-			var control = this,
-				nodes, radios, settings;
+		defaults: {
+			label: '',
+			description: '',
+			active: true,
+			priority: 10
+		},
 
-			control.params = {};
-			$.extend( control, options || {} );
+		initialize: function( id, options ) {
+			var control = this, deferredSettingIds = [], settings, gatherSettings, standardTypes;
+
+			control.params = _.extend( {}, control.defaults );
+
+			if ( ! api.Control.instanceCounter ) {
+				api.Control.instanceCounter = 0;
+			}
+			api.Control.instanceCounter++;
+			if ( ! control.params.instanceNumber ) {
+				control.params.instanceNumber = api.Control.instanceCounter;
+			}
+
+			// Look up the type if one was not supplied.
+			if ( ! control.params.type ) {
+				_.find( api.controlConstructor, function( Constructor, type ) {
+					if ( Constructor === control.constructor ) {
+						control.params.type = type;
+						return true;
+					}
+					return false;
+				} );
+			}
+
+			_.extend( control.params, options.params || options );
+			if ( ! control.params.content ) {
+				control.params.content = $( '<li></li>', {
+					id: 'customize-control-' + id.replace( /]/g, '' ).replace( /\[/g, '-' ),
+					'class': 'customize-control customize-control-' + control.params.type
+				} );
+			}
+
 			control.id = id;
-			control.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' );
-			control.templateSelector = 'customize-control-' + control.params.type + '-content';
-			control.container = control.params.content ? $( control.params.content ) : $( control.selector );
+			control.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' ); // Deprecated, likely dead code from time before #28709.
+			if ( control.params.content ) {
+				control.container = $( control.params.content );
+			} else {
+				control.container = $( control.selector ); // Likely dead, per above. See #28709.
+			}
+
+			standardTypes = [
+				'button',
+				'checkbox',
+				'color',
+				'date',
+				'datetime-local',
+				'email',
+				'month',
+				'number',
+				'password',
+				'radio',
+				'range',
+				'search',
+				'select',
+				'tel',
+				'time',
+				'text',
+				'textarea',
+				'week',
+				'url'
+			];
+			if ( control.params.templateId ) {
+				control.templateSelector = control.params.templateId;
+			} else if ( _.contains( standardTypes, control.params.type ) && control.container.is( ':empty' ) ) {
+				control.templateSelector = 'customize-control-default-content';
+			} else {
+				control.templateSelector = 'customize-control-' + control.params.type + '-content';
+			}
 
 			control.deferred = {
 				embedded: new $.Deferred()
@@ -3117,31 +3222,6 @@
 
 			control.elements = [];
 
-			nodes  = control.container.find('[data-customize-setting-link]');
-			radios = {};
-
-			nodes.each( function() {
-				var node = $( this ),
-					name;
-
-				if ( node.is( ':radio' ) ) {
-					name = node.prop( 'name' );
-					if ( radios[ name ] ) {
-						return;
-					}
-
-					radios[ name ] = true;
-					node = nodes.filter( '[name="' + name + '"]' );
-				}
-
-				api( node.data( 'customizeSettingLink' ), function( setting ) {
-					var element = new api.Element( node );
-					control.elements.push( element );
-					element.sync( setting );
-					element.set( setting() );
-				});
-			});
-
 			control.active.bind( function ( active ) {
 				var args = control.activeArgumentsQueue.shift();
 				args = $.extend( {}, control.defaultActiveArguments, args );
@@ -3154,58 +3234,103 @@
 
 			api.utils.bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
 
-			/*
-			 * After all settings related to the control are available,
-			 * make them available on the control and embed the control into the page.
-			 */
-			settings = $.map( control.params.settings, function( value ) {
-				return value;
-			});
+			control.settings = {};
 
-			if ( 0 === settings.length ) {
-				control.setting = null;
-				control.settings = {};
-				control.embed();
-			} else {
-				api.apply( api, settings.concat( function() {
-					var key;
+			settings = {};
+			if ( control.params.setting ) {
+				settings['default'] = control.params.setting;
+			}
+			_.extend( settings, control.params.settings );
 
-					control.settings = {};
-					for ( key in control.params.settings ) {
-						control.settings[ key ] = api( control.params.settings[ key ] );
+			// Note: Settings can be an array or an object.
+			_.each( settings, function( setting, key ) {
+				if ( _.isObject( setting ) ) { // @todo Or check if instance of api.Setting?
+					control.settings[ key ] = setting;
+				} else {
+					deferredSettingIds.push( setting );
+				}
+			} );
+
+			gatherSettings = function() {
+
+				// Fill-in all resolved settings.
+				_.each( settings, function ( settingId, key ) {
+					if ( ! control.settings[ key ] && _.isString( settingId ) ) {
+						control.settings[ key ] = api( settingId );
 					}
+				} );
 
-					control.setting = control.settings['default'] || null;
+				// Make sure settings passed as array gets associated with default.
+				if ( control.settings[0] && ! control.settings['default'] ) {
+					control.settings['default'] = control.settings[0];
+				}
 
-					// Add setting notifications to the control notification.
-					_.each( control.settings, function( setting ) {
-						setting.notifications.bind( 'add', function( settingNotification ) {
-							var controlNotification, code, params;
-							code = setting.id + ':' + settingNotification.code;
-							params = _.extend(
-								{},
-								settingNotification,
-								{
-									setting: setting.id
-								}
-							);
-							controlNotification = new api.Notification( code, params );
-							control.notifications.add( controlNotification.code, controlNotification );
-						} );
-						setting.notifications.bind( 'remove', function( settingNotification ) {
-							control.notifications.remove( setting.id + ':' + settingNotification.code );
-						} );
-					} );
+				// Identify the main setting.
+				control.setting = control.settings['default'] || null;
 
-					control.embed();
-				}) );
+				control.embed();
+			};
+
+			if ( 0 === deferredSettingIds.length ) {
+				gatherSettings();
+			} else {
+				api.apply( api, deferredSettingIds.concat( gatherSettings ) );
 			}
 
 			// After the control is embedded on the page, invoke the "ready" method.
 			control.deferred.embedded.done( function () {
+				control.linkElements();
 				control.setupNotifications();
 				control.ready();
 			});
+		},
+
+		/**
+		 * Link elements between settings and inputs.
+		 *
+		 * @since 4.7.0
+		 * @access public
+		 *
+		 * @returns {void}
+		 */
+		linkElements: function () {
+			var control = this, nodes, radios, element;
+
+			nodes = control.container.find( '[data-customize-setting-link], [data-customize-setting-key-link]' );
+			radios = {};
+
+			nodes.each( function () {
+				var node = $( this ), name, setting;
+
+				if ( node.data( 'customizeSettingLinked' ) ) {
+					return;
+				}
+				node.data( 'customizeSettingLinked', true ); // Prevent re-linking element.
+
+				if ( node.is( ':radio' ) ) {
+					name = node.prop( 'name' );
+					if ( radios[name] ) {
+						return;
+					}
+
+					radios[name] = true;
+					node = nodes.filter( '[name="' + name + '"]' );
+				}
+
+				// Let link by default refer to setting ID. If it doesn't exist, fallback to looking up by setting key.
+				if ( node.data( 'customizeSettingLink' ) ) {
+					setting = api( node.data( 'customizeSettingLink' ) );
+				} else if ( node.data( 'customizeSettingKeyLink' ) ) {
+					setting = control.settings[ node.data( 'customizeSettingKeyLink' ) ];
+				}
+
+				if ( setting ) {
+					element = new api.Element( node );
+					control.elements.push( element );
+					element.sync( setting );
+					element.set( setting() );
+				}
+			} );
 		},
 
 		/**
@@ -3308,6 +3433,26 @@
 		 */
 		setupNotifications: function() {
 			var control = this, renderNotificationsIfVisible, onSectionAssigned;
+
+			// Add setting notifications to the control notification.
+			_.each( control.settings, function( setting ) {
+				if ( ! setting.notifications ) {
+					return;
+				}
+				setting.notifications.bind( 'add', function( settingNotification ) {
+					var params = _.extend(
+						{},
+						settingNotification,
+						{
+							setting: setting.id
+						}
+					);
+					control.notifications.add( new api.Notification( setting.id + ':' + settingNotification.code, params ) );
+				} );
+				setting.notifications.bind( 'remove', function( settingNotification ) {
+					control.notifications.remove( setting.id + ':' + settingNotification.code );
+				} );
+			} );
 
 			control.notifications.container = control.getNotificationsContainerElement();
 
@@ -3472,16 +3617,18 @@
 		 */
 		_toggleActive: Container.prototype._toggleActive,
 
+		// @todo This function appears to be dead code and can be removed.
 		dropdownInit: function() {
 			var control      = this,
 				statuses     = this.container.find('.dropdown-status'),
 				params       = this.params,
 				toggleFreeze = false,
 				update       = function( to ) {
-					if ( typeof to === 'string' && params.statuses && params.statuses[ to ] )
+					if ( 'string' === typeof to && params.statuses && params.statuses[ to ] ) {
 						statuses.html( params.statuses[ to ] ).show();
-					else
+					} else {
 						statuses.hide();
+					}
 				};
 
 			// Support the .dropdown class to open/close complex elements
@@ -3492,11 +3639,13 @@
 
 				event.preventDefault();
 
-				if (!toggleFreeze)
-					control.container.toggleClass('open');
+				if ( ! toggleFreeze ) {
+					control.container.toggleClass( 'open' );
+				}
 
-				if ( control.container.hasClass('open') )
-					control.container.parent().parent().find('li.library-selected').focus();
+				if ( control.container.hasClass( 'open' ) ) {
+					control.container.parent().parent().find( 'li.library-selected' ).focus();
+				}
 
 				// Don't want to fire focus and click at same time
 				toggleFreeze = true;
@@ -4869,7 +5018,7 @@
 				} else {
 					message = api.l10n.customCssError.plural.replace( '%d', String( errorAnnotations.length ) );
 				}
-				control.setting.notifications.add( 'csslint_error', new api.Notification( 'csslint_error', {
+				control.setting.notifications.add( new api.Notification( 'csslint_error', {
 					message: message,
 					type: 'error'
 				} ) );
@@ -4949,14 +5098,8 @@
 
 			_.bindAll( control, 'populateSetting', 'updateDaysForMonth', 'updateMinutesForHour', 'populateDateInputs' );
 
-			// @todo This needs https://core.trac.wordpress.org/ticket/37964
 			if ( ! control.setting ) {
-				control.setting = new api.Value();
-			}
-
-			// @todo Should this be? Default should be on client. The default value should be in the setting itself.
-			if ( ! control.setting.get() && control.params.defaultValue ) {
-				control.setting.set( control.params.defaultValue );
+				throw new Error( 'Missing setting' );
 			}
 
 			control.container.find( '.date-input' ).each( function() {
@@ -5256,7 +5399,7 @@
 					type: 'error',
 					message: api.l10n.futureDateError
 				} );
-				control.notifications.add( notificationCode, notification );
+				control.notifications.add( notification );
 			} else {
 				control.notifications.remove( notificationCode );
 			}
@@ -5275,17 +5418,9 @@
 	 */
 	api.PreviewLinkControl = api.Control.extend({
 
-		/**
-		 * Override the templateSelector before embedding the control into the page.
-		 *
-		 * @since 4.9.0
-		 * @return {void}
-		 */
-		embed: function() {
-			var control = this;
-			control.templateSelector = 'customize-preview-link-control';
-			return api.Control.prototype.embed.apply( control, arguments );
-		},
+		defaults: _.extend( {}, api.Control.prototype.defaults, {
+			templateId: 'customize-preview-link-control'
+		} ),
 
 		/**
 		 * Initialize behaviors.
@@ -5386,7 +5521,7 @@
 					type: 'info',
 					message: api.l10n.saveBeforeShare
 				} );
-				control.notifications.add( notificationCode, notification );
+				control.notifications.add( notification );
 			} else {
 				control.notifications.remove( notificationCode );
 			}
@@ -6014,8 +6149,9 @@
 			var previewer = this,
 				deferred, messenger, iframe;
 
-			if ( this._login )
+			if ( this._login ) {
 				return this._login;
+			}
 
 			deferred = $.Deferred();
 			this._login = deferred.promise();
@@ -6141,7 +6277,7 @@
 						}
 
 						if ( ! setting.notifications.has( notification.code ) ) {
-							setting.notifications.add( code, notification );
+							setting.notifications.add( notification );
 						}
 						invalidSettings.push( setting.id );
 					} );
@@ -6330,47 +6466,32 @@
 			publishSettingsBtn = $( '#publish-settings' ),
 			footerActions = $( '#customize-footer-actions' );
 
+		// Set up publish settings section and its controls.
 		api.section( 'publish_settings', function( section ) {
-			var updateButtonsState, previewLinkControl, TrashControl, trashControlInstance, trashControlId = 'trash_changeset', previewLinkControlId = 'changeset_preview_link', updateSectionActive, isSectionActive;
+			var updateButtonsState, trashControl, updateSectionActive, isSectionActive, statusControl, dateControl, toggleDateControl, publishWhenTime, pollInterval, updateTimeArrivedPoller, timeArrivedPollingInterval = 1000;
 
-			TrashControl = api.Control.extend( {
-
-				// This is a temporary hack while waiting for richer JS templating and dynamic instantiation.
-				embed: function() {
-					var control = this;
-					control.templateSelector = 'customize-trash-changeset-control';
-					return api.Control.prototype.embed.apply( control, arguments );
+			trashControl = new api.Control( 'trash_changeset', {
+				type: 'button',
+				section: section.id,
+				priority: 30,
+				inputAttrs: {
+					'class': 'button-link button-link-delete',
+					value: api.l10n.discardChanges
 				}
 			} );
-
-			trashControlInstance = new TrashControl( trashControlId, {
-				params: {
-					type: 'button',
-					section: section.id,
-					active: true,
-					priority: 30,
-					content: '<li id="customize-control-' + trashControlId + '" class="customize-control"></li>'
-				}
-			} );
-			api.control.add( trashControlId, trashControlInstance );
-			trashControlInstance.deferred.embedded.done( function() {
-				trashControlInstance.container.find( 'button' ).on( 'click', function() {
+			api.control.add( trashControl );
+			trashControl.deferred.embedded.done( function() {
+				trashControl.container.find( '.button-link' ).on( 'click', function() {
 					if ( confirm( api.l10n.trashConfirm ) ) {
 						wp.customize.previewer.trash();
 					}
 				} );
 			} );
 
-			previewLinkControl = new api.PreviewLinkControl( previewLinkControlId, {
-				params: {
-					section: section.id,
-					active: true,
-					priority: 100,
-					content: '<li id="customize-control-' + previewLinkControlId + '" class="customize-control"></li>'
-				}
-			} );
-
-			api.control.add( previewLinkControlId, previewLinkControl );
+			api.control.add( new api.PreviewLinkControl( 'changeset_preview_link', {
+				section: section.id,
+				priority: 100
+			} ) );
 
 			/**
 			 * Return whether the pubish settings section should be active.
@@ -6421,6 +6542,84 @@
 			section.expanded.bind( function( isExpanded ) {
 				publishSettingsBtn.attr( 'aria-expanded', String( isExpanded ) );
 				publishSettingsBtn.toggleClass( 'active', isExpanded );
+			} );
+
+			statusControl = new api.Control( 'changeset_status', {
+				priority: 10,
+				type: 'radio',
+				section: 'publish_settings',
+				setting: api.state( 'selectedChangesetStatus' ),
+				templateId: 'customize-selected-changeset-status-control',
+				label: api.l10n.action,
+				choices: api.settings.changeset.statusChoices
+			} );
+			api.control.add( statusControl );
+
+			dateControl = new api.DateTimeControl( 'changeset_scheduled_date', {
+				priority: 20,
+				section: 'publish_settings',
+				setting: api.state( 'selectedChangesetDate' ),
+				minYear: ( new Date() ).getFullYear(),
+				allowPastDate: false,
+				includeTime: true,
+				twelveHourFormat: /a/i.test( api.settings.timeFormat ),
+				description: api.l10n.scheduleDescription
+			} );
+			dateControl.notifications.alt = true;
+			api.control.add( dateControl );
+
+			publishWhenTime = function() {
+				api.state( 'selectedChangesetStatus' ).set( 'publish' );
+				api.previewer.save();
+			};
+
+			// Start countdown for when the dateTime arrives, or clear interval when it is .
+			updateTimeArrivedPoller = function() {
+				var shouldPoll = (
+					'future' === api.state( 'changesetStatus' ).get() &&
+					'future' === api.state( 'selectedChangesetStatus' ).get() &&
+					api.state( 'changesetDate' ).get() &&
+					api.state( 'selectedChangesetDate' ).get() === api.state( 'changesetDate' ).get() &&
+					api.utils.getRemainingTime( api.state( 'changesetDate' ).get() ) >= 0
+				);
+
+				if ( shouldPoll && ! pollInterval ) {
+					pollInterval = setInterval( function() {
+						var remainingTime = api.utils.getRemainingTime( api.state( 'changesetDate' ).get() );
+						api.state( 'remainingTimeToPublish' ).set( remainingTime );
+						if ( remainingTime <= 0 ) {
+							clearInterval( pollInterval );
+							pollInterval = 0;
+							publishWhenTime();
+						}
+					}, timeArrivedPollingInterval );
+				} else if ( ! shouldPoll && pollInterval ) {
+					clearInterval( pollInterval );
+					pollInterval = 0;
+				}
+			};
+
+			api.state( 'changesetDate' ).bind( updateTimeArrivedPoller );
+			api.state( 'selectedChangesetDate' ).bind( updateTimeArrivedPoller );
+			api.state( 'changesetStatus' ).bind( updateTimeArrivedPoller );
+			api.state( 'selectedChangesetStatus' ).bind( updateTimeArrivedPoller );
+			updateTimeArrivedPoller();
+
+			// Ensure dateControl only appears when selected status is future.
+			dateControl.active.validate = function() {
+				return 'future' === api.state( 'selectedChangesetStatus' ).get();
+			};
+			toggleDateControl = function( value ) {
+				dateControl.active.set( 'future' === value );
+			};
+			toggleDateControl( api.state( 'selectedChangesetStatus' ).get() );
+			api.state( 'selectedChangesetStatus' ).bind( toggleDateControl );
+
+			// Show notification on date control when status is future but it isn't a future date.
+			api.state( 'saving' ).bind( function( isSaving ) {
+				if ( isSaving && 'future' === api.state( 'selectedChangesetStatus' ).get() ) {
+					dateControl.toggleFutureDateNotification( ! dateControl.isFutureDate() );
+				}
 			} );
 		} );
 
@@ -6588,7 +6787,7 @@
 						api.unbind( 'change', captureSettingModifiedDuringSave );
 
 						if ( invalidSettings.length ) {
-							api.notifications.add( errorCode, new api.Notification( errorCode, {
+							api.notifications.add( new api.Notification( errorCode, {
 								message: ( 1 === invalidSettings.length ? api.l10n.saveBlockedError.singular : api.l10n.saveBlockedError.plural ).replace( /%s/g, String( invalidSettings.length ) ),
 								type: 'error',
 								dismissible: true,
@@ -6690,7 +6889,7 @@
 						}
 
 						if ( notification ) {
-							api.notifications.add( notification.code, notification );
+							api.notifications.add( notification );
 						}
 
 						if ( response.setting_validities ) {
@@ -6801,7 +7000,7 @@
 					customize_changeset_uuid: api.settings.changeset.uuid,
 					nonce: api.settings.nonce.trash
 				} );
-				api.notifications.add( 'changeset_trashing', new api.OverlayNotification( 'changeset_trashing', {
+				api.notifications.add( new api.OverlayNotification( 'changeset_trashing', {
 					type: 'info',
 					message: api.l10n.revertingChanges,
 					loading: true
@@ -6829,7 +7028,7 @@
 					api.state( 'processing' ).set( api.state( 'processing' ).get() - 1 );
 					api.state( 'trashing' ).set( false );
 					api.notifications.remove( 'changeset_trashing' );
-					api.notifications.add( notificationCode, new api.Notification( notificationCode, {
+					api.notifications.add( new api.Notification( notificationCode, {
 						message: message || api.l10n.unknownError,
 						dismissible: true,
 						type: 'error'
@@ -6897,49 +7096,30 @@
 
 		// Create Settings
 		$.each( api.settings.settings, function( id, data ) {
-			var constructor = api.settingConstructor[ data.type ] || api.Setting,
-				setting;
-
-			setting = new constructor( id, data.value, {
+			var Constructor = api.settingConstructor[ data.type ] || api.Setting;
+			api.add( new Constructor( id, data.value, {
 				transport: data.transport,
 				previewer: api.previewer,
 				dirty: !! data.dirty
-			} );
-			api.add( id, setting );
+			} ) );
 		});
 
 		// Create Panels
 		$.each( api.settings.panels, function ( id, data ) {
-			var constructor = api.panelConstructor[ data.type ] || api.Panel,
-				panel;
-
-			panel = new constructor( id, {
-				params: data
-			} );
-			api.panel.add( id, panel );
+			var Constructor = api.panelConstructor[ data.type ] || api.Panel;
+			api.panel.add( new Constructor( id, data ) );
 		});
 
 		// Create Sections
 		$.each( api.settings.sections, function ( id, data ) {
-			var constructor = api.sectionConstructor[ data.type ] || api.Section,
-				section;
-
-			section = new constructor( id, {
-				params: data
-			} );
-			api.section.add( id, section );
+			var Constructor = api.sectionConstructor[ data.type ] || api.Section;
+			api.section.add( new Constructor( id, data ) );
 		});
 
 		// Create Controls
 		$.each( api.settings.controls, function( id, data ) {
-			var constructor = api.controlConstructor[ data.type ] || api.Control,
-				control;
-
-			control = new constructor( id, {
-				params: data,
-				previewer: api.previewer
-			} );
-			api.control.add( id, control );
+			var Constructor = api.controlConstructor[ data.type ] || api.Control;
+			api.control.add( new Constructor( id, data ) );
 		});
 
 		// Focus the autofocused element
@@ -7076,6 +7256,7 @@
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
 			changesetDate( api.settings.changeset.publishDate );
+			selectedChangesetDate( api.settings.changeset.publishDate );
 			selectedChangesetStatus( '' === api.settings.changeset.status || 'auto-draft' === api.settings.changeset.status ? 'publish' : api.settings.changeset.status );
 			selectedChangesetStatus.link( changesetStatus ); // Ensure that direct updates to status on server via wp.customizer.previewer.save() will update selection.
 			saved( true );
@@ -7272,7 +7453,7 @@
 				var code = 'autosave_available', onStateChange;
 
 				// Since there is an autosave revision and the user hasn't loaded with autosaved, add notification to prompt to load autosaved version.
-				api.notifications.add( code, new api.Notification( code, {
+				api.notifications.add( new api.Notification( code, {
 					message: api.l10n.autosaveNotice,
 					type: 'warning',
 					dismissible: true,
@@ -7925,8 +8106,9 @@
 			control.element.set( 'blank' !== control.setting() );
 
 			control.element.bind( function( to ) {
-				if ( ! to )
+				if ( ! to ) {
 					last = api( 'header_textcolor' ).get();
+				}
 
 				control.setting.set( to ? last : 'blank' );
 			});
@@ -7958,7 +8140,7 @@
 
 				// Toggle notification when the homepage and posts page are both set and the same.
 				if ( 'page' === showOnFront() && pageOnFrontId && pageForPostsId && pageOnFrontId === pageForPostsId ) {
-					showOnFront.notifications.add( errorCode, new api.Notification( errorCode, {
+					showOnFront.notifications.add( new api.Notification( errorCode, {
 						type: 'error',
 						message: api.l10n.pageOnFrontError
 					} ) );
@@ -8024,80 +8206,6 @@
 			});
 		})();
 
-		// Publish settings section and controls.
-		api.control( 'changeset_status', 'changeset_scheduled_date', function( statusControl, dateControl ) {
-			$.when( statusControl.deferred.embedded, dateControl.deferred.embedded ).done( function() {
-				var radioNodes, statusElement, toggleDateControl, publishWhenTime, pollInterval, updateTimeArrivedPoller, timeArrivedPollingInterval = 1000;
-
-				radioNodes = statusControl.container.find( 'input[type=radio][name]' );
-				statusElement = new api.Element( radioNodes );
-				statusControl.elements.push( statusElement );
-
-				statusElement.sync( api.state( 'selectedChangesetStatus' ) );
-				statusElement.set( api.state( 'selectedChangesetStatus' ).get() );
-
-				dateControl.notifications.alt = true;
-				dateControl.deferred.embedded.done( function() {
-					api.state( 'selectedChangesetDate' ).sync( dateControl.setting );
-				    api.state( 'selectedChangesetDate' ).set( dateControl.setting() );
-				} );
-
-				publishWhenTime = function() {
-					api.state( 'selectedChangesetStatus' ).set( 'publish' );
-					api.previewer.save();
-				};
-
-				// Start countdown for when the dateTime arrives, or clear interval when it is .
-				updateTimeArrivedPoller = function() {
-					var shouldPoll = (
-						'future' === api.state( 'changesetStatus' ).get() &&
-						'future' === api.state( 'selectedChangesetStatus' ).get() &&
-						api.state( 'changesetDate' ).get() &&
-						api.state( 'selectedChangesetDate' ).get() === api.state( 'changesetDate' ).get() &&
-						api.utils.getRemainingTime( api.state( 'changesetDate' ).get() ) >= 0
-					);
-
-					if ( shouldPoll && ! pollInterval ) {
-						pollInterval = setInterval( function() {
-							var remainingTime = api.utils.getRemainingTime( api.state( 'changesetDate' ).get() );
-							api.state( 'remainingTimeToPublish' ).set( remainingTime );
-							if ( remainingTime <= 0 ) {
-								clearInterval( pollInterval );
-								pollInterval = 0;
-								publishWhenTime();
-							}
-						}, timeArrivedPollingInterval );
-					} else if ( ! shouldPoll && pollInterval ) {
-						clearInterval( pollInterval );
-						pollInterval = 0;
-					}
-				};
-
-				api.state( 'changesetDate' ).bind( updateTimeArrivedPoller );
-				api.state( 'selectedChangesetDate' ).bind( updateTimeArrivedPoller );
-				api.state( 'changesetStatus' ).bind( updateTimeArrivedPoller );
-				api.state( 'selectedChangesetStatus' ).bind( updateTimeArrivedPoller );
-				updateTimeArrivedPoller();
-
-				// Ensure dateControl only appears when selected status is future.
-				dateControl.active.validate = function() {
-					return 'future' === statusElement.get();
-				};
-				toggleDateControl = function( value ) {
-					dateControl.active.set( 'future' === value );
-				};
-				toggleDateControl( statusElement.get() );
-				statusElement.bind( toggleDateControl );
-
-				// Show notification on date control when status is future but it isn't a future date.
-				api.state( 'saving' ).bind( function( isSaving ) {
-					if ( isSaving && 'future' === api.state( 'selectedChangesetStatus' ).get() ) {
-						dateControl.toggleFutureDateNotification( ! dateControl.isFutureDate() );
-					}
-				} );
-			} );
-		} );
-
 		// Toggle visibility of Header Video notice when active state change.
 		api.control( 'header_video', function( headerVideoControl ) {
 			headerVideoControl.deferred.embedded.done( function() {
@@ -8109,7 +8217,7 @@
 					if ( headerVideoControl.active.get() ) {
 						section.notifications.remove( noticeCode );
 					} else {
-						section.notifications.add( noticeCode, new api.Notification( noticeCode, {
+						section.notifications.add( new api.Notification( noticeCode, {
 							type: 'info',
 							message: api.l10n.videoHeaderNotice
 						} ) );

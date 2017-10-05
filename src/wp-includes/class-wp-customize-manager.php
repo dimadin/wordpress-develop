@@ -323,8 +323,8 @@ final class WP_Customize_Manager {
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-nav-menu-item-control.php' );
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-nav-menu-location-control.php' );
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-nav-menu-name-control.php' );
+		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-nav-menu-locations-control.php' );
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-nav-menu-auto-add-control.php' );
-		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-new-menu-control.php' );
 
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-nav-menus-panel.php' );
 
@@ -332,7 +332,6 @@ final class WP_Customize_Manager {
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-themes-section.php' );
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-sidebar-section.php' );
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-nav-menu-section.php' );
-		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-new-menu-section.php' );
 
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-custom-css-setting.php' );
 		require_once( ABSPATH . WPINC . '/customize/class-wp-customize-filter-setting.php' );
@@ -3860,10 +3859,145 @@ final class WP_Customize_Manager {
 			) );
 			$control->print_template();
 		}
-
 		?>
+
+		<script type="text/html" id="tmpl-customize-control-default-content">
+			<#
+			var inputId = _.uniqueId( 'customize-control-default-input-' );
+			var descriptionId = _.uniqueId( 'customize-control-default-description-' );
+			var describedByAttr = data.description ? ' aria-describedby="' + descriptionId + '" ' : '';
+			#>
+			<# switch ( data.type ) {
+				case 'checkbox': #>
+					<span class="customize-inside-control-row">
+						<input
+							id="{{ inputId }}"
+							{{{ describedByAttr }}}
+							type="checkbox"
+							value="{{ data.value }}"
+							data-customize-setting-key-link="default"
+						>
+						<label for="{{ inputId }}">
+							{{ data.label }}
+						</label>
+						<# if ( data.description ) { #>
+							<span id="{{ descriptionId }}" class="description customize-control-description">{{{ data.description }}}</span>
+						<# } #>
+					</span>
+					<#
+					break;
+				case 'radio':
+					if ( ! data.choices ) {
+						return;
+					}
+					#>
+					<# if ( data.label ) { #>
+						<label for="{{ inputId }}" class="customize-control-title">
+							{{ data.label }}
+						</label>
+					<# } #>
+					<# if ( data.description ) { #>
+						<span id="{{ descriptionId }}" class="description customize-control-description">{{{ data.description }}}</span>
+					<# } #>
+					<# _.each( data.choices, function( val, key ) { #>
+						<span class="customize-inside-control-row">
+							<#
+							var value, text;
+							if ( _.isObject( val ) ) {
+								value = val.value;
+								text = val.text;
+							} else {
+								value = key;
+								text = val;
+							}
+							#>
+							<input
+								id="{{ inputId + '-' + value }}"
+								type="radio"
+								value="{{ value }}"
+								name="{{ inputId }}"
+								data-customize-setting-key-link="default"
+								{{{ describedByAttr }}}
+							>
+							<label for="{{ inputId + '-' + value }}">{{ text }}</label>
+						</span>
+					<# } ); #>
+					<#
+					break;
+				default:
+					#>
+					<# if ( data.label ) { #>
+						<label for="{{ inputId }}" class="customize-control-title">
+							{{ data.label }}
+						</label>
+					<# } #>
+					<# if ( data.description ) { #>
+						<span id="{{ descriptionId }}" class="description customize-control-description">{{{ data.description }}}</span>
+					<# } #>
+
+					<#
+					var inputAttrs = {
+						id: inputId,
+						'data-customize-setting-key-link': 'default'
+					};
+					if ( 'textarea' === data.type ) {
+						inputAttrs.rows = '5';
+					} else if ( 'button' === data.type ) {
+						inputAttrs['class'] = 'button button-secondary';
+						inputAttrs.type = 'button';
+					} else {
+						inputAttrs.type = data.type;
+					}
+					if ( data.description ) {
+						inputAttrs['aria-describedby'] = descriptionId;
+					}
+					_.extend( inputAttrs, data.inputAttrs );
+					#>
+
+					<# if ( 'button' === data.type ) { #>
+						<button
+							<# _.each( _.extend( inputAttrs ), function( value, key ) { #>
+								{{{ key }}}="{{ value }}"
+							<# } ); #>
+						>{{ inputAttrs.value }}</button>
+					<# } else if ( 'textarea' === data.type ) { #>
+						<textarea
+							<# _.each( _.extend( inputAttrs ), function( value, key ) { #>
+								{{{ key }}}="{{ value }}"
+							<# }); #>
+						>{{ inputAttrs.value }}</textarea>
+					<# } else if ( 'select' === data.type ) { #>
+						<select
+							<# _.each( _.extend( inputAttrs ), function( value, key ) { #>
+								{{{ key }}}="{{ value }}"
+							<# }); #>
+							>
+							<# _.each( data.choices, function( val, key ) { #>
+								<#
+								var value, text;
+								if ( _.isObject( val ) ) {
+									value = val.value;
+									text = val.text;
+								} else {
+									value = key;
+									text = val;
+								}
+								#>
+								<option value="{{ value }}">{{ text }}</option>
+							<# } ); #>
+						</select>
+					<# } else { #>
+						<input
+							<# _.each( _.extend( inputAttrs ), function( value, key ) { #>
+								{{{ key }}}="{{ value }}"
+							<# }); #>
+							>
+					<# } #>
+			<# } #>
+		</script>
+
 		<script type="text/html" id="tmpl-customize-notification">
-			<li class="notice notice-{{ data.type || 'info' }} {{ data.alt ? 'notice-alt' : '' }} {{ data.dismissible ? 'is-dismissible' : '' }} {{ data.classes || '' }}" data-code="{{ data.code }}" data-type="{{ data.type }}">
+			<li class="notice notice-{{ data.type || 'info' }} {{ data.alt ? 'notice-alt' : '' }} {{ data.dismissible ? 'is-dismissible' : '' }} {{ data.containerClasses || '' }}" data-code="{{ data.code }}" data-type="{{ data.type }}">
 				<div class="notification-message">{{{ data.message || data.code }}}</div>
 				<# if ( data.dismissible ) { #>
 					<button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php _e( 'Dismiss' ); ?></span></button>
@@ -3881,6 +4015,7 @@ final class WP_Customize_Manager {
 				<# } ); #>
 			</ul>
 		</script>
+
 		<script type="text/html" id="tmpl-customize-preview-link-control" >
 			<# var elementPrefix = _.uniqueId( 'el' ) + '-' #>
 			<p class="customize-control-title">
@@ -3898,8 +4033,22 @@ final class WP_Customize_Manager {
 				<button class="customize-copy-preview-link preview-control-element button button-secondary" data-component="button" data-copy-text="<?php esc_attr_e( 'Copy' ); ?>" data-copied-text="<?php esc_attr_e( 'Copied' ); ?>" ><?php esc_html_e( 'Copy' ); ?></button>
 			</div>
 		</script>
-		<script type="text/html" id="tmpl-customize-trash-changeset-control">
-			<button type="button" class="button-link button-link-delete"><?php _e( 'Discard changes' ); ?></button>
+		<script type="text/html" id="tmpl-customize-selected-changeset-status-control">
+			<# var inputId = _.uniqueId( 'customize-selected-changeset-status-control-input-' ); #>
+			<# var descriptionId = _.uniqueId( 'customize-selected-changeset-status-control-description-' ); #>
+			<# if ( data.label ) { #>
+				<label for="{{ inputId }}" class="customize-control-title">{{ data.label }}</label>
+			<# } #>
+			<# if ( data.description ) { #>
+				<span id="{{ descriptionId }}" class="description customize-control-description">{{{ data.description }}}</span>
+			<# } #>
+			<# _.each( data.choices, function( choice ) { #>
+				<# var choiceId = inputId + '-' + choice.status; #>
+				<span class="customize-inside-control-row">
+					<input id="{{ choiceId }}" type="radio" value="{{ choice.status }}" name="{{ inputId }}" data-customize-setting-key-link="default">
+					<label for="{{ choiceId }}">{{ choice.label }}</label>
+				</span>
+			<# } ); #>
 		</script>
 		<?php
 	}
@@ -4283,10 +4432,37 @@ final class WP_Customize_Manager {
 			}
 		}
 
+		$current_user_can_publish = current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts );
+
+		// @todo Include all of the status labels here from script-loader.php, and then allow it to be filtered.
+		$status_choices = array();
+		if ( $current_user_can_publish ) {
+			$status_choices[] = array(
+				'status' => 'publish',
+				'label' => __( 'Publish' ),
+			);
+		}
+		$status_choices[] = array(
+			'status' => 'draft',
+			'label' => __( 'Save Draft' ),
+		);
+		if ( $current_user_can_publish ) {
+			$status_choices[] = array(
+				'status' => 'future',
+				'label' => __( 'Schedule' ),
+			);
+		}
+
 		// Prepare Customizer settings to pass to JavaScript.
 		$changeset_post = null;
 		if ( $changeset_post_id ) {
 			$changeset_post = get_post( $changeset_post_id );
+		}
+
+		if ( $this->changeset_post_id() && 'future' === get_post_status( $this->changeset_post_id() ) ) {
+			$initial_date = get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() );
+		} else {
+			$initial_date = current_time( 'mysql', false );
 		}
 
 		$settings = array(
@@ -4297,10 +4473,13 @@ final class WP_Customize_Manager {
 				'hasAutosaveRevision' => ! empty( $autosave_revision_post ),
 				'latestAutoDraftUuid' => $autosave_autodraft_post ? $autosave_autodraft_post->post_name : null,
 				'status' => $changeset_post ? $changeset_post->post_status : '',
-				'currentUserCanPublish' => current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts ),
-				'publishDate' => $changeset_post ? $changeset_post->post_date : '', // @todo Only if future status? Rename to just date?
+				'currentUserCanPublish' => $current_user_can_publish,
+				'publishDate' => $initial_date,
+				'statusChoices' => $status_choices,
 			),
 			'initialServerDate' => current_time( 'mysql', false ),
+			'dateFormat' => get_option( 'date_format' ),
+			'timeFormat' => get_option( 'time_format' ),
 			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
 			'initialClientTimestamp' => -1, // To be set with JS below.
 			'timeouts' => array(
@@ -4464,6 +4643,7 @@ final class WP_Customize_Manager {
 
 		/* Publish Settings */
 
+		// Note the controls for this section are added via JS.
 		$this->add_section( 'publish_settings', array(
 			'title' => __( 'Publish Settings' ),
 			'priority' => 0,
@@ -4471,47 +4651,6 @@ final class WP_Customize_Manager {
 			'type' => 'outer',
 			'active_callback' => array( $this, 'is_theme_active' ),
 		) );
-
-		/* Publish Settings Controls */
-		$status_choices = array(
-			'publish' => __( 'Publish' ),
-			'draft' => __( 'Save Draft' ),
-			'future' => __( 'Schedule' ),
-		);
-
-		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->publish_posts ) ) {
-			unset( $status_choices['publish'] );
-		}
-
-		$this->add_control( 'changeset_status', array(
-			'section' => 'publish_settings',
-			'priority' => 10,
-			'settings' => array(),
-			'type' => 'radio',
-			'label' => __( 'Action' ),
-			'choices' => $status_choices,
-			'capability' => 'customize',
-		) );
-
-		if ( $this->changeset_post_id() && 'future' === get_post_status( $this->changeset_post_id() ) ) {
-			$initial_date = get_the_time( 'Y-m-d H:i:s', $this->changeset_post_id() );
-		} else {
-			$initial_date = current_time( 'mysql', false );
-		}
-
-		$this->add_control( new WP_Customize_Date_Time_Control( $this, 'changeset_scheduled_date', array(
-			'section' => 'publish_settings',
-			'priority' => 20,
-			'settings' => array(),
-			'type' => 'date_time',
-			'min_year' => date( 'Y' ),
-			'allow_past_date' => false,
-			'include_time' => true,
-			'twelve_hour_format' => false !== stripos( get_option( 'time_format' ), 'a' ),
-			'description' => __( 'Schedule your customization changes to publish ("go live") at a future date.' ),
-			'capability' => 'customize',
-			'default_value' => $initial_date,
-		) ) );
 
 		/* Themes (controls are loaded via ajax) */
 
@@ -4599,9 +4738,10 @@ final class WP_Customize_Manager {
 		$this->add_control( new WP_Customize_Site_Icon_Control( $this, 'site_icon', array(
 			'label'       => __( 'Site Icon' ),
 			'description' => sprintf(
+				'<p>' . __( 'Site Icons are what you see in browser tabs, bookmark bars, and within the WordPress mobile apps. Upload one here!' ) . '</p>' .
 				/* translators: %s: site icon size in pixels */
-				__( 'The Site Icon is used as a browser and app icon for your site. Icons must be square, and at least %s pixels wide and tall.' ),
-				'<strong>512</strong>'
+				'<p>' . __( 'Site Icons should be square and at least %s pixels.' ) . '</p>',
+				'<strong>512 &times; 512</strong>'
 			),
 			'section'     => 'title_tagline',
 			'priority'    => 60,
