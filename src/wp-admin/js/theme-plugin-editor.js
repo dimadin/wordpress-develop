@@ -46,6 +46,14 @@ wp.themePluginEditor = (function( $ ) {
 		component.form.on( 'submit', component.submit );
 		component.textarea = component.form.find( '#newcontent' );
 		component.textarea.on( 'change', component.onChange );
+		component.warning = $( '.file-editor-warning' );
+
+		if ( component.warning.length > 0 ) {
+			$( 'body' ).addClass( 'modal-open' );
+			component.warning.find( '.notice-dismiss' ).focus();
+			component.warning.on( 'click', '.notice-dismiss', component.dismissWarning );
+		};
+
 
 		if ( false !== component.codeEditor ) {
 			/*
@@ -65,6 +73,25 @@ wp.themePluginEditor = (function( $ ) {
 			return undefined;
 		} );
 	};
+
+	/**
+	 * Dismiss the warning modal.
+	 */
+	component.dismissWarning = function() {
+
+		// update user meta
+		var request = wp.ajax.post( 'edit-theme-plugin-warning-dismissed', {
+			_ajax_nonce: wp.themePluginEditor.nonce,
+			dismissed:   wp.themePluginEditor.themeOrPlugin
+		} );
+
+		// hide modal
+		component.warning.remove();
+		$( 'body' ).removeClass( 'modal-open' );
+
+		// return focus - is this a trap?
+		component.instance.codemirror.focus();
+	}
 
 	/**
 	 * Callback for when a change happens.

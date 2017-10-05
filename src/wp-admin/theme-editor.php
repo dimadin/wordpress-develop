@@ -127,6 +127,7 @@ if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 	);
 	wp_enqueue_script( 'wp-theme-plugin-editor' );
 	wp_add_inline_script( 'wp-theme-plugin-editor', sprintf( 'jQuery( function( $ ) { wp.themePluginEditor.init( $( "#template" ), %s ); } )', wp_json_encode( $settings ) ) );
+	wp_add_inline_script( 'wp-theme-plugin-editor', 'wp.themePluginEditor.themeOrPlugin = "theme";' );
 
 	require_once( ABSPATH . 'wp-admin/admin-header.php' );
 
@@ -309,5 +310,21 @@ endif; // $error
 <br class="clear" />
 </div>
 <?php
+$hide_notice = get_user_meta( get_current_user_id(), 'hide_theme_editor_notice', true );
+if ( empty( $hide_notice ) ) :
+?>
+<div id="file-editor-warning" class="notification-dialog-wrap file-editor-warning hide-if-no-js">
+	<div class="notification-dialog-background"></div>
+	<div class="notification-dialog" role="dialog" aria-labelledby="file-editor-warning-title" tabindex="0">
+		<div class="file-editor-warning-content">
+			<h1 id="file-editor-warning-title"><?php _e( 'Heads up!' ); ?></h1>
+			<p><?php _e( 'You appear to be making direct edits to your theme in the WordPress dashboard. We recommend that you don&#8217;t! Editing this code directly is dangerous, and can leave you unable to log back in to WordPress and undo changes. There’s no need to change your CSS here &mdash; you can edit and live preview CSS changes in WordPress&#8217;s built in CSS editor.' ); ?></p>
+			<p><?php _e( 'If you decide to go ahead with direct edits anyway, make sure to back up all your site&#8217;s files before making changes so you can restore a functional version if something goes wrong. Once dismissed, this notice will not appear again.' ); ?></p>
+		</div>
+		<button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php _e( 'Dismiss' ); ?></span></button>
+	</div>
+</div>
+<?php
+endif; // editor warning notice
 
 include(ABSPATH . 'wp-admin/admin-footer.php' );
