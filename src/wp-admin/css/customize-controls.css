@@ -914,6 +914,7 @@ p.customize-section-description {
 
 .customize-control-description {
 	display: block;
+	color: #656a6f;
 	font-style: italic;
 	line-height: 18px;
 	margin-top: 0;
