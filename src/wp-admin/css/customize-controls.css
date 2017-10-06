@@ -2815,6 +2815,11 @@ body.adding-widget .add-new-widget:before,
 		margin-bottom: 4px;
 		margin-top: 12px;
 	}
+	
+	#customize-theme-controls .add-new-widget,
+	#customize-theme-controls .add-new-menu-item {
+		padding: 10px 20px;
+	}
 
 	#publish-settings {
 		height: 31px;
