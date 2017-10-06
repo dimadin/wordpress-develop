@@ -1340,6 +1340,7 @@ p.customize-section-description {
 	position: relative;
 	text-align: center;
 	cursor: default;
+	background-color: white;
 	border: 1px dashed #b4b9be;
 	box-sizing: border-box;
 	padding: 9px 0;
