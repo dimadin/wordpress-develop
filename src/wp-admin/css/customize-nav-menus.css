@@ -94,9 +94,10 @@
 	overflow: hidden;
 	z-index: 8;
 	padding: 10px;
-	background: #eee;
-	border: 1px solid #999;
+	background: #f8f9f9;
+	border: 1px solid #8f98a1;
 	border-top: none;
+	box-shadow: inset 0px 1px 0 #ddd;
 }
 
 .wp-customizer .menu-item-settings .description-thin {
@@ -835,7 +836,7 @@ li.assigned-to-menu-location .add-new-menu-item {
 }
 
 .menu-item-edit-active .menu-item-handle {
-	border-color: #999;
+	border-color: #8f98a1;
 	border-bottom: none;
 }
 
