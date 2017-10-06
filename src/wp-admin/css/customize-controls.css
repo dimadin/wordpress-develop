@@ -2337,7 +2337,7 @@ body.cheatin p {
 #customize-theme-controls .add-new-menu-item {
 	cursor: pointer;
 	float: right;
-    font-weight: 600;
+	font-weight: 600;
 	margin: 0;
 	margin-left: 10px;
 	padding: 5px 15px;
