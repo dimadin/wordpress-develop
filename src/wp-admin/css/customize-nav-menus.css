@@ -789,7 +789,9 @@ body.adding-menu-items #customize-preview iframe {
 }
 
 #accordion-section-add_menu .customize-add-menu-button {
-	font-weight: normal;
+	font-weight: 600;
+	padding: 5px 15px;
+	height: auto;
 }
 
 #create-new-menu-submit {

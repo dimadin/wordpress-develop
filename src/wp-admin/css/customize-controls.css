@@ -2337,8 +2337,11 @@ body.cheatin p {
 #customize-theme-controls .add-new-menu-item {
 	cursor: pointer;
 	float: right;
+    font-weight: 600;
 	margin: 0;
 	margin-left: 10px;
+    padding: 5px 15px;
+    height: auto;
 	transition: all 0.2s;
 	-webkit-user-select: none;
 	-moz-user-select: none;
@@ -2372,6 +2375,8 @@ body.cheatin p {
 /* Reordering */
 .reorder-toggle {
 	float: right;
+	position: relative;
+	top: 5px;
 	padding: 5px 8px;
 	text-decoration: none;
 	cursor: pointer;
