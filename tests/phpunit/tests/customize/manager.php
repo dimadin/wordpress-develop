@@ -741,9 +741,12 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test import_theme_starter_content() should support post_parent.
+	 *
+	 * @covers WP_Customize_Manager::import_theme_starter_content()
 	 * @ticket 40807
 	 */
-	function test_import_theme_starter_content_should_support_post_parent() {
+	public function test_import_theme_starter_content_should_support_post_parent() {
 		wp_set_current_user( self::$admin_user_id );
 
 		global $wp_customize;
@@ -752,28 +755,28 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		$starter_content_config = array(
 			'posts' => array(
 				'animal' => array(
-					'post_type' 	=> 'page',
-					'post_title' 	=> 'Animal',
+					'post_type'  => 'page',
+					'post_title' => 'Animal',
 				),
-				'bird' => array(
-					'post_type' 	=> 'page',
-					'post_title' 	=> 'Bird',
-					'parent'	=> 'animal'
+				'bird'   => array(
+					'post_type'  => 'page',
+					'post_title' => 'Bird',
+					'parent'     => 'animal',
 				),
-				'owl' => array(
-					'post_type' 	=> 'page',
-					'post_title' 	=> 'Owl',
-					'parent'	=> 'birds'  //non-existing post symbol that should result in post_parent as 0
+				'owl'    => array(
+					'post_type'  => 'page',
+					'post_title' => 'Owl',
+					'parent'     => 'birds', // Non-existing post symbol that should result in post_parent as 0.
 				),
-				'fish' => array(
-					'post_type' 	=> 'page',
-					'post_title' 	=> 'Fish',
-					'parent'	=> 'animal'
+				'fish'   => array(
+					'post_type'  => 'page',
+					'post_title' => 'Fish',
+					'parent'     => 'animal',
 				),
 				'salmon' => array(
-					'post_type' 	=> 'page',
-					'post_title' 	=> 'Salmon',
-					'parent'	=> 'fish'
+					'post_type'  => 'page',
+					'post_title' => 'Salmon',
+					'parent'     => 'fish',
 				),
 			),
 		);
@@ -784,20 +787,20 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		$changeset_values = $wp_customize->unsanitized_post_values();
 
 		$posts_by_name = array();
-                foreach ( $changeset_values['nav_menus_created_posts'] as $post_id ) {
-                        $post = get_post( $post_id );
-                        $post_name = $post->post_name;
-                        if ( empty( $post_name ) ) {
-                                $post_name = get_post_meta( $post->ID, '_customize_draft_post_name', true );
-                        }
-                        $posts_by_name[ $post_name ] = $post->ID;
-                }
+		foreach ( $changeset_values['nav_menus_created_posts'] as $post_id ) {
+			$post = get_post( $post_id );
+			$post_name = $post->post_name;
+			if ( empty( $post_name ) ) {
+				$post_name = get_post_meta( $post->ID, '_customize_draft_post_name', true );
+			}
+			$posts_by_name[ $post_name ] = $post->ID;
+		}
 
-		$this->assertSame( $posts_by_name['animal'], 	get_post_field( 'post_parent', $posts_by_name['bird']   ) );
-		$this->assertSame( $posts_by_name['animal'], 	get_post_field( 'post_parent', $posts_by_name['fish']   ) );
-		$this->assertSame( $posts_by_name['fish'],   	get_post_field( 'post_parent', $posts_by_name['salmon'] ) );
-		$this->assertSame( 0, 				get_post_field( 'post_parent', $posts_by_name['animal'] ) );
-		$this->assertSame( 0,   			get_post_field( 'post_parent', $posts_by_name['owl']    ) );
+		$this->assertSame( $posts_by_name['animal'], get_post_field( 'post_parent', $posts_by_name['bird'] ) );
+		$this->assertSame( $posts_by_name['animal'], get_post_field( 'post_parent', $posts_by_name['fish'] ) );
+		$this->assertSame( $posts_by_name['fish'], get_post_field( 'post_parent', $posts_by_name['salmon'] ) );
+		$this->assertSame( 0, get_post_field( 'post_parent', $posts_by_name['animal'] ) );
+		$this->assertSame( 0, get_post_field( 'post_parent', $posts_by_name['owl'] ) );
 	}
 
 	/**

@@ -1383,28 +1383,28 @@ final class WP_Customize_Manager {
 
 			$post_relations = array();
 			foreach ( array_keys( $posts ) as $post_symbol ) {
-        			if( isset( $posts[ $post_symbol ]['parent'] ) ) {
-                			$post_relations[] = array(
-                			        'post_id'               => $posts[$post_symbol]['ID'],
-                			        'post_symbol'           => $post_symbol,
-                			        'parent_post_symbol'    => $posts[$post_symbol]['parent'],
-			                );
-			        }
+				if ( isset( $posts[ $post_symbol ]['parent'] ) ) {
+					$post_relations[] = array(
+						'post_id'            => $posts[ $post_symbol ]['ID'],
+						'post_symbol'        => $post_symbol,
+						'parent_post_symbol' => $posts[ $post_symbol ]['parent'],
+					);
+				}
 			}
 
-			// Translate the parent post symbol to an ID and assign it to the post_parent field
-			foreach( $post_relations as $relation ) {
-			        $post_id                = $relation['post_id'];
-			        $post_symbol            = $relation['post_symbol'];
-			        $parent_post_symbol     = $relation['parent_post_symbol'];
+			// Translate the parent post symbol to an ID and assign it to the post_parent field.
+			foreach ( $post_relations as $relation ) {
+				$post_id            = $relation['post_id'];
+				$post_symbol        = $relation['post_symbol'];
+				$parent_post_symbol = $relation['parent_post_symbol'];
 
-			        if( isset( $posts[$parent_post_symbol]['ID'] ) ) {
-			                $posts[$post_symbol]['post_parent'] = $posts[$parent_post_symbol]['ID'];
+				if ( isset( $posts[ $parent_post_symbol ]['ID'] ) ) {
+					$posts[ $post_symbol ]['post_parent'] = $posts[ $parent_post_symbol ]['ID'];
 					wp_update_post( array(
-						'ID'           	=> $post_id,
-						'post_parent'	=> $posts[ $post_symbol ]['post_parent']
+						'ID'          => $post_id,
+						'post_parent' => $posts[ $post_symbol ]['post_parent'],
 					) );
-			        }
+				}
 			}
 
 			$starter_content_auto_draft_post_ids = array_merge( $starter_content_auto_draft_post_ids, wp_list_pluck( $posts, 'ID' ) );
