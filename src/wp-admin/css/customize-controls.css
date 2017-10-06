@@ -485,7 +485,7 @@ body.trashing #publish-settings {
 	color: #555d66;
 	background-color: #fff;
 	border-bottom: 1px solid #ddd;
-	border-left: 4px solid #fff;
+	box-shadow: inset 4px 0px 0px #fff;
 	transition: .15s color ease-in-out,
 	            .15s background-color ease-in-out,
 	            .15s border-color ease-in-out;
@@ -518,7 +518,7 @@ body.trashing #publish-settings {
 #customize-controls .control-section .accordion-section-title:focus {
 	color: #0073aa;
 	background: #f3f3f5;
-	border-left-color: #0073aa;
+	box-shadow: inset 4px 0px 0px #0073aa;
 }
 
 #accordion-section-themes + .control-section {
