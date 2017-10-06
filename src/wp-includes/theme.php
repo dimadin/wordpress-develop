@@ -2175,6 +2175,7 @@ function get_theme_starter_content() {
 								'comment_status',
 								'thumbnail',
 								'template',
+								'parent',
 							)
 						);
 					} elseif ( is_string( $item ) && ! empty( $core_content[ $type ][ $item ] ) ) {
