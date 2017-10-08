@@ -7504,11 +7504,12 @@
 
 						// Handle dismissal of notice.
 						li.find( '.notice-dismiss' ).on( 'click', function() {
-							wp.ajax.post( 'customize_dismiss_autosave', {
+							wp.ajax.post( 'customize_dismiss_autosave_or_lock', {
 								wp_customize: 'on',
 								customize_theme: api.settings.theme.stylesheet,
 								customize_changeset_uuid: api.settings.changeset.uuid,
-								nonce: api.settings.nonce.dismiss_autosave
+								nonce: api.settings.nonce.dismiss_autosave_or_lock,
+								dismiss_autosave: true
 							} );
 						} );
 
@@ -7918,7 +7919,7 @@
 
 		// Handle exiting of Customizer.
 		(function() {
-			var isInsideIframe = false;
+			var isInsideIframe = false, dismissAutoSave = false, dismissLock = false;
 
 			function isCleanState() {
 				return api.state( 'saved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
@@ -7957,8 +7958,10 @@
 				 * when customize-loader.js is used.
 				 */
 				if ( isInsideIframe || isCleanState() ) {
-					clearedToClose.resolve();
+					dismissLock = true;
 				} else if ( confirm( api.l10n.saveAlert ) ) {
+
+					dismissLock = true;
 
 					// Mark all settings as clean to prevent another call to requestChangesetUpdate.
 					api.each( function( setting ) {
@@ -7968,23 +7971,27 @@
 					$( window ).off( 'beforeunload.wp-customize-changeset-update' );
 
 					closeBtn.css( 'cursor', 'progress' );
-					if ( '' === api.state( 'changesetStatus' ).get() ) {
-						clearedToClose.resolve();
-					} else {
-						wp.ajax.send( 'customize_dismiss_autosave', {
-							timeout: 500, // Don't wait too long.
-							data: {
-								wp_customize: 'on',
-								customize_theme: api.settings.theme.stylesheet,
-								customize_changeset_uuid: api.settings.changeset.uuid,
-								nonce: api.settings.nonce.dismiss_autosave
-							}
-						} ).always( function() {
-							clearedToClose.resolve();
-						} );
+					if ( '' !== api.state( 'changesetStatus' ).get() ) {
+						dismissAutoSave = true;
 					}
 				} else {
 					clearedToClose.reject();
+				}
+
+				if ( dismissLock || dismissAutoSave ) {
+					wp.ajax.send( 'customize_dismiss_autosave_or_lock', {
+						timeout: 500, // Don't wait too long.
+						data: {
+							wp_customize: 'on',
+							customize_theme: api.settings.theme.stylesheet,
+							customize_changeset_uuid: api.settings.changeset.uuid,
+							nonce: api.settings.nonce.dismiss_autosave_or_lock,
+							dismiss_autosave: dismissAutoSave,
+							dismiss_lock: dismissLock
+						}
+					} ).always( function() {
+						clearedToClose.resolve();
+					} );
 				}
 
 				clearedToClose.done( function() {

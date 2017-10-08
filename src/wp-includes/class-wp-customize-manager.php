@@ -381,13 +381,13 @@ final class WP_Customize_Manager {
 		remove_action( 'admin_init', '_maybe_update_plugins' );
 		remove_action( 'admin_init', '_maybe_update_themes' );
 
-		add_action( 'wp_ajax_customize_save',             array( $this, 'save' ) );
-		add_action( 'wp_ajax_customize_trash',            array( $this, 'handle_changeset_trash_request' ) );
-		add_action( 'wp_ajax_customize_refresh_nonces',   array( $this, 'refresh_nonces' ) );
-		add_action( 'wp_ajax_customize_load_themes',      array( $this, 'handle_load_themes_request' ) );
-		add_action( 'wp_ajax_customize_dismiss_autosave', array( $this, 'handle_dismiss_autosave_request' ) );
-		add_filter( 'heartbeat_settings',                 array( $this, 'wp_heartbeat_settings_customizer_filter' ) );
-		add_filter( 'heartbeat_received',                 array( $this, 'check_changeset_lock_with_heartbeat' ), 10, 3 );
+		add_action( 'wp_ajax_customize_save',                     array( $this, 'save' ) );
+		add_action( 'wp_ajax_customize_trash',                    array( $this, 'handle_changeset_trash_request' ) );
+		add_action( 'wp_ajax_customize_refresh_nonces',           array( $this, 'refresh_nonces' ) );
+		add_action( 'wp_ajax_customize_load_themes',              array( $this, 'handle_load_themes_request' ) );
+		add_filter( 'heartbeat_settings',                         array( $this, 'wp_heartbeat_settings_customizer_filter' ) );
+		add_filter( 'heartbeat_received',                         array( $this, 'check_changeset_lock_with_heartbeat' ), 10, 3 );
+		add_action( 'wp_ajax_customize_dismiss_autosave_or_lock', array( $this, 'handle_dismiss_autosave_request_or_lock' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
@@ -3430,45 +3430,62 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Delete a given auto-draft changeset or the autosave revision for a given changeset.
+	 * Delete a given auto-draft changeset or the autosave revision for a given changeset or delete changeset lock.
 	 *
 	 * @since 4.9.0
 	 */
-	public function handle_dismiss_autosave_request() {
+	public function handle_dismiss_autosave_request_or_lock() {
 		if ( ! $this->is_preview() ) {
 			wp_send_json_error( 'not_preview', 400 );
 		}
 
-		if ( ! check_ajax_referer( 'customize_dismiss_autosave', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'customize_dismiss_autosave_or_lock', 'nonce', false ) ) {
 			wp_send_json_error( 'invalid_nonce', 403 );
 		}
 
 		$changeset_post_id = $this->changeset_post_id();
+		$dismiss_lock = ! empty( $_POST['dismiss_lock'] );
+		$dismiss_autosave = ! empty( $_POST['dismiss_autosave'] );
 
-		if ( empty( $changeset_post_id ) || 'auto-draft' === get_post_status( $changeset_post_id ) ) {
-			$dismissed = $this->dismiss_user_auto_draft_changesets();
-			if ( $dismissed > 0 ) {
-				wp_send_json_success( 'auto_draft_dismissed' );
-			} else {
-				wp_send_json_error( 'no_auto_draft_to_delete', 404 );
+		if ( ! empty( $changeset_post_id ) && $dismiss_lock ) {
+			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
+				wp_send_json_error( 'cannot_remove_changeset_lock', 403 );
 			}
-		} else {
-			$revision = wp_get_post_autosave( $changeset_post_id );
 
-			if ( $revision ) {
-				if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
-					wp_send_json_error( 'cannot_delete_autosave_revision', 403 );
-				}
+			$this->remove_changeset_lock( $changeset_post_id );
 
-				if ( ! wp_delete_post( $revision->ID, true ) ) {
-					wp_send_json_error( 'autosave_revision_deletion_failure', 500 );
-				} else {
-					wp_send_json_success( 'autosave_revision_deleted' );
-				}
-			} else {
-				wp_send_json_error( 'no_autosave_revision_to_delete', 404 );
+			if ( ! $dismiss_autosave ) {
+				wp_send_json_success( 'changeset_lock_dismissed' );
 			}
 		}
+
+		if ( $dismiss_autosave ) {
+			if ( empty( $changeset_post_id ) || 'auto-draft' === get_post_status( $changeset_post_id ) ) {
+				$dismissed = $this->dismiss_user_auto_draft_changesets();
+				if ( $dismissed > 0 ) {
+					wp_send_json_success( 'auto_draft_dismissed' );
+				} else {
+					wp_send_json_error( 'no_auto_draft_to_delete', 404 );
+				}
+			} else {
+				$revision = wp_get_post_autosave( $changeset_post_id );
+
+				if ( $revision ) {
+					if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->delete_post, $changeset_post_id ) ) {
+						wp_send_json_error( 'cannot_delete_autosave_revision', 403 );
+					}
+
+					if ( ! wp_delete_post( $revision->ID, true ) ) {
+						wp_send_json_error( 'autosave_revision_deletion_failure', 500 );
+					} else {
+						wp_send_json_success( 'autosave_revision_deleted' );
+					}
+				} else {
+					wp_send_json_error( 'no_autosave_revision_to_delete', 404 );
+				}
+			}
+		}
+
 		wp_send_json_error( 'unknown_error', 500 );
 	}
 
@@ -4389,7 +4406,7 @@ final class WP_Customize_Manager {
 			'save' => wp_create_nonce( 'save-customize_' . $this->get_stylesheet() ),
 			'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() ),
 			'switch_themes' => wp_create_nonce( 'switch_themes' ),
-			'dismiss_autosave' => wp_create_nonce( 'customize_dismiss_autosave' ),
+			'dismiss_autosave_or_lock' => wp_create_nonce( 'customize_dismiss_autosave_or_lock' ),
 			'trash' => wp_create_nonce( 'trash_customize_changeset' ),
 		);
 
