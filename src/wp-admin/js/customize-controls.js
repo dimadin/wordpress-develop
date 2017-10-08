@@ -3014,7 +3014,8 @@
 				api.utils.parseQueryString( urlParser.search.substr( 1 ) ),
 				{
 					theme: themeId,
-					changeset_uuid: api.settings.changeset.uuid
+					changeset_uuid: api.settings.changeset.uuid,
+					'return': api.settings.url['return']
 				}
 			);
 
@@ -7065,6 +7066,7 @@
 					urlParser.href = location.href;
 					queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
 					delete queryParams.changeset_uuid;
+					queryParams['return'] = api.settings.url['return'];
 					urlParser.search = $.param( queryParams );
 					location.replace( urlParser.href );
 				};
@@ -7418,6 +7420,7 @@
 				} else {
 					queryParams.customize_autosaved = 'on';
 				}
+				queryParams['return'] = api.settings.url['return'];
 				urlParser.search = $.param( queryParams );
 				return urlParser.href;
 			}
