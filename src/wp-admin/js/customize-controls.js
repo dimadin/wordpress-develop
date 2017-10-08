@@ -3045,7 +3045,7 @@
 				request.done( function() {
 					deferred.resolve();
 					$( window ).off( 'beforeunload.customize-confirm' );
-					window.location.href = urlParser.href; // @todo Use location.replace()?
+					location.replace( urlParser.href );
 				} );
 				request.fail( function() {
 
