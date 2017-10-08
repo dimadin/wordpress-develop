@@ -3131,6 +3131,10 @@ final class WP_Customize_Manager {
 			'changeset_uuid' => $changeset_uuid,
 		), $this->get_autofocus() );
 
+		if ( empty( $_GET['has_changeset_uuid_param'] ) ) {
+			unset( $query_args['changeset_uuid'] );
+		}
+
 		if ( isset( $_GET['return'] ) ) {
 			$query_args['return'] = $_GET['return'];
 		}
@@ -3153,6 +3157,7 @@ final class WP_Customize_Manager {
 		$query_args = array_merge( array(
 			'changeset_uuid' => $this->changeset_uuid(),
 			'action' => $this->_changeset_take_over_action,
+			'has_changeset_uuid_param' => ! empty( $_GET['changeset_uuid'] ),
 			'nonce' => wp_create_nonce( $this->_changeset_take_over_action ),
 		), $this->get_autofocus() );
 
