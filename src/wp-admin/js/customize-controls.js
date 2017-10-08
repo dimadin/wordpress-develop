@@ -7947,7 +7947,7 @@
 
 				// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
 				$( window ).on( 'beforeunload.customize-confirm', function() {
-					if ( ! isCleanState() ) {
+					if ( ! isCleanState() && ! api.state( 'changesetLocked' ).get() ) {
 						setTimeout( function() {
 							overlay.removeClass( 'customize-loading' );
 						}, 1 );
