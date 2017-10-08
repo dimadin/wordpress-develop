@@ -1385,6 +1385,63 @@ themes.view.Search = wp.Backbone.View.extend({
 	}
 });
 
+/**
+ * Add a return param the supplied URL.
+ *
+ * @since 4.9.0
+ *
+ * @param {string} url - Original URL.
+ * @param {string} returnUrl - Value for the return param.
+ * @returns {string} URL with return param appended to it.
+ */
+function addReturnUrlParam( url, returnUrl ) {
+	var urlParser = document.createElement( 'a' );
+	urlParser.href = url;
+	urlParser.search = $.param( _.extend(
+		wp.customize.utils.parseQueryString( urlParser.search.substr( 1 ) ),
+		{
+			'return': returnUrl
+		}
+	) );
+	return urlParser.href;
+}
+
+/**
+ * Update the return param in any links to the Customizer to reflect the current location.
+ *
+ * @since 4.9.0
+ *
+ * @returns {void}
+ */
+function updateCustomizeLoadLinks() {
+	$( '.load-customize' ).each( function() {
+		var link = $( this );
+		link.prop( 'href', addReturnUrlParam( link.prop( 'href' ), window.location.href ) );
+	} );
+}
+
+/**
+ * Navigate router.
+ *
+ * Update links to Customizer whenever history.pushState() will be called.
+ *
+ * @since 4.9.0
+ *
+ * @param {string} url - URL to navigate to.
+ * @param {object} state - State.
+ * @returns {void}
+ */
+function navigateRouter( url, state ) {
+	var router = this;
+	if ( Backbone.history._hasPushState ) {
+		Backbone.Router.prototype.navigate.call( router, url, state );
+		updateCustomizeLoadLinks();
+	}
+}
+
+// Update links to Customizer whenever popstate happens.
+$( window ).on( 'popstate', updateCustomizeLoadLinks );
+
 // Sets up the routes events for relevant url queries
 // Listens to [theme] and [search] params
 themes.Router = Backbone.Router.extend({
@@ -1412,11 +1469,7 @@ themes.Router = Backbone.Router.extend({
 		$( '.wp-filter-search' ).val( '' );
 	},
 
-	navigate: function() {
-		if ( Backbone.history._hasPushState ) {
-			Backbone.Router.prototype.navigate.apply( this, arguments );
-		}
-	}
+	navigate: navigateRouter
 
 });
 
@@ -1890,11 +1943,7 @@ themes.InstallerRouter = Backbone.Router.extend({
 		$( '.wp-filter-search' ).val( query );
 	},
 
-	navigate: function() {
-		if ( Backbone.history._hasPushState ) {
-			Backbone.Router.prototype.navigate.apply( this, arguments );
-		}
-	}
+	navigate: navigateRouter
 });
 
 
