@@ -2343,7 +2343,7 @@ final class WP_Customize_Manager {
 			if ( $user ) {
 				wp_send_json_error( array(
 					'message' => __( 'Changeset is being edited by other user.' ),
-					'code' => 'changeset_locked_by_other_user',
+					'code' => 'changeset_locked',
 					'user_data' => $user,
 				) );
 			}
@@ -2956,7 +2956,7 @@ final class WP_Customize_Manager {
 	 * @since 4.9.0
 	 *
 	 * @param int $changeset_post_id Changeset post id.
-	 * @param boolean $take_over Take over the changeset, default false.
+	 * @param boolean $take_over Take over the changeset, default is false.
 	 */
 	public function set_changeset_lock( $changeset_post_id, $take_over = false ) {
 		if ( $changeset_post_id ) {
@@ -2998,10 +2998,10 @@ final class WP_Customize_Manager {
 			$lock = get_post_meta( $changeset_post_id, '_edit_lock', true );
 			$lock = explode( ':', $lock );
 
-			if ( $lock && isset( $lock[1] ) ) {
+			if ( $lock && ! empty( $lock[1] ) ) {
 				$user_id = intval( $lock[1] );
 				$current_user_id = get_current_user_id();
-				if ( $current_user_id && $user_id === $current_user_id ) {
+				if ( $user_id === $current_user_id ) {
 					$lock = sprintf( '%s:%s', time(), $user_id );
 					update_post_meta( $changeset_post_id, '_edit_lock', $lock );
 				}
@@ -3110,8 +3110,10 @@ final class WP_Customize_Manager {
 		if ( ! isset( $_GET['changeset_uuid'] ) ) {
 			$this->wp_die( -1, __( 'Missing changeset uuid' ) );
 		}
-
-		check_ajax_referer( $this->_changeset_take_over_action, 'nonce' );
+		
+		if ( ! wp_verify_nonce( $_GET['nonce'], $this->_changeset_take_over_action ) ) {
+			$this->wp_die( -1, __( 'Security Check Failed' ) );
+		}
 
 		$changeset_uuid = wp_unslash( $_GET['changeset_uuid'] );
 		$changeset_post_id = $this->find_changeset_post_id( $changeset_uuid );

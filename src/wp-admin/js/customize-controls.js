@@ -530,7 +530,7 @@
 		request.fail( function requestChangesetUpdateFail( data ) {
 			deferred.reject( data );
 			api.trigger( 'changeset-error', data );
-			if ( 'changeset_locked_by_other_user' === data.code && data.user_data ) {
+			if ( 'changeset_locked' === data.code && data.user_data ) {
 				$( document ).trigger( 'heartbeat-tick', {
 					changeset_locked_data: data.user_data
 				} );
@@ -6935,7 +6935,7 @@
 						} else if ( response.code ) {
 							if ( 'not_future_date' === response.code && api.section.has( 'publish_settings' ) && api.section( 'publish_settings' ).active.get() && api.control.has( 'changeset_scheduled_date' ) ) {
 								api.control( 'changeset_scheduled_date' ).toggleFutureDateNotification( true ).focus();
-							} else if ( 'changeset_locked_by_other_user' !== response.code ) {
+							} else if ( 'changeset_locked' !== response.code ) {
 								notification = new api.Notification( response.code, _.extend( notificationArgs, {
 									message: response.message
 								} ) );
@@ -6968,7 +6968,7 @@
 							api.previewer.send( 'changeset-uuid', api.settings.changeset.uuid );
 						}
 
-						if ( 'changeset_locked_by_other_user' === response.code && response.user_data ) {
+						if ( 'changeset_locked' === response.code && response.user_data ) {
 							$( document ).trigger( 'heartbeat-tick', {
 								changeset_locked_data: response.user_data
 							} );
@@ -7415,11 +7415,11 @@
 		}( api.state ) );
 
 		/**
-		 * Checks if changeset is being edited by other user and display dialog.
+		 * Checks and displays lock notice if changeset is locked.
 		 *
 		 * @since 4.9.0
 		 */
-		(function showChangesetLockDialog() {
+		(function checkAndDisplayLockNotice() {
 			var template, body;
 			body = $( 'body' );
 			template = $( wp.template( 'customize-changeset-locked-notice' )() );
