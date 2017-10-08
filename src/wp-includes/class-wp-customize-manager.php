@@ -387,7 +387,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_load_themes',              array( $this, 'handle_load_themes_request' ) );
 		add_filter( 'heartbeat_settings',                         array( $this, 'wp_heartbeat_settings_customizer_filter' ) );
 		add_filter( 'heartbeat_received',                         array( $this, 'check_changeset_lock_with_heartbeat' ), 10, 3 );
-		add_action( 'wp_ajax_customize_dismiss_autosave_or_lock', array( $this, 'handle_dismiss_autosave_request_or_lock' ) );
+		add_action( 'wp_ajax_customize_dismiss_autosave_or_lock', array( $this, 'handle_dismiss_autosave_or_lock_request' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
@@ -3434,7 +3434,7 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.9.0
 	 */
-	public function handle_dismiss_autosave_request_or_lock() {
+	public function handle_dismiss_autosave_or_lock_request() {
 		if ( ! $this->is_preview() ) {
 			wp_send_json_error( 'not_preview', 400 );
 		}
@@ -3447,7 +3447,10 @@ final class WP_Customize_Manager {
 		$dismiss_lock = ! empty( $_POST['dismiss_lock'] );
 		$dismiss_autosave = ! empty( $_POST['dismiss_autosave'] );
 
-		if ( ! empty( $changeset_post_id ) && $dismiss_lock ) {
+		if ( $dismiss_lock ) {
+			if ( empty( $changeset_post_id ) ) {
+				wp_send_json_error( 'no_changeset_to_dismiss_lock', 404 );
+			}
 			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
 				wp_send_json_error( 'cannot_remove_changeset_lock', 403 );
 			}
