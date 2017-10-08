@@ -529,7 +529,13 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 
 		$nonce = wp_create_nonce( 'customize_dismiss_autosave_or_lock' );
 		$_POST['nonce'] = $_GET['nonce'] = $_REQUEST['nonce'] = $nonce;
-		$_POST['dismiss_autosave'] = $_GET['dismiss_autosave'] = $_REQUEST['dismiss_autosave'] = $nonce;
+
+		$_POST['dismiss_lock'] = $_GET['dismiss_lock'] = $_REQUEST['dismiss_lock'] = true;
+		$this->make_ajax_call( 'customize_dismiss_autosave_or_lock' );
+		$this->assertFalse( $this->_last_response_parsed['success'] );
+		$this->assertEquals( 'no_changeset_to_dismiss_lock', $this->_last_response_parsed['data'] );
+
+		$_POST['dismiss_autosave'] = $_GET['dismiss_autosave'] = $_REQUEST['dismiss_autosave'] = true;
 		$this->make_ajax_call( 'customize_dismiss_autosave_or_lock' );
 		$this->assertFalse( $this->_last_response_parsed['success'] );
 		$this->assertEquals( 'no_auto_draft_to_delete', $this->_last_response_parsed['data'] );
@@ -586,6 +592,13 @@ class Tests_Ajax_CustomizeManager extends WP_Ajax_UnitTestCase {
 			),
 			'status' => 'draft',
 		) );
+
+		$_POST['dismiss_autosave'] = $_GET['dismiss_autosave'] = $_REQUEST['dismiss_autosave'] = false;
+		$this->make_ajax_call( 'customize_dismiss_autosave_or_lock' );
+		$this->assertTrue( $this->_last_response_parsed['success'] );
+		$this->assertEquals( 'changeset_lock_dismissed', $this->_last_response_parsed['data'] );
+
+		$_POST['dismiss_autosave'] = $_GET['dismiss_autosave'] = $_REQUEST['dismiss_autosave'] = true;
 		$this->assertNotInstanceOf( 'WP_Error', $r );
 		$this->assertFalse( wp_get_post_autosave( $wp_customize->changeset_post_id() ) );
 		$this->assertContains( 'Foo', get_post( $wp_customize->changeset_post_id() )->post_content );

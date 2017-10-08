@@ -3448,10 +3448,10 @@ final class WP_Customize_Manager {
 		$dismiss_autosave = ! empty( $_POST['dismiss_autosave'] );
 
 		if ( $dismiss_lock ) {
-			if ( empty( $changeset_post_id ) ) {
+			if ( empty( $changeset_post_id ) && ! $dismiss_autosave ) {
 				wp_send_json_error( 'no_changeset_to_dismiss_lock', 404 );
 			}
-			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
+			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) && ! $dismiss_autosave ) {
 				wp_send_json_error( 'cannot_remove_changeset_lock', 403 );
 			}
 
