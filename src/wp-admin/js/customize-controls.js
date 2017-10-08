@@ -6482,7 +6482,8 @@
 		'selectedChangesetStatus',
 		'remainingTimeToPublish',
 		'previewerAlive',
-		'editShortcutVisibility'
+		'editShortcutVisibility',
+		'changesetLocked'
 	], function( name ) {
 		api.state.create( name );
 	});
@@ -7243,6 +7244,7 @@
 				selectedChangesetDate = state.instance( 'selectedChangesetDate' ),
 				previewerAlive = state.instance( 'previewerAlive' ),
 				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
+				changesetLocked = state.instance( 'changesetLocked' ),
 				populateChangesetUuidParam;
 
 			state.bind( 'change', function() {
@@ -7307,6 +7309,7 @@
 
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
+			changesetLocked( api.settings.changeset.locked );
 			changesetDate( api.settings.changeset.publishDate );
 			selectedChangesetDate( api.settings.changeset.publishDate );
 			selectedChangesetStatus( '' === api.settings.changeset.status || 'auto-draft' === api.settings.changeset.status ? 'publish' : api.settings.changeset.status );
@@ -7422,7 +7425,8 @@
 			});
 
 			$( document ).on( 'heartbeat-tick', function ( event, data ) {
-				if ( data.changeset_locked_data && data.changeset_locked_data.user_id ) {
+				if ( data.changeset_locked_data && data.changeset_locked_data.user_id && ! api.state( 'changesetLocked' ).get() ) {
+					api.state( 'changesetLocked' ).set( true );
 					template.find( '.customize-changeset-locked-avatar' ).html( data.changeset_locked_data.user_avatar );
 					template.find( '.customize-notice-user-name' ).text( data.changeset_locked_data.user_name );
 					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage );

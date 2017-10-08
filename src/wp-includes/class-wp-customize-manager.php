@@ -4506,6 +4506,7 @@ final class WP_Customize_Manager {
 				'currentUserCanPublish' => $current_user_can_publish,
 				'publishDate' => $initial_date,
 				'statusChoices' => $status_choices,
+				'locked' => (bool) $this->check_changeset_lock(),
 			),
 			'initialServerDate' => current_time( 'mysql', false ),
 			'dateFormat' => get_option( 'date_format' ),
