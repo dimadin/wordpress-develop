@@ -564,7 +564,7 @@ function wp_default_scripts( &$scripts ) {
 		'saved'              => __( 'Saved' ),
 		'cancel'             => __( 'Cancel' ),
 		'close'              => __( 'Close' ),
-		'takenOverMessage'   => __( 'has taken over and is currently editing.' ),
+		'takenOverMessage'   => __( 'has taken over and is currently customizing.' ),
 		'action'             => __( 'Action' ),
 		'discardChanges'     => __( 'Discard changes' ),
 		'cheatin'            => __( 'Cheatin&#8217; uh?' ),
