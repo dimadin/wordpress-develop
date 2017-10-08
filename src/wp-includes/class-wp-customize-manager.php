@@ -3139,6 +3139,10 @@ final class WP_Customize_Manager {
 			$query_args['return'] = $_GET['return'];
 		}
 
+		if ( isset( $_GET['url'] ) ) {
+			$query_args['url'] = $_GET['url'];
+		}
+
 		$redirect_url = add_query_arg( $query_args, admin_url( 'customize.php' ) );
 		wp_redirect( $redirect_url );
 		exit();
@@ -3163,6 +3167,10 @@ final class WP_Customize_Manager {
 
 		if ( isset( $_GET['return'] ) ) {
 			$query_args['return'] = $_GET['return'];
+		}
+
+		if ( isset( $_GET['url'] ) ) {
+			$query_args['url'] = $_GET['url'];
 		}
 
 		$take_over = add_query_arg( $query_args, admin_url( 'customize.php' ) );
