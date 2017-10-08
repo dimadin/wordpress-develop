@@ -6935,7 +6935,7 @@
 						} else if ( response.code ) {
 							if ( 'not_future_date' === response.code && api.section.has( 'publish_settings' ) && api.section( 'publish_settings' ).active.get() && api.control.has( 'changeset_scheduled_date' ) ) {
 								api.control( 'changeset_scheduled_date' ).toggleFutureDateNotification( true ).focus();
-							} else {
+							} else if ( 'changeset_locked_by_other_user' !== response.code ) {
 								notification = new api.Notification( response.code, _.extend( notificationArgs, {
 									message: response.message
 								} ) );
