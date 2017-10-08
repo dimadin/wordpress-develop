@@ -530,6 +530,11 @@
 		request.fail( function requestChangesetUpdateFail( data ) {
 			deferred.reject( data );
 			api.trigger( 'changeset-error', data );
+			if ( 'changeset_locked_by_other_user' === data.code && data.user_data ) {
+				$( document ).trigger( 'heartbeat-tick', {
+					changeset_locked_data: data.user_data
+				} );
+			}
 		} );
 		request.always( function( data ) {
 			if ( data.setting_validities ) {
@@ -7426,12 +7431,12 @@
 
 			$( document ).on( 'heartbeat-tick', function ( event, data ) {
 				if ( data.changeset_locked_data && data.changeset_locked_data.user_id && ! api.state( 'changesetLocked' ).get() ) {
-					api.state( 'changesetLocked' ).set( true );
 					template.find( '.customize-changeset-locked-avatar' ).html( data.changeset_locked_data.user_avatar );
 					template.find( '.customize-notice-user-name' ).text( data.changeset_locked_data.user_name );
 					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage );
 					template.find( '.customize-notice-take-over-button' ).remove();
 					template.removeClass( 'hidden' );
+					api.state( 'changesetLocked' ).set( true );
 				}
 			} );
 		})();
