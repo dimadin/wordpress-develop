@@ -398,9 +398,6 @@ final class WP_Customize_Manager {
 		// Export the settings to JS via the _wpCustomizeSettings variable.
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'customize_pane_settings' ), 1000 );
 
-		// Render changeset locked notice template.
-		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_changeset_locked_notice_template' ) );
-
 		// Add theme update notices.
 		if ( current_user_can( 'install_themes' ) || current_user_can( 'update_themes' ) ) {
 			require_once ABSPATH . '/wp-admin/includes/update.php';
@@ -3110,48 +3107,6 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Render template for changeset locked notice.
-	 *
-	 * @since 4.9.0
-	 */
-	public function render_changeset_locked_notice_template() {
-		$user = $this->check_changeset_lock();
-		$user_name = '';
-		$user_avatar = '';
-		$hidden_class = 'hidden';
-		$preview_url = add_query_arg( 'customize_changeset_uuid', $this->changeset_uuid(), $this->get_preview_url() );
-
-		if ( $user ) {
-			$hidden_class = '';
-			$user_name = $user['user_name'];
-			$user_avatar = $user['user_avatar'];
-		}
-		?>
-		<script type="text/html" id="tmpl-customize-changeset-locked-notice">
-			<div id="customize-changeset-lock-dialog" class="notification-dialog-wrap <?php echo $hidden_class; ?>">
-				<div class="notification-dialog-background"></div>
-				<div class="notification-dialog">
-					<div class="customize-changeset-locked-message">
-						<div class="customize-changeset-locked-avatar"><?php echo $user_avatar; ?></div>
-						<p class="currently-editing wp-tab-first" tabindex="0">
-							<?php printf( '<span class="customize-notice-user-name">%s</span> <span class="customize-take-over-message">%s</span>', $user_name, esc_html__( 'is already customizing this site. Do you want to take over?' ) ); ?>
-						</p>
-						<p class="error hidden"></p>
-						<p>
-							<?php if ( $this->get_preview_url() !== $this->get_return_url() ) { ?>
-								<a class="button customize-notice-go-back-button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
-							<?php } ?>
-							<a class="button customize-notice-preview-button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
-							<a class="button button-primary wp-tab-last customize-notice-take-over-button" href="javascript:void(0)"><?php esc_html_e( 'Take over' ); ?></a>
-						</p>
-					</div>
-				</div>
-			</div>
-		</script>
-		<?php
-	}
-
-	/**
 	 * Whether a changeset revision should be made.
 	 *
 	 * @since 4.7.0
@@ -3853,6 +3808,18 @@ final class WP_Customize_Manager {
 			) );
 			$control->print_template();
 		}
+
+		$user = $this->check_changeset_lock();
+		$user_name = '';
+		$user_avatar = '';
+		$hidden_class = 'hidden';
+		$preview_url = add_query_arg( 'customize_changeset_uuid', $this->changeset_uuid(), $this->get_preview_url() );
+
+		if ( $user ) {
+			$hidden_class = '';
+			$user_name = $user['user_name'];
+			$user_avatar = $user['user_avatar'];
+		}
 		?>
 
 		<script type="text/html" id="tmpl-customize-control-default-content">
@@ -4043,6 +4010,28 @@ final class WP_Customize_Manager {
 					<label for="{{ choiceId }}">{{ choice.label }}</label>
 				</span>
 			<# } ); #>
+		</script>
+
+		<script type="text/html" id="tmpl-customize-changeset-locked-notice">
+			<div id="customize-changeset-lock-dialog" class="notification-dialog-wrap <?php echo $hidden_class; ?>">
+				<div class="notification-dialog-background"></div>
+				<div class="notification-dialog">
+					<div class="customize-changeset-locked-message">
+						<div class="customize-changeset-locked-avatar"><?php echo $user_avatar; ?></div>
+						<p class="currently-editing wp-tab-first" tabindex="0">
+							<?php printf( '<span class="customize-notice-user-name">%s</span> <span class="customize-take-over-message">%s</span>', $user_name, esc_html__( 'is already customizing this site. Do you want to take over?' ) ); ?>
+						</p>
+						<p class="error hidden"></p>
+						<p>
+							<?php if ( $this->get_preview_url() !== $this->get_return_url() ) { ?>
+								<a class="button customize-notice-go-back-button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
+							<?php } ?>
+							<a class="button customize-notice-preview-button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
+							<a class="button button-primary wp-tab-last customize-notice-take-over-button" href="javascript:void(0)"><?php esc_html_e( 'Take over' ); ?></a>
+						</p>
+					</div>
+				</div>
+			</div>
 		</script>
 		<?php
 	}
