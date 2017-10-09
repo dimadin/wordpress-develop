@@ -77,6 +77,8 @@ themes.view.Appearance = wp.Backbone.View.extend({
 		// Render search form.
 		this.search();
 
+		this.$el.removeClass( 'search-loading' );
+
 		// Render and append
 		this.view.render();
 		this.$el.empty().append( this.view.el ).addClass( 'rendered' );
