@@ -1355,7 +1355,7 @@ themes.view.Search = wp.Backbone.View.extend({
 	doSearch: _.throttle( function( event ) {
 		var options = {};
 
-		this.collection.doSearch( event.target.value );
+		this.collection.doSearch( event.target.value.replace( /\+/g, ' ' ) );
 
 		// if search is initiated and key is not return
 		if ( this.searching && event.which !== 13 ) {
@@ -1376,7 +1376,7 @@ themes.view.Search = wp.Backbone.View.extend({
 		var url = themes.router.baseUrl( '' );
 
 		if ( event.target.value ) {
-			url = themes.router.baseUrl( themes.router.searchPath + event.target.value );
+			url = themes.router.baseUrl( themes.router.searchPath + encodeURIComponent( event.target.value ) );
 		}
 
 		this.searching = false;
@@ -1421,7 +1421,7 @@ themes.Router = Backbone.Router.extend({
 	searchPath: '?search=',
 
 	search: function( query ) {
-		$( '.wp-filter-search' ).val( query );
+		$( '.wp-filter-search' ).val( query.replace( /\+/g, ' ' ) );
 	},
 
 	themes: function() {
@@ -1563,7 +1563,7 @@ themes.view.InstallerSearch =  themes.view.Search.extend({
 		this.collection.query( request );
 
 		// Set route
-		themes.router.navigate( themes.router.baseUrl( themes.router.searchPath + value ), { replace: true } );
+		themes.router.navigate( themes.router.baseUrl( themes.router.searchPath + encodeURIComponent( value ) ), { replace: true } );
 	}, 500 )
 });
 
@@ -1899,7 +1899,7 @@ themes.InstallerRouter = Backbone.Router.extend({
 	searchPath: '?search=',
 
 	search: function( query ) {
-		$( '.wp-filter-search' ).val( query );
+		$( '.wp-filter-search' ).val( query.replace( /\+/g, ' ' ) );
 	},
 
 	navigate: navigateRouter
