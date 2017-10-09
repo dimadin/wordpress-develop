@@ -55,7 +55,7 @@ body:not(.ready) #customize-save-button-wrapper .save {
 	visibility: hidden;
 	overflow-x: hidden;
 	overflow-y: auto;
-	width: 300px;
+	width: 100%;
 	margin: 0;
 	z-index: -1;
 	background: #eee;
@@ -78,7 +78,7 @@ body:not(.ready) #customize-save-button-wrapper .save {
 
 .outer-section-open .wp-full-overlay.expanded #customize-sidebar-outer-content {
 	visibility: visible;
-	left: 300px;
+	left: 100%;
 	transition: left .18s;
 }
 
@@ -2835,6 +2835,14 @@ body.adding-widget .add-new-widget:before,
 		left: 0;
 		z-index: 10;
 		width: 100%;
+	}
+
+	body.wp-customizer .wp-full-overlay.expanded #customize-sidebar-outer-content {
+		left: -100%;
+	}
+
+	body.wp-customizer.outer-section-open .wp-full-overlay.expanded #customize-sidebar-outer-content {
+		left: 0;
 	}
 
 	#available-widgets .customize-section-title,
