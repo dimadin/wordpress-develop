@@ -3457,9 +3457,9 @@ final class WP_Customize_Manager {
 				wp_send_json_error( 'cannot_remove_changeset_lock', 403 );
 			}
 
-			$lock_dismissed = delete_post_meta( $changeset_post_id, '_edit_lock' );
+			delete_post_meta( $changeset_post_id, '_edit_lock' );
 
-			if ( ! $dismiss_autosave && $lock_dismissed ) {
+			if ( ! $dismiss_autosave ) {
 				wp_send_json_success( 'changeset_lock_dismissed' );
 			}
 		}
