@@ -2976,19 +2976,6 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Removes changeset lock from a changeset post.
-	 *
-	 * @since 4.9.0
-	 *
-	 * @param int $changeset_post_id Changeset post id.
-	 */
-	public function remove_changeset_lock( $changeset_post_id ) {
-		if ( $changeset_post_id ) {
-			delete_post_meta( $changeset_post_id, '_edit_lock' );
-		}
-	}
-
-	/**
 	 * Refreshes changeset lock with the current time if current user edited the changeset before.
 	 *
 	 * @param int $changeset_post_id Changeset post id.
@@ -3470,9 +3457,9 @@ final class WP_Customize_Manager {
 				wp_send_json_error( 'cannot_remove_changeset_lock', 403 );
 			}
 
-			$this->remove_changeset_lock( $changeset_post_id );
+			$lock_dismissed = delete_post_meta( $changeset_post_id, '_edit_lock' );
 
-			if ( ! $dismiss_autosave ) {
+			if ( ! $dismiss_autosave && $lock_dismissed ) {
 				wp_send_json_success( 'changeset_lock_dismissed' );
 			}
 		}
