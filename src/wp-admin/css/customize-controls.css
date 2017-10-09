@@ -24,6 +24,10 @@ body {
 	margin: 25px;
 }
 
+.customize-changeset-locked-message .error {
+	color: #dc3232;
+}
+
 .customize-changeset-locked-avatar {
 	float: left;
 	margin: 0 20px 20px 0;

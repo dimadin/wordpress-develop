@@ -237,14 +237,6 @@ final class WP_Customize_Manager {
 	private $_changeset_data;
 
 	/**
-	 * Changeset take over action.
-	 *
-	 * @since 4.9.0
-	 * @var string
-	 */
-	private $_changeset_take_over_action = 'customize_take_over_changeset';
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 3.4.0
@@ -387,6 +379,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_load_themes',              array( $this, 'handle_load_themes_request' ) );
 		add_filter( 'heartbeat_settings',                         array( $this, 'wp_heartbeat_settings_customizer_filter' ) );
 		add_filter( 'heartbeat_received',                         array( $this, 'check_changeset_lock_with_heartbeat' ), 10, 3 );
+		add_action( 'wp_ajax_customize_take_over_changeset',      array( $this, 'take_over_changeset_request' ) );
 		add_action( 'wp_ajax_customize_dismiss_autosave_or_lock', array( $this, 'handle_dismiss_autosave_or_lock_request' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
@@ -413,8 +406,6 @@ final class WP_Customize_Manager {
 			require_once ABSPATH . '/wp-admin/includes/update.php';
 			add_action( 'customize_controls_print_footer_scripts', 'wp_print_admin_notice_templates' );
 		}
-
-		$this->take_over_changeset_on_request();
 	}
 
 	/**
@@ -3081,58 +3072,41 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Removes changeset lock when take over request is sent.
+	 * Removes changeset lock when take over request is sent via ajax.
 	 *
 	 * @since 4.9.0
 	 */
-	public function take_over_changeset_on_request() {
-		if ( ! isset( $_GET['action'] ) || $this->_changeset_take_over_action !== $_GET['action'] ) {
-			return;
+	public function take_over_changeset_request() {
+		if ( ! $this->is_preview() ) {
+			wp_send_json_error( 'not_preview', 400 );
 		}
 
-		if ( ! is_user_logged_in() ) {
-			$this->wp_die( -1, __( 'Sorry, You are not authorized to take over.' ) );
+		if ( ! check_ajax_referer( 'customize_take_over_changeset', 'nonce', false ) ) {
+			wp_send_json_error( array(
+				'code' => 'invalid_nonce',
+				'message' => esc_html__( 'Security check failed.' ),
+			), 403 );
 		}
 
-		if ( ! isset( $_GET['changeset_uuid'] ) ) {
-			$this->wp_die( -1, __( 'Missing changeset uuid' ) );
-		}
-		
-		if ( ! wp_verify_nonce( $_GET['nonce'], $this->_changeset_take_over_action ) ) {
-			$this->wp_die( -1, __( 'Security Check Failed' ) );
-		}
+		$changeset_post_id = $this->changeset_post_id();
 
-		$changeset_uuid = wp_unslash( $_GET['changeset_uuid'] );
-		$changeset_post_id = $this->find_changeset_post_id( $changeset_uuid );
-
-		if ( ! $changeset_post_id ) {
-			$this->wp_die( -1, __( 'Non-existent changeset UUID' ) );
+		if ( empty( $changeset_post_id ) ) {
+			wp_send_json_error( array(
+				'code' => 'no_changeset_found_to_take_over',
+				'message' => esc_html__( 'No changeset found to take over' ),
+			), 404 );
 		}
 
 		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
-			$this->wp_die( -1, __( 'Sorry, you do not have permission to edit changeset' ) );
+			wp_send_json_error( array(
+				'code' => 'cannot_remove_changeset_lock',
+				'message' => esc_html__( 'Sorry you are not allowed to take over.' ),
+			), 403 );
 		}
 
 		$this->set_changeset_lock( $changeset_post_id, true );
-		$query_args = array_merge( array(
-			'changeset_uuid' => $changeset_uuid,
-		), $this->get_autofocus() );
 
-		if ( empty( $_GET['has_changeset_uuid_param'] ) ) {
-			unset( $query_args['changeset_uuid'] );
-		}
-
-		if ( isset( $_GET['return'] ) ) {
-			$query_args['return'] = $_GET['return'];
-		}
-
-		if ( isset( $_GET['url'] ) ) {
-			$query_args['url'] = $_GET['url'];
-		}
-
-		$redirect_url = add_query_arg( $query_args, admin_url( 'customize.php' ) );
-		wp_redirect( $redirect_url );
-		exit();
+		wp_send_json_success( 'changeset_taken_over' );
 	}
 
 	/**
@@ -3145,22 +3119,6 @@ final class WP_Customize_Manager {
 		$user_name = '';
 		$user_avatar = '';
 		$hidden_class = 'hidden';
-		$query_args = array_merge( array(
-			'changeset_uuid' => $this->changeset_uuid(),
-			'action' => $this->_changeset_take_over_action,
-			'has_changeset_uuid_param' => ! empty( $_GET['changeset_uuid'] ),
-			'nonce' => wp_create_nonce( $this->_changeset_take_over_action ),
-		), $this->get_autofocus() );
-
-		if ( isset( $_GET['return'] ) ) {
-			$query_args['return'] = $_GET['return'];
-		}
-
-		if ( isset( $_GET['url'] ) ) {
-			$query_args['url'] = $_GET['url'];
-		}
-
-		$take_over = add_query_arg( $query_args, admin_url( 'customize.php' ) );
 		$preview_url = add_query_arg( 'customize_changeset_uuid', $this->changeset_uuid(), $this->get_preview_url() );
 
 		if ( $user ) {
@@ -3178,12 +3136,13 @@ final class WP_Customize_Manager {
 						<p class="currently-editing wp-tab-first" tabindex="0">
 							<?php printf( '<span class="customize-notice-user-name">%s</span> <span class="customize-take-over-message">%s</span>', $user_name, esc_html__( 'is already customizing this site. Do you want to take over?' ) ); ?>
 						</p>
+						<p class="error hidden"></p>
 						<p>
 							<?php if ( $this->get_preview_url() !== $this->get_return_url() ) { ?>
 								<a class="button customize-notice-go-back-button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
 							<?php } ?>
 							<a class="button customize-notice-preview-button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
-							<a class="button button-primary wp-tab-last customize-notice-take-over-button" href="<?php echo $take_over; ?>"><?php esc_html_e( 'Take over' ); ?></a>
+							<a class="button button-primary wp-tab-last customize-notice-take-over-button" href="javascript:void(0)"><?php esc_html_e( 'Take over' ); ?></a>
 						</p>
 					</div>
 				</div>
@@ -4412,6 +4371,7 @@ final class WP_Customize_Manager {
 			'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() ),
 			'switch_themes' => wp_create_nonce( 'switch_themes' ),
 			'dismiss_autosave_or_lock' => wp_create_nonce( 'customize_dismiss_autosave_or_lock' ),
+			'customize_take_over_changeset' => wp_create_nonce( 'customize_take_over_changeset' ),
 			'trash' => wp_create_nonce( 'trash_customize_changeset' ),
 		);
 

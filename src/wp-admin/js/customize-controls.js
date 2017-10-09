@@ -7421,14 +7421,43 @@
 		}( api.state ) );
 
 		/**
-		 * Checks and displays lock notice if changeset is locked.
+		 * Handles lock notice and take over request.
 		 *
 		 * @since 4.9.0
 		 */
-		(function checkAndDisplayLockNotice() {
-			var template, body;
+		( function checkAndDisplayLockNotice() {
+			var template, body, request, takeOverButton, errorMessage;
 			body = $( 'body' );
 			template = $( wp.template( 'customize-changeset-locked-notice' )() );
+			takeOverButton = template.find( '.customize-notice-take-over-button' );
+			errorMessage = template.find( '.error' );
+
+			takeOverButton.on( 'click', function() {
+				takeOverButton.prop( 'disabled', true );
+				request = wp.ajax.post( 'customize_take_over_changeset', {
+				    wp_customize: 'on',
+				    customize_theme: api.settings.theme.stylesheet,
+				    customize_changeset_uuid: api.settings.changeset.uuid,
+				    nonce: api.settings.nonce.customize_take_over_changeset
+			    } );
+
+				request.done( function() {
+					api.state( 'changesetLocked' ).set( false );
+					template.addClass( 'hidden' );
+					errorMessage.addClass( 'hidden' );
+				} );
+
+				request.fail( function( response ) {
+					if ( response.data.message ) {
+						errorMessage.removeClass( 'hidden' ).text( response.data.message );
+					}
+				} );
+
+				request.always( function() {
+					takeOverButton.prop( 'disabled', false );
+				} );
+			} );
+
 			body.append( template );
 
 			$( document ).on( 'heartbeat-send', function ( event, data ) {
@@ -7445,7 +7474,7 @@
 					api.state( 'changesetLocked' ).set( true );
 				}
 			} );
-		})();
+		} )();
 
 		// Set up initial notifications.
 		(function() {
