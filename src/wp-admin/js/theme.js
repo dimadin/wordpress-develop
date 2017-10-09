@@ -1345,14 +1345,12 @@ themes.view.Search = wp.Backbone.View.extend({
 			event.target.value = '';
 		}
 
-		/**
-		 * Since doSearch is debounced, it will only run when user input comes to a rest
-		 */
+		// Note that doSearch is throttled.
 		this.doSearch( event );
 	},
 
 	// Runs a search on the theme collection.
-	doSearch: _.debounce( function( event ) {
+	doSearch: _.throttle( function( event ) {
 		var options = {};
 
 		this.collection.doSearch( event.target.value );
@@ -1561,7 +1559,7 @@ themes.view.InstallerSearch =  themes.view.Search.extend({
 		this.doSearch( event.target.value );
 	},
 
-	doSearch: _.debounce( function( value ) {
+	doSearch: _.throttle( function( value ) {
 		var request = {};
 
 		// Don't do anything if the search terms haven't changed.
