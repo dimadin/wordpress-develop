@@ -106,7 +106,7 @@
 		 *
 		 * @since 4.9.0
 		 *
-		 * @param {string|wp.customize.Notification} - Notification object to add. Alternatively code may be supplied, and in that case the second notificationObject argument must be supplied.
+		 * @param {string|wp.customize.Notification} notification - Notification object to add. Alternatively code may be supplied, and in that case the second notificationObject argument must be supplied.
 		 * @param {wp.customize.Notification} [notificationObject] - Notification to add when first argument is the code string.
 		 * @returns {wp.customize.Notification} Added notification (or existing instance if it was already added).
 		 */
@@ -7918,16 +7918,9 @@
 			}
 			api.bind( 'change', startPromptingBeforeUnload );
 
-			closeBtn.on( 'click.customize-controls-close', function( event ) {
+			function requestClose() {
 				var clearedToClose = $.Deferred();
-				event.preventDefault();
-
-				/*
-				 * The isInsideIframe condition is because Customizer is not able to use a confirm()
-				 * since customize-loader.js will also use one. So autosave restorations are disabled
-				 * when customize-loader.js is used.
-				 */
-				if ( isInsideIframe || isCleanState() ) {
+				if ( isCleanState() ) {
 					clearedToClose.resolve();
 				} else if ( confirm( api.l10n.saveAlert ) ) {
 
@@ -7957,15 +7950,27 @@
 				} else {
 					clearedToClose.reject();
 				}
+				return clearedToClose.promise();
+			}
 
-				clearedToClose.done( function() {
-					$( window ).off( 'beforeunload.customize-confirm' );
-					if ( isInsideIframe ) {
-						parent.send( 'close' );
-					} else {
-						window.location.href = closeBtn.prop( 'href' );
-					}
+			parent.bind( 'confirm-close', function() {
+				requestClose().done( function() {
+					parent.send( 'confirmed-close', true );
+				} ).fail( function() {
+					parent.send( 'confirmed-close', false );
 				} );
+			} );
+
+			closeBtn.on( 'click.customize-controls-close', function( event ) {
+				event.preventDefault();
+				if ( isInsideIframe ) {
+					parent.send( 'close' ); // See confirm-close logic above.
+				} else {
+					requestClose().done( function() {
+						$( window ).off( 'beforeunload.customize-confirm' );
+						window.location.href = closeBtn.prop( 'href' );
+					} );
+				}
 			});
 		})();
 
