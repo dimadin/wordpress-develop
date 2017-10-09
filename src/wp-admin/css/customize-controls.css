@@ -61,6 +61,7 @@ body:not(.ready) #customize-save-button-wrapper .save {
 	background: #eee;
 	transition: left .18s;
 	border-right: 1px solid #ddd;
+	border-left: 1px solid #ddd;
 	height: 100%;
 }
 
