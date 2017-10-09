@@ -7935,7 +7935,7 @@
 
 		// Handle exiting of Customizer.
 		(function() {
-			var isInsideIframe = false, dismissAutoSave = false, dismissLock = false;
+			var isInsideIframe = false;
 
 			function isCleanState() {
 				return api.state( 'saved' ).get() && 'auto-draft' !== api.state( 'changesetStatus' ).get();
@@ -7965,7 +7965,7 @@
 			api.bind( 'change', startPromptingBeforeUnload );
 
 			function requestClose() {
-				var clearedToClose = $.Deferred();
+				var clearedToClose = $.Deferred(), dismissAutoSave = false, dismissLock = false;
 
 				if ( isCleanState() ) {
 					dismissLock = true;
