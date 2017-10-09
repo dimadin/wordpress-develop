@@ -564,7 +564,6 @@ function wp_default_scripts( &$scripts ) {
 		'saved'              => __( 'Saved' ),
 		'cancel'             => __( 'Cancel' ),
 		'close'              => __( 'Close' ),
-		'takenOverMessage'   => __( 'has taken over and is currently customizing.' ),
 		'action'             => __( 'Action' ),
 		'discardChanges'     => __( 'Discard changes' ),
 		'cheatin'            => __( 'Cheatin&#8217; uh?' ),
@@ -579,6 +578,8 @@ function wp_default_scripts( &$scripts ) {
 		'themePreviewWait'   => __( 'Setting up your live preview. This may take a bit.' ),
 		'revertingChanges'   => __( 'Reverting unpublished changes&hellip;' ),
 		'trashConfirm'       => __( 'Are you sure you&#8217;d like to discard your unpublished changes?' ),
+		/* translators: %s: User who has taken over the changeset in customizer. */
+		'takenOverMessage'   => __( '%s has taken over and is currently customizing.' ),
 		/* translators: %s: URL to the Customizer to load the autosaved version */
 		'autosaveNotice'     => __( 'There is a more recent autosave of your changes than the one you are previewing. <a href="%s">Restore the autosave</a>' ),
 		'videoHeaderNotice'  => __( 'This theme doesn&#8217;t support video headers on this page. Navigate to the front page or another page that supports video headers.' ),

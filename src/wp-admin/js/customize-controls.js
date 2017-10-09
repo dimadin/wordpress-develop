@@ -7432,7 +7432,8 @@
 			takeOverButton = template.find( '.customize-notice-take-over-button' );
 			errorMessage = template.find( '.error' );
 
-			takeOverButton.on( 'click', function() {
+			takeOverButton.on( 'click', function( event ) {
+				event.preventDefault();
 				takeOverButton.prop( 'disabled', true );
 				request = wp.ajax.post( 'customize_take_over_changeset', {
 				    wp_customize: 'on',
@@ -7467,8 +7468,7 @@
 			$( document ).on( 'heartbeat-tick', function ( event, data ) {
 				if ( data.changeset_locked_data && data.changeset_locked_data.user_id && ! api.state( 'changesetLocked' ).get() ) {
 					template.find( '.customize-changeset-locked-avatar' ).html( data.changeset_locked_data.user_avatar );
-					template.find( '.customize-notice-user-name' ).text( data.changeset_locked_data.user_name );
-					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage );
+					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage.replace( /%s/g, String( data.changeset_locked_data.user_name ) ) );
 					template.find( '.customize-notice-take-over-button' ).remove();
 					template.removeClass( 'hidden' );
 					api.state( 'changesetLocked' ).set( true );

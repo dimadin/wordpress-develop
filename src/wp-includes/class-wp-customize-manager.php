@@ -4018,8 +4018,11 @@ final class WP_Customize_Manager {
 				<div class="notification-dialog">
 					<div class="customize-changeset-locked-message">
 						<div class="customize-changeset-locked-avatar"><?php echo $user_avatar; ?></div>
-						<p class="currently-editing wp-tab-first" tabindex="0">
-							<?php printf( '<span class="customize-notice-user-name">%s</span> <span class="customize-take-over-message">%s</span>', $user_name, esc_html__( 'is already customizing this site. Do you want to take over?' ) ); ?>
+						<p class="currently-editing wp-tab-first customize-take-over-message" tabindex="0">
+							<?php
+								/* translators: %s: User who is customizing the changeset in customizer. */
+								printf( esc_html__( '%s is already customizing this site. Do you want to take over?' ), $user_name );
+							?>
 						</p>
 						<p class="error hidden"></p>
 						<p>
@@ -4027,7 +4030,7 @@ final class WP_Customize_Manager {
 								<a class="button customize-notice-go-back-button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
 							<?php } ?>
 							<a class="button customize-notice-preview-button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
-							<a class="button button-primary wp-tab-last customize-notice-take-over-button" href="javascript:void(0)"><?php esc_html_e( 'Take over' ); ?></a>
+							<button class="button button-primary wp-tab-last customize-notice-take-over-button"><?php esc_html_e( 'Take over' ); ?></button>
 						</p>
 					</div>
 				</div>
