@@ -1386,44 +1386,7 @@ themes.view.Search = wp.Backbone.View.extend({
 });
 
 /**
- * Add a return param the supplied URL.
- *
- * @since 4.9.0
- *
- * @param {string} url - Original URL.
- * @param {string} returnUrl - Value for the return param.
- * @returns {string} URL with return param appended to it.
- */
-function addReturnUrlParam( url, returnUrl ) {
-	var urlParser = document.createElement( 'a' );
-	urlParser.href = url;
-	urlParser.search = $.param( _.extend(
-		wp.customize.utils.parseQueryString( urlParser.search.substr( 1 ) ),
-		{
-			'return': returnUrl
-		}
-	) );
-	return urlParser.href;
-}
-
-/**
- * Update the return param in any links to the Customizer to reflect the current location.
- *
- * @since 4.9.0
- *
- * @returns {void}
- */
-function updateCustomizeLoadLinks() {
-	$( '.load-customize' ).each( function() {
-		var link = $( this );
-		link.prop( 'href', addReturnUrlParam( link.prop( 'href' ), window.location.href ) );
-	} );
-}
-
-/**
  * Navigate router.
- *
- * Update links to Customizer whenever history.pushState() will be called.
  *
  * @since 4.9.0
  *
@@ -1435,12 +1398,8 @@ function navigateRouter( url, state ) {
 	var router = this;
 	if ( Backbone.history._hasPushState ) {
 		Backbone.Router.prototype.navigate.call( router, url, state );
-		updateCustomizeLoadLinks();
 	}
 }
-
-// Update links to Customizer whenever popstate happens.
-$( window ).on( 'popstate', updateCustomizeLoadLinks );
 
 // Sets up the routes events for relevant url queries
 // Listens to [theme] and [search] params
@@ -2051,6 +2010,19 @@ $( document ).ready(function() {
 	} else {
 		themes.Run.init();
 	}
+
+	// Update the return param just in time.
+	$( document.body ).on( 'click', '.load-customize', function() {
+		var link = $( this ), urlParser = document.createElement( 'a' );
+		urlParser.href = link.prop( 'href' );
+		urlParser.search = $.param( _.extend(
+			wp.customize.utils.parseQueryString( urlParser.search.substr( 1 ) ),
+			{
+				'return': window.location.href
+			}
+		) );
+		link.prop( 'href', urlParser.href );
+	});
 
 	$( '.broken-themes .delete-theme' ).on( 'click', function() {
 		return confirm( _wpThemeSettings.settings.confirmDelete );
