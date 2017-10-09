@@ -7986,7 +7986,9 @@
 			parent.send( 'title', newTitle );
 		});
 
-		parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+		if ( api.settings.changeset.branching ) {
+			parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+		}
 
 		// Initialize the connection with the parent frame.
 		parent.send( 'ready' );
