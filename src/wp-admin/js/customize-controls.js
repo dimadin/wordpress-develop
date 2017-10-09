@@ -106,7 +106,7 @@
 		 *
 		 * @since 4.9.0
 		 *
-		 * @param {string|wp.customize.Notification} - Notification object to add. Alternatively code may be supplied, and in that case the second notificationObject argument must be supplied.
+		 * @param {string|wp.customize.Notification} notification - Notification object to add. Alternatively code may be supplied, and in that case the second notificationObject argument must be supplied.
 		 * @param {wp.customize.Notification} [notificationObject] - Notification to add when first argument is the code string.
 		 * @returns {wp.customize.Notification} Added notification (or existing instance if it was already added).
 		 */
@@ -3019,7 +3019,8 @@
 				api.utils.parseQueryString( urlParser.search.substr( 1 ) ),
 				{
 					theme: themeId,
-					changeset_uuid: api.settings.changeset.uuid
+					changeset_uuid: api.settings.changeset.uuid,
+					'return': api.settings.url['return']
 				}
 			);
 
@@ -3049,7 +3050,7 @@
 				request.done( function() {
 					deferred.resolve();
 					$( window ).off( 'beforeunload.customize-confirm' );
-					window.location.href = urlParser.href; // @todo Use location.replace()?
+					location.replace( urlParser.href );
 				} );
 				request.fail( function() {
 
@@ -6964,7 +6965,9 @@
 						if ( 'changeset_already_published' === response.code && response.next_changeset_uuid ) {
 							api.settings.changeset.uuid = response.next_changeset_uuid;
 							api.state( 'changesetStatus' ).set( '' );
-							parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							if ( api.settings.changeset.branching ) {
+								parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							}
 							api.previewer.send( 'changeset-uuid', api.settings.changeset.uuid );
 						}
 
@@ -7001,7 +7004,9 @@
 
 							api.state( 'changesetStatus' ).set( '' );
 							api.settings.changeset.uuid = response.next_changeset_uuid;
-							parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							if ( api.settings.changeset.branching ) {
+								parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							}
 						}
 
 						// Prevent subsequent requestChangesetUpdate() calls from including the settings that have been saved.
@@ -7077,6 +7082,7 @@
 					urlParser.href = location.href;
 					queryParams = api.utils.parseQueryString( urlParser.search.substr( 1 ) );
 					delete queryParams.changeset_uuid;
+					queryParams['return'] = api.settings.url['return'];
 					urlParser.search = $.param( queryParams );
 					location.replace( urlParser.href );
 				};
@@ -7459,6 +7465,7 @@
 				} else {
 					queryParams.customize_autosaved = 'on';
 				}
+				queryParams['return'] = api.settings.url['return'];
 				urlParser.search = $.param( queryParams );
 				return urlParser.href;
 			}
@@ -7957,18 +7964,10 @@
 			}
 			api.bind( 'change', startPromptingBeforeUnload );
 
-			closeBtn.on( 'click.customize-controls-close', function( event ) {
+			function requestClose() {
 				var clearedToClose = $.Deferred();
-				event.preventDefault();
 
-				/*
-				 * The isInsideIframe condition is because Customizer is not able to use a confirm()
-				 * since customize-loader.js will also use one. So autosave restorations are disabled
-				 * when customize-loader.js is used.
-				 */
-				if ( isInsideIframe ) {
-					clearedToClose.resolve();
-				} else if ( isCleanState() ) {
+				if ( isCleanState() ) {
 					dismissLock = true;
 				} else if ( confirm( api.l10n.saveAlert ) ) {
 
@@ -8005,14 +8004,27 @@
 					} );
 				}
 
-				clearedToClose.done( function() {
-					$( window ).off( 'beforeunload.customize-confirm' );
-					if ( isInsideIframe ) {
-						parent.send( 'close' );
-					} else {
-						window.location.href = closeBtn.prop( 'href' );
-					}
+				return clearedToClose.promise();
+			}
+
+			parent.bind( 'confirm-close', function() {
+				requestClose().done( function() {
+					parent.send( 'confirmed-close', true );
+				} ).fail( function() {
+					parent.send( 'confirmed-close', false );
 				} );
+			} );
+
+			closeBtn.on( 'click.customize-controls-close', function( event ) {
+				event.preventDefault();
+				if ( isInsideIframe ) {
+					parent.send( 'close' ); // See confirm-close logic above.
+				} else {
+					requestClose().done( function() {
+						$( window ).off( 'beforeunload.customize-confirm' );
+						window.location.href = closeBtn.prop( 'href' );
+					} );
+				}
 			});
 		})();
 
@@ -8028,7 +8040,9 @@
 			parent.send( 'title', newTitle );
 		});
 
-		parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+		if ( api.settings.changeset.branching ) {
+			parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+		}
 
 		// Initialize the connection with the parent frame.
 		parent.send( 'ready' );
