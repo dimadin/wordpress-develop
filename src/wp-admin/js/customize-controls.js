@@ -6959,7 +6959,9 @@
 						if ( 'changeset_already_published' === response.code && response.next_changeset_uuid ) {
 							api.settings.changeset.uuid = response.next_changeset_uuid;
 							api.state( 'changesetStatus' ).set( '' );
-							parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							if ( api.settings.changeset.branching ) {
+								parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							}
 							api.previewer.send( 'changeset-uuid', api.settings.changeset.uuid );
 						}
 					} );
@@ -6990,7 +6992,9 @@
 
 							api.state( 'changesetStatus' ).set( '' );
 							api.settings.changeset.uuid = response.next_changeset_uuid;
-							parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							if ( api.settings.changeset.branching ) {
+								parent.send( 'changeset-uuid', api.settings.changeset.uuid );
+							}
 						}
 
 						// Prevent subsequent requestChangesetUpdate() calls from including the settings that have been saved.
