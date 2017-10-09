@@ -2489,7 +2489,7 @@ final class WP_Customize_Manager {
 			if ( 'publish' === $existing_status || 'trash' === $existing_status ) {
 				return new WP_Error(
 					'changeset_already_published',
-					__( 'The previous set of changes already been published. Please try saving your current set of changes again.' ),
+					__( 'The previous set of changes has already been published. Please try saving your current set of changes again.' ),
 					array(
 						'next_changeset_uuid' => wp_generate_uuid4(),
 					)
@@ -4850,7 +4850,7 @@ final class WP_Customize_Manager {
 		$section_description .= '<ul>';
 		$section_description .= '<li id="editor-keyboard-trap-help-2">' . __( 'In the editing area, the Tab key enters a tab character.' ) . '</li>';
 		$section_description .= '<li id="editor-keyboard-trap-help-3">' . __( 'To move away from this area, press the Esc key followed by the Tab key.' ) . '</li>';
-		$section_description .= '<li id="editor-keyboard-trap-help-4">' . __( 'Screen reader users: when in forms mode, you may need to press the Esc key twice.' ) . '</li>';
+		$section_description .= '<li id="editor-keyboard-trap-help-4">' . __( 'Screen reader users: when in forms mode, you may need to press the escape key twice.' ) . '</li>';
 		$section_description .= '</ul>';
 
 		if ( 'false' !== wp_get_current_user()->syntax_highlighting ) {
