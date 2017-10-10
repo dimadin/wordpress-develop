@@ -7426,7 +7426,7 @@
 		 * @since 4.9.0
 		 */
 		( function checkAndDisplayLockNotice() {
-			var template, body, request, takeOverButton, errorMessage, focusLock;
+			var template, body, request, takeOverButton, errorMessage, focusAndToggleLockNotice;
 
 			body = $( 'body' );
 			template = $( wp.template( 'customize-changeset-locked-notice' )() );
@@ -7462,14 +7462,17 @@
 
 			body.append( template );
 
-			focusLock = function() {
-				if ( true === api.state( 'changesetLocked' ).get() ) {
+			focusAndToggleLockNotice = function() {
+				var locked = api.state( 'changesetLocked' ).get();
+
+				template.toggleClass( 'hidden', ! locked );
+				if ( true === locked ) {
 					template.find( '.button' ).first().focus();
 				}
 			};
 
-			focusLock();
-			api.state( 'changesetLocked' ).bind( 'change', focusLock );
+			focusAndToggleLockNotice();
+			api.state( 'changesetLocked' ).bind( 'change', focusAndToggleLockNotice );
 
 			$( document ).on( 'heartbeat-send', function ( event, data ) {
 				data.check_changeset_lock = true;
@@ -7480,8 +7483,9 @@
 					template.find( '.customize-changeset-locked-avatar' ).html( data.changeset_locked_data.user_avatar );
 					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage.replace( /%s/g, String( data.changeset_locked_data.display_name ) ) );
 					template.find( '.customize-notice-take-over-button' ).remove();
-					template.removeClass( 'hidden' );
 					api.state( 'changesetLocked' ).set( true );
+				} else {
+					api.state( 'changesetLocked' ).set( false );
 				}
 			} );
 		} )();
