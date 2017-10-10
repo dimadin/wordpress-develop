@@ -578,7 +578,7 @@ function wp_default_scripts( &$scripts ) {
 		'themePreviewWait'   => __( 'Setting up your live preview. This may take a bit.' ),
 		'revertingChanges'   => __( 'Reverting unpublished changes&hellip;' ),
 		'trashConfirm'       => __( 'Are you sure you&#8217;d like to discard your unpublished changes?' ),
-		/* translators: %s: User who has taken over the changeset in customizer. */
+		/* translators: %s: Display name of the user who has taken over the changeset in customizer. */
 		'takenOverMessage'   => __( '%s has taken over and is currently customizing.' ),
 		/* translators: %s: URL to the Customizer to load the autosaved version */
 		'autosaveNotice'     => __( 'There is a more recent autosave of your changes than the one you are previewing. <a href="%s">Restore the autosave</a>' ),

@@ -7478,7 +7478,7 @@
 			$( document ).on( 'heartbeat-tick', function ( event, data ) {
 				if ( data.changeset_locked_data && data.changeset_locked_data.user_id && ! api.state( 'changesetLocked' ).get() ) {
 					template.find( '.customize-changeset-locked-avatar' ).html( data.changeset_locked_data.user_avatar );
-					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage.replace( /%s/g, String( data.changeset_locked_data.user_name ) ) );
+					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage.replace( /%s/g, String( data.changeset_locked_data.display_name ) ) );
 					template.find( '.customize-notice-take-over-button' ).remove();
 					template.removeClass( 'hidden' );
 					api.state( 'changesetLocked' ).set( true );

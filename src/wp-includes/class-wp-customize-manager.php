@@ -3060,7 +3060,7 @@ final class WP_Customize_Manager {
 			$user = get_userdata( $user_id );
 			return array(
 				'user_id' => $user_id,
-				'user_name' => $user->display_name,
+				'display_name' => $user->display_name,
 				'user_avatar' => get_avatar( $user->ID, 64 ),
 			);
 		}
@@ -3810,14 +3810,14 @@ final class WP_Customize_Manager {
 		}
 
 		$user = $this->check_changeset_lock();
-		$user_name = '';
+		$display_name = '';
 		$user_avatar = '';
 		$hidden_class = 'hidden';
 		$preview_url = add_query_arg( 'customize_changeset_uuid', $this->changeset_uuid(), $this->get_preview_url() );
 
 		if ( $user ) {
 			$hidden_class = '';
-			$user_name = $user['user_name'];
+			$display_name = $user['display_name'];
 			$user_avatar = $user['user_avatar'];
 		}
 		?>
@@ -4020,8 +4020,8 @@ final class WP_Customize_Manager {
 						<div class="customize-changeset-locked-avatar"><?php echo $user_avatar; ?></div>
 						<p class="currently-editing wp-tab-first customize-take-over-message" tabindex="0">
 							<?php
-								/* translators: %s: User who is customizing the changeset in customizer. */
-								printf( esc_html__( '%s is already customizing this site. Do you want to take over?' ), $user_name );
+								/* translators: %s: Display name of the user who is customizing the changeset in customizer. */
+								printf( esc_html__( '%s is already customizing this site. Do you want to take over?' ), $display_name );
 							?>
 						</p>
 						<p class="error hidden"></p>
