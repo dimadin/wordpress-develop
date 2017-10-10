@@ -174,7 +174,7 @@ final class WP_Customize_Manager {
 	protected $messenger_channel;
 
 	/**
-	 * Whether the autosave revision of the changeset should should be loaded.
+	 * Whether the autosave revision of the changeset should be loaded.
 	 *
 	 * @since 4.9.0
 	 * @var bool
