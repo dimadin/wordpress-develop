@@ -7426,7 +7426,8 @@
 		 * @since 4.9.0
 		 */
 		( function checkAndDisplayLockNotice() {
-			var template, body, request, takeOverButton, errorMessage;
+			var template, body, request, takeOverButton, errorMessage, focusLock;
+
 			body = $( 'body' );
 			template = $( wp.template( 'customize-changeset-locked-notice' )() );
 			takeOverButton = template.find( '.customize-notice-take-over-button' );
@@ -7460,6 +7461,15 @@
 			} );
 
 			body.append( template );
+
+			focusLock = function() {
+				if ( true === api.state( 'changesetLocked' ).get() ) {
+					template.find( '.button' ).first().focus();
+				}
+			};
+
+			focusLock();
+			api.state( 'changesetLocked' ).bind( 'change', focusLock );
 
 			$( document ).on( 'heartbeat-send', function ( event, data ) {
 				data.check_changeset_lock = true;

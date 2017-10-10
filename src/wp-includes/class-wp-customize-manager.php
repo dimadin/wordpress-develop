@@ -4029,8 +4029,8 @@ final class WP_Customize_Manager {
 							<?php if ( $this->get_preview_url() !== $this->get_return_url() ) { ?>
 								<a class="button customize-notice-go-back-button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
 							<?php } ?>
-							<a tabindex="1" class="button customize-notice-preview-button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
-							<button tabindex="2" class="button button-primary wp-tab-last customize-notice-take-over-button"><?php esc_html_e( 'Take over' ); ?></button>
+							<a class="button customize-notice-preview-button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
+							<button class="button button-primary wp-tab-last customize-notice-take-over-button"><?php esc_html_e( 'Take over' ); ?></button>
 						</p>
 					</div>
 				</div>
