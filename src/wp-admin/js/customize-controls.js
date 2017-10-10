@@ -570,7 +570,7 @@
 			deferred.reject( data );
 			api.trigger( 'changeset-error', data );
 			if ( 'changeset_locked' === data.code && data.user_data ) {
-				$( document ).trigger( 'heartbeat-tick', {
+				$( document ).trigger( 'heartbeat-tick.update_lock_notice', {
 					changeset_locked_data: data.user_data
 				} );
 			}
@@ -7226,7 +7226,7 @@
 						}
 
 						if ( 'changeset_locked' === response.code && response.user_data ) {
-							$( document ).trigger( 'heartbeat-tick', {
+							$( document ).trigger( 'heartbeat-tick.update_lock_notice', {
 								changeset_locked_data: response.user_data
 							} );
 						}
@@ -7728,11 +7728,11 @@
 			focusAndToggleLockNotice();
 			api.state( 'changesetLocked' ).bind( 'change', focusAndToggleLockNotice );
 
-			$( document ).on( 'heartbeat-send', function ( event, data ) {
+			$( document ).on( 'heartbeat-send.check_changeset_lock', function ( event, data ) {
 				data.check_changeset_lock = true;
 			});
 
-			$( document ).on( 'heartbeat-tick', function ( event, data ) {
+			$( document ).on( 'heartbeat-tick.update_lock_notice', function ( event, data ) {
 				if ( data.changeset_locked_data && data.changeset_locked_data.user_id && ! api.state( 'changesetLocked' ).get() ) {
 					template.find( '.customize-changeset-locked-avatar' ).html( data.changeset_locked_data.user_avatar );
 					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage.replace( /%s/g, String( data.changeset_locked_data.display_name ) ) );
