@@ -313,11 +313,30 @@
 		 * @returns {void}
 		 */
 		constrainFocus: function constrainFocus( event ) {
-			var collection = this;
-			if ( ! collection.focusContainer || collection.focusContainer.is( event.target ) || $.contains( collection.focusContainer[0], event.target[0] ) ) {
+			var collection = this, focusableElements;
+
+			// Prevent keys from escaping.
+			event.stopPropagation();
+
+			if ( 9 !== event.which ) { // Tab key.
 				return;
 			}
-			collection.focusContainer.focus();
+
+			focusableElements = collection.focusContainer.find( ':focusable' );
+			if ( 0 === focusableElements.length ) {
+				focusableElements = collection.focusContainer;
+			}
+
+			if ( ! $.contains( collection.focusContainer[0], event.target ) || ! $.contains( collection.focusContainer[0], document.activeElement ) ) {
+				event.preventDefault();
+				focusableElements.first().focus();
+			} else if ( focusableElements.last().is( event.target ) && ! event.shiftKey ) {
+				event.preventDefault();
+				focusableElements.first().focus();
+			} else if ( focusableElements.first().is( event.target ) && event.shiftKey ) {
+				event.preventDefault();
+				focusableElements.last().focus();
+			}
 		}
 	});
 
