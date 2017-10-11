@@ -144,6 +144,9 @@ if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 	wp_add_inline_script( 'wp-theme-plugin-editor', sprintf( 'jQuery( function( $ ) { wp.themePluginEditor.init( $( "#template" ), %s ); } )', wp_json_encode( $settings ) ) );
 	wp_add_inline_script( 'wp-theme-plugin-editor', sprintf( 'wp.themePluginEditor.themeOrPlugin = "plugin";' ) );
 
+	wp_enqueue_script( 'tree-links' );
+	wp_add_inline_script( 'tree-links', 'jQuery( function( $ ) { $(\'#templateside [role="group"]\').parent().attr(\'aria-expanded\', false); $(\'#templateside .notice\').parents(\'[aria-expanded]\').attr(\'aria-expanded\', true); } )' );
+
 	require_once(ABSPATH . 'wp-admin/admin-header.php');
 
 	update_recently_edited(WP_PLUGIN_DIR . '/' . $file);
@@ -231,7 +234,7 @@ if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 </div>
 
 <div id="templateside">
-	<h2><?php _e( 'Plugin Files' ); ?></h2>
+	<h2 id="plugin-files-label"><?php _e( 'Plugin Files' ); ?></h2>
 
 	<?php
 	$plugin_editable_files = array();
@@ -241,12 +244,14 @@ if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 		}
 	}
 	?>
-	<ul>
-	<?php foreach ( $plugin_editable_files as $plugin_file ) : ?>
-		<li class="<?php echo esc_attr( $file === $plugin_file ? 'notice notice-info' : '' ); ?>">
-			<a href="plugin-editor.php?file=<?php echo urlencode( $plugin_file ); ?>&amp;plugin=<?php echo urlencode( $plugin ); ?>"><?php echo esc_html( preg_replace( '#^.+?/#', '', $plugin_file ) ); ?></a>
-		</li>
-	<?php endforeach; ?>
+	<ul role="tree" aria-labelledby="plugin-files-label">
+	<li role="treeitem" tabindex="-1" aria-expanded="true"
+		aria-level="1"
+		aria-posinset="1"
+		aria-setsize="1">
+		<ul role="group" style="padding-left: 0;">
+			<?php wp_print_plugin_file_tree( wp_make_plugin_file_tree( $plugin_editable_files ) ); ?>
+		</ul>
 	</ul>
 </div>
 <form name="template" id="template" action="plugin-editor.php" method="post">

@@ -270,6 +270,167 @@ function update_recently_edited( $file ) {
 }
 
 /**
+ * Makes a tree structure for the Theme Editor's file list.
+ *
+ * @since 4.9.0
+ * @access private
+ *
+ * @param string $allowed_files List of theme file paths.
+ *
+ * @return array Tree structure for listing theme files.
+ */
+function wp_make_theme_file_tree( $allowed_files ) {
+	$tree_list = array();
+	foreach ( $allowed_files as $file_name => $absolute_filename ) {
+		$list = explode( '/', $file_name );
+		$last_dir = &$tree_list;
+		foreach ( $list as $dir ) {
+			$last_dir =& $last_dir[ $dir ];
+		}
+		$last_dir = $file_name;
+	}
+	return $tree_list;
+}
+
+/**
+ * Outputs the formatted file list for the Theme Editor.
+ *
+ * @since 4.9.0
+ * @access private
+ *
+ * @param array  $tree  List of file/folder paths.
+ * @param string $label Name of file or folder to print.
+ * @param int    $level Current level.
+ * @param int    $index Current level.
+ * @param int    $size  Current level.
+ */
+function wp_print_theme_file_tree( $tree, $label = false, $level = 2, $index = 1, $size = 1 ) {
+	global $relative_file, $stylesheet;
+
+	if ( is_array( $tree ) ) {
+		$index = 0;
+		$size = count( $tree );
+		foreach ( $tree as $label => $theme_file ) :
+			$index++;
+			if ( ! is_array( $theme_file ) ) {
+				wp_print_theme_file_tree( $theme_file, $label, $level, $index, $size );
+				continue;
+			}
+			?>
+			<li role="treeitem" aria-expanded="true" tabindex="-1"
+				aria-level="<?php echo (string) $level; ?>"
+				aria-setsize="<?php echo (string) $size; ?>"
+				aria-posinset="<?php echo (string) $index; ?>">
+				<span class="folder-label"><?php echo esc_html( $label ); ?> <span class="screen-reader-text">folder</span><span aria-hidden="true" class="icon"></span></span>
+				<ul role="group" class="tree-folder"><?php wp_print_theme_file_tree( $theme_file, false, $level + 1, $index, $size ); ?></ul>
+			</li>
+			<?php
+		endforeach;
+	} else {
+		$filename = $tree;
+		?>
+		<li role="none" class="<?php echo $relative_file === $filename ? 'current-file' : ''; ?>">
+			<a role="treeitem" tabindex="<?php echo $relative_file === $filename ? '0' : '-1'; ?>"
+				href="theme-editor.php?file=<?php echo urlencode( $tree ); ?>&amp;theme=<?php echo urlencode( $stylesheet ); ?>"
+				aria-level="<?php echo (string) $level; ?>"
+				aria-setsize="<?php echo (string) $size; ?>"
+				aria-posinset="<?php echo (string) $index; ?>">
+				<?php
+				$file_description = esc_html( get_file_description( $filename ) );
+				if ( $file_description !== $filename && $file_description !== basename($filename) ) {
+					$file_description .= '<br /><span class="nonessential">(' . esc_html( $filename ) . ')</span>';
+				}
+
+				if ( $relative_file === $filename ) {
+					echo '<span class="notice notice-info">' . $file_description . '</span>';
+				} else {
+					echo $file_description;
+				}
+				?>
+			</a>
+		</li>
+		<?php
+	}
+}
+
+/**
+ * Makes a tree structure for the Plugin Editor's file list.
+ *
+ * @since 4.9.0
+ * @access private
+ *
+ * @param string $plugin_editable_files List of plugin file paths.
+ *
+ * @return array Tree structure for listing plugin files.
+ */
+function wp_make_plugin_file_tree( $plugin_editable_files ) {
+	$tree_list = array();
+	foreach ( $plugin_editable_files as $plugin_file ) {
+		$list = explode( '/', preg_replace( '#^.+?/#', '', $plugin_file ) );
+		$last_dir = &$tree_list;
+		foreach ( $list as $dir ) {
+			$last_dir =& $last_dir[ $dir ];
+		}
+		$last_dir = $plugin_file;
+	}
+	return $tree_list;
+}
+
+/**
+ * Outputs the formatted file list for the Plugin Editor.
+ *
+ * @since 4.9.0
+ * @access private
+ *
+ * @param array  $tree  List of file/folder paths.
+ * @param string $label Name of file or folder to print.
+ * @param int    $level Current level.
+ * @param int    $index Current level.
+ * @param int    $size  Current level.
+ */
+function wp_print_plugin_file_tree( $tree, $label = false, $level = 2, $index = 1, $size = 1 ) {
+	global $file, $plugin;
+	if ( is_array( $tree ) ) {
+		$index = 0;
+		$size = count( $tree );
+		foreach ( $tree as $label => $plugin_file ) :
+			$index++;
+			if ( ! is_array( $plugin_file ) ) {
+				wp_print_plugin_file_tree( $plugin_file, $label, $level, $index, $size );
+				continue;
+			}
+			?>
+			<li role="treeitem" aria-expanded="true" tabindex="-1"
+				aria-level="<?php echo (string) $level; ?>"
+				aria-setsize="<?php echo (string) $size; ?>"
+				aria-posinset="<?php echo (string) $index; ?>">
+				<span class="folder-label"><?php echo esc_html( $label ); ?> <span class="screen-reader-text">folder</span><span aria-hidden="true" class="icon"></span></span>
+				<ul role="group" class="tree-folder"><?php wp_print_plugin_file_tree( $plugin_file, false, $level + 1, $index, $size ); ?></ul>
+			</li>
+			<?php
+		endforeach;
+	} else {
+		?>
+		<li role="none" class="<?php echo $file === $tree ? 'current-file' : ''; ?>">
+			<a role="treeitem" tabindex="<?php echo $file === $tree ? '0' : '-1'; ?>"
+				href="plugin-editor.php?file=<?php echo urlencode( $tree ); ?>&amp;plugin=<?php echo urlencode( $plugin ); ?>"
+				aria-level="<?php echo (string) $level; ?>"
+				aria-setsize="<?php echo (string) $size; ?>"
+				aria-posinset="<?php echo (string) $index; ?>">
+				<?php
+				if ( $file === $tree ) {
+					echo '<span class="notice notice-info">' . esc_html( $label ) . '</span>';
+				} else {
+					echo esc_html( $label );
+				}
+				?>
+			</a>
+		</li>
+		<?php
+	}
+}
+
+/**
  * Flushes rewrite rules if siteurl, home or page_on_front changed.
  *
  * @since 2.1.0
