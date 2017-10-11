@@ -34,6 +34,37 @@
 			if ( notification.loading ) {
 				notification.containerClasses += ' notification-loading';
 			}
+		},
+
+		/**
+		 * Render notification.
+		 *
+		 * @since 4.9.0
+		 *
+		 * @return {jQuery} Notification container.
+		 */
+		render: function() {
+			var li = api.Notification.prototype.render.call( this );
+			li.on( 'keydown', _.bind( this.handleEscape, this ) );
+			return li;
+		},
+
+		/**
+		 * Stop propagation on escape key presses, but also dismiss notification if it is dismissible.
+		 *
+		 * @since 4.9.0
+		 *
+		 * @param {jQuery.Event} event - Event.
+		 * @returns {void}
+		 */
+		handleEscape: function( event ) {
+			var notification = this;
+			if ( 27 === event.which ) {
+				event.stopPropagation();
+				if ( notification.dismissible && notification.parent ) {
+					notification.parent.remove( notification.code );
+				}
+			}
 		}
 	});
 
