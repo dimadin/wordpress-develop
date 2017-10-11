@@ -275,8 +275,7 @@ function update_recently_edited( $file ) {
  * @since 4.9.0
  * @access private
  *
- * @param string $allowed_files List of theme file paths.
- *
+ * @param array $allowed_files List of theme file paths.
  * @return array Tree structure for listing theme files.
  */
 function wp_make_theme_file_tree( $allowed_files ) {
@@ -344,7 +343,7 @@ function wp_print_theme_file_tree( $tree, $label = false, $level = 2, $index = 1
 				aria-posinset="<?php echo esc_attr( $index ); ?>">
 				<?php
 				$file_description = esc_html( get_file_description( $filename ) );
-				if ( $file_description !== $filename && $file_description !== basename($filename) ) {
+				if ( $file_description !== $filename && basename( $filename ) !== $file_description ) {
 					$file_description .= '<br /><span class="nonessential">(' . esc_html( $filename ) . ')</span>';
 				}
 
