@@ -318,23 +318,30 @@ function wp_print_theme_file_tree( $tree, $label = false, $level = 2, $index = 1
 			}
 			?>
 			<li role="treeitem" aria-expanded="true" tabindex="-1"
-				aria-level="<?php echo (string) $level; ?>"
-				aria-setsize="<?php echo (string) $size; ?>"
-				aria-posinset="<?php echo (string) $index; ?>">
-				<span class="folder-label"><?php echo esc_html( $label ); ?> <span class="screen-reader-text">folder</span><span aria-hidden="true" class="icon"></span></span>
+				aria-level="<?php echo esc_attr( $level ); ?>"
+				aria-setsize="<?php echo esc_attr( $size ); ?>"
+				aria-posinset="<?php echo esc_attr( $index ); ?>">
+				<span class="folder-label"><?php echo esc_html( $label ); ?> <span class="screen-reader-text"><?php _e( 'folder' ); ?></span><span aria-hidden="true" class="icon"></span></span>
 				<ul role="group" class="tree-folder"><?php wp_print_theme_file_tree( $theme_file, false, $level + 1, $index, $size ); ?></ul>
 			</li>
 			<?php
 		endforeach;
 	} else {
 		$filename = $tree;
+		$url = add_query_arg(
+			array(
+				'file' => rawurlencode( $tree ),
+				'theme' => rawurlencode( $stylesheet ),
+			),
+			admin_url( 'theme-editor.php' )
+		);
 		?>
-		<li role="none" class="<?php echo $relative_file === $filename ? 'current-file' : ''; ?>">
-			<a role="treeitem" tabindex="<?php echo $relative_file === $filename ? '0' : '-1'; ?>"
-				href="theme-editor.php?file=<?php echo urlencode( $tree ); ?>&amp;theme=<?php echo urlencode( $stylesheet ); ?>"
-				aria-level="<?php echo (string) $level; ?>"
-				aria-setsize="<?php echo (string) $size; ?>"
-				aria-posinset="<?php echo (string) $index; ?>">
+		<li role="none" class="<?php echo esc_attr( $relative_file === $filename ? 'current-file' : '' ); ?>">
+			<a role="treeitem" tabindex="<?php echo esc_attr( $relative_file === $filename ? '0' : '-1' ); ?>"
+				href="<?php echo esc_url( $url ); ?>"
+				aria-level="<?php echo esc_attr( $level ); ?>"
+				aria-setsize="<?php echo esc_attr( $size ); ?>"
+				aria-posinset="<?php echo esc_attr( $index ); ?>">
 				<?php
 				$file_description = esc_html( get_file_description( $filename ) );
 				if ( $file_description !== $filename && $file_description !== basename($filename) ) {
@@ -401,22 +408,29 @@ function wp_print_plugin_file_tree( $tree, $label = false, $level = 2, $index = 
 			}
 			?>
 			<li role="treeitem" aria-expanded="true" tabindex="-1"
-				aria-level="<?php echo (string) $level; ?>"
-				aria-setsize="<?php echo (string) $size; ?>"
-				aria-posinset="<?php echo (string) $index; ?>">
-				<span class="folder-label"><?php echo esc_html( $label ); ?> <span class="screen-reader-text">folder</span><span aria-hidden="true" class="icon"></span></span>
+				aria-level="<?php echo esc_attr( $level ); ?>"
+				aria-setsize="<?php echo esc_attr( $size ); ?>"
+				aria-posinset="<?php echo esc_attr( $index ); ?>">
+				<span class="folder-label"><?php echo esc_html( $label ); ?> <span class="screen-reader-text"><?php _e( 'folder' ); ?></span><span aria-hidden="true" class="icon"></span></span>
 				<ul role="group" class="tree-folder"><?php wp_print_plugin_file_tree( $plugin_file, false, $level + 1, $index, $size ); ?></ul>
 			</li>
 			<?php
 		endforeach;
 	} else {
+		$url = add_query_arg(
+			array(
+				'file' => rawurlencode( $tree ),
+				'plugin' => rawurlencode( $plugin ),
+			),
+			admin_url( 'plugin-editor.php' )
+		);
 		?>
-		<li role="none" class="<?php echo $file === $tree ? 'current-file' : ''; ?>">
-			<a role="treeitem" tabindex="<?php echo $file === $tree ? '0' : '-1'; ?>"
-				href="plugin-editor.php?file=<?php echo urlencode( $tree ); ?>&amp;plugin=<?php echo urlencode( $plugin ); ?>"
-				aria-level="<?php echo (string) $level; ?>"
-				aria-setsize="<?php echo (string) $size; ?>"
-				aria-posinset="<?php echo (string) $index; ?>">
+		<li role="none" class="<?php echo esc_attr( $file === $tree ? 'current-file' : '' ); ?>">
+			<a role="treeitem" tabindex="<?php echo esc_attr( $file === $tree ? '0' : '-1' ); ?>"
+				href="<?php echo esc_url( $url ); ?>"
+				aria-level="<?php echo esc_attr( $level ); ?>"
+				aria-setsize="<?php echo esc_attr( $size ); ?>"
+				aria-posinset="<?php echo esc_attr( $index ); ?>">
 				<?php
 				if ( $file === $tree ) {
 					echo '<span class="notice notice-info">' . esc_html( $label ) . '</span>';
