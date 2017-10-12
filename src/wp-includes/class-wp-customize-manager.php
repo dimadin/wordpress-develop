@@ -3064,17 +3064,18 @@ final class WP_Customize_Manager {
 	 * @param int $changeset_post_id Changeset post id.
 	 */
 	public function refresh_changeset_lock( $changeset_post_id ) {
-		if ( $changeset_post_id ) {
-			$lock = get_post_meta( $changeset_post_id, '_edit_lock', true );
-			$lock = explode( ':', $lock );
+		if ( ! $changeset_post_id ) {
+			return;
+		}
+		$lock = get_post_meta( $changeset_post_id, '_edit_lock', true );
+		$lock = explode( ':', $lock );
 
-			if ( $lock && ! empty( $lock[1] ) ) {
-				$user_id = intval( $lock[1] );
-				$current_user_id = get_current_user_id();
-				if ( $user_id === $current_user_id ) {
-					$lock = sprintf( '%s:%s', time(), $user_id );
-					update_post_meta( $changeset_post_id, '_edit_lock', $lock );
-				}
+		if ( $lock && ! empty( $lock[1] ) ) {
+			$user_id = intval( $lock[1] );
+			$current_user_id = get_current_user_id();
+			if ( $user_id === $current_user_id ) {
+				$lock = sprintf( '%s:%s', time(), $user_id );
+				update_post_meta( $changeset_post_id, '_edit_lock', $lock );
 			}
 		}
 	}
