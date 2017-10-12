@@ -2399,6 +2399,7 @@ final class WP_Customize_Manager {
 			define( 'DOING_AUTOSAVE', true );
 		}
 
+		$autosaved = false;
 		$r = $this->save_changeset_post( array(
 			'status' => $changeset_status,
 			'title' => $changeset_title,
@@ -2406,6 +2407,9 @@ final class WP_Customize_Manager {
 			'data' => $input_changeset_data,
 			'autosave' => $autosave,
 		) );
+		if ( $autosave && ! is_wp_error( $r ) ) {
+			$autosaved = true;
+		}
 
 		// If the changeset was locked and an autosave request wasn't itself an error, then now explicitly return with a failure.
 		if ( $lock_user_id && ! is_wp_error( $r ) ) {
@@ -2444,7 +2448,7 @@ final class WP_Customize_Manager {
 			}
 
 			if ( 'publish' !== $response['changeset_status'] ) {
-				$this->set_changeset_lock( $changeset_post->ID ); // @todo And if not auto-draft?
+				$this->set_changeset_lock( $changeset_post->ID );
 			}
 
 			if ( 'future' === $response['changeset_status'] ) {
@@ -2454,6 +2458,10 @@ final class WP_Customize_Manager {
 			if ( 'publish' === $response['changeset_status'] || 'trash' === $response['changeset_status'] ) {
 				$response['next_changeset_uuid'] = wp_generate_uuid4();
 			}
+		}
+
+		if ( $autosave ) {
+			$response['autosaved'] = $autosaved;
 		}
 
 		if ( isset( $response['setting_validities'] ) ) {
@@ -4066,7 +4074,7 @@ final class WP_Customize_Manager {
 						<# } else { #>
 							<?php
 							/* translators: %s: User who is customizing the changeset in customizer. */
-							printf( __( '%s is already customizing this site. Please wait until they are done to try customizing.' ), '{{ data.lockUser.name }}' );
+							printf( __( '%s is already customizing this site. Please wait until they are done to try customizing. Your latest changes have been autosaved.' ), '{{ data.lockUser.name }}' );
 							?>
 						<# } #>
 					</p>

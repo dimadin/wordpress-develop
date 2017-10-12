@@ -7719,9 +7719,7 @@
 		 * @since 4.9.0
 		 */
 		( function checkAndDisplayLockNotice() {
-			var LockedNotification;
-
-			LockedNotification = api.OverlayNotification.extend({
+			var LockedNotification = api.OverlayNotification.extend({
 
 				/**
 				 * Template ID.
@@ -7765,7 +7763,7 @@
 				 *
 				 * @since 4.9.0
 				 *
-				 * @return {jQuery}
+				 * @return {jQuery} Notification container.
 				 */
 				render: function() {
 					var notification = this, li, data, takeOverButton, request;
@@ -7780,6 +7778,30 @@
 					);
 
 					li = api.OverlayNotification.prototype.render.call( data );
+
+					li.find( '.customize-notice-preview-button, .customize-notice-go-back-button' ).on( 'click', function( event ) {
+						var link = $( this );
+						event.preventDefault();
+						if ( request ) {
+							return;
+						}
+						link.addClass( 'disabled' );
+						request = api.requestChangesetUpdate( {}, { autosave: true } );
+						request.fail( function( response ) {
+							if ( response.autosaved ) {
+								location.href = link.prop( 'href' );
+							} else {
+								li.find( '.notice-error' ).prop( 'hidden', false ).text( response.message || api.l10n.unknownRequestFail );
+								link.removeClass( 'disabled' );
+							}
+						} );
+						request.done( function( response ) {
+							location.href = link.prop( 'href' );
+						} );
+						request.always( function() {
+							request = null;
+						} );
+					} );
 
 					takeOverButton = li.find( '.customize-notice-take-over-button' );
 					takeOverButton.on( 'click', function( event ) {
@@ -7848,7 +7870,7 @@
 			// Check for lock when sending heartbeat requests.
 			$( document ).on( 'heartbeat-send.update_lock_notice', function( event, data ) {
 				data.check_changeset_lock = true;
-			});
+			} );
 
 			// Handle heartbeat ticks.
 			$( document ).on( 'heartbeat-tick.update_lock_notice', function( event, data ) {
@@ -7869,15 +7891,13 @@
 			} );
 
 			// Handle locking in response to changeset save errors.
-			function handleSaveError( response ) {
+			api.bind( 'error', function ( response ) {
 				if ( 'changeset_locked' === response.code && response.lock_user ) {
 					startLock( {
 						lockUser: response.lock_user
 					} );
 				}
-			}
-			api.bind( 'changeset-error', handleSaveError );
-			api.bind( 'error', handleSaveError );
+			} );
 		} )();
 
 		// Set up initial notifications.
