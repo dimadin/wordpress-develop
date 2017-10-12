@@ -137,9 +137,6 @@ if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 	wp_add_inline_script( 'wp-theme-plugin-editor', sprintf( 'jQuery( function( $ ) { wp.themePluginEditor.init( $( "#template" ), %s ); } )', wp_json_encode( $settings ) ) );
 	wp_add_inline_script( 'wp-theme-plugin-editor', 'wp.themePluginEditor.themeOrPlugin = "theme";' );
 
-	wp_enqueue_script( 'tree-links' );
-	wp_add_inline_script( 'tree-links', 'jQuery( function( $ ) { $(\'#templateside [role="group"]\').parent().attr(\'aria-expanded\', false); $(\'#templateside .notice\').parents(\'[aria-expanded]\').attr(\'aria-expanded\', true); } )' );
-
 	require_once( ABSPATH . 'wp-admin/admin-header.php' );
 
 	update_recently_edited( $file );

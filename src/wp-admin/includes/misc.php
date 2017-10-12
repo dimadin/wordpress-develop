@@ -297,13 +297,12 @@ function wp_make_theme_file_tree( $allowed_files ) {
  * @since 4.9.0
  * @access private
  *
- * @param array  $tree  List of file/folder paths.
- * @param string $label Name of file or folder to print.
- * @param int    $level Current level.
- * @param int    $index Current level.
- * @param int    $size  Current level.
+ * @param array|string $tree  List of file/folder paths, or filename.
+ * @param int          $level The aria-level for the current iteration.
+ * @param int          $size  The aria-setsize for the current iteration.
+ * @param int          $index The aria-posinset for the current iteration.
  */
-function wp_print_theme_file_tree( $tree, $label = false, $level = 2, $index = 1, $size = 1 ) {
+function wp_print_theme_file_tree( $tree, $level = 2, $size = 1, $index = 1 ) {
 	global $relative_file, $stylesheet;
 
 	if ( is_array( $tree ) ) {
@@ -312,7 +311,7 @@ function wp_print_theme_file_tree( $tree, $label = false, $level = 2, $index = 1
 		foreach ( $tree as $label => $theme_file ) :
 			$index++;
 			if ( ! is_array( $theme_file ) ) {
-				wp_print_theme_file_tree( $theme_file, $label, $level, $index, $size );
+				wp_print_theme_file_tree( $theme_file, $level, $index, $size );
 				continue;
 			}
 			?>
@@ -321,7 +320,7 @@ function wp_print_theme_file_tree( $tree, $label = false, $level = 2, $index = 1
 				aria-setsize="<?php echo esc_attr( $size ); ?>"
 				aria-posinset="<?php echo esc_attr( $index ); ?>">
 				<span class="folder-label"><?php echo esc_html( $label ); ?> <span class="screen-reader-text"><?php _e( 'folder' ); ?></span><span aria-hidden="true" class="icon"></span></span>
-				<ul role="group" class="tree-folder"><?php wp_print_theme_file_tree( $theme_file, false, $level + 1, $index, $size ); ?></ul>
+				<ul role="group" class="tree-folder"><?php wp_print_theme_file_tree( $theme_file, $level + 1, $index, $size ); ?></ul>
 			</li>
 			<?php
 		endforeach;
@@ -388,13 +387,13 @@ function wp_make_plugin_file_tree( $plugin_editable_files ) {
  * @since 4.9.0
  * @access private
  *
- * @param array  $tree  List of file/folder paths.
- * @param string $label Name of file or folder to print.
- * @param int    $level Current level.
- * @param int    $index Current level.
- * @param int    $size  Current level.
+ * @param array|string $tree  List of file/folder paths, or filename.
+ * @param string       $label Name of file or folder to print.
+ * @param int          $level The aria-level for the current iteration.
+ * @param int          $size  The aria-setsize for the current iteration.
+ * @param int          $index The aria-posinset for the current iteration.
  */
-function wp_print_plugin_file_tree( $tree, $label = false, $level = 2, $index = 1, $size = 1 ) {
+function wp_print_plugin_file_tree( $tree, $label = '', $level = 2, $size = 1, $index = 1 ) {
 	global $file, $plugin;
 	if ( is_array( $tree ) ) {
 		$index = 0;
@@ -411,7 +410,7 @@ function wp_print_plugin_file_tree( $tree, $label = false, $level = 2, $index = 
 				aria-setsize="<?php echo esc_attr( $size ); ?>"
 				aria-posinset="<?php echo esc_attr( $index ); ?>">
 				<span class="folder-label"><?php echo esc_html( $label ); ?> <span class="screen-reader-text"><?php _e( 'folder' ); ?></span><span aria-hidden="true" class="icon"></span></span>
-				<ul role="group" class="tree-folder"><?php wp_print_plugin_file_tree( $plugin_file, false, $level + 1, $index, $size ); ?></ul>
+				<ul role="group" class="tree-folder"><?php wp_print_plugin_file_tree( $plugin_file, '', $level + 1, $index, $size ); ?></ul>
 			</li>
 			<?php
 		endforeach;

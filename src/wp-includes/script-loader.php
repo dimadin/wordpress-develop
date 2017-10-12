@@ -886,9 +886,6 @@ function wp_default_scripts( &$scripts ) {
 		$scripts->add( 'media-gallery', "/wp-admin/js/media-gallery$suffix.js", array('jquery'), false, 1 );
 
 		$scripts->add( 'svg-painter', '/wp-admin/js/svg-painter.js', array( 'jquery' ), false, 1 );
-
-		$scripts->add( 'treeitem-links', "/wp-admin/js/treeitem-links$suffix.js", array( 'jquery' ), false, 1 );
-		$scripts->add( 'tree-links', "/wp-admin/js/tree-links$suffix.js", array( 'treeitem-links' ), false, 1 );
 	}
 }
 
