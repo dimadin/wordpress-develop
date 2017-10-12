@@ -900,19 +900,18 @@ wp.themePluginEditor = (function( $ ) {
 	 * @returns {void}
 	 */
 	component.initFileBrowser = function initFileBrowser() {
+
 		// Collapse all folders.
-		$('#templateside [role="group"]').parent().attr('aria-expanded', false);
+		$( '#templateside [role="group"]' ).parent().attr( 'aria-expanded', false );
 
 		// Expand ancestors to the current file.
-		$('#templateside .notice').parents('[aria-expanded]').attr('aria-expanded', true);
+		$( '#templateside .notice' ).parents( '[aria-expanded]' ).attr( 'aria-expanded', true );
 
 		// Find Tree elements and enhance them.
-		var trees = document.querySelectorAll('[role="tree"]');
-
-		for (var i = 0; i < trees.length; i++) {
-			var t = new TreeLinks(trees[i]);
-			t.init();
-		}
+		$( '#templateside [role="tree"]' ).each( function() {
+			var treeLinks = new TreeLinks( this );
+			treeLinks.init();
+		} );
 	};
 
 	return component;
