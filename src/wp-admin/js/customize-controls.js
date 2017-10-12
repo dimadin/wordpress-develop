@@ -619,11 +619,6 @@
 		request.fail( function requestChangesetUpdateFail( data ) {
 			deferred.reject( data );
 			api.trigger( 'changeset-error', data );
-			if ( 'changeset_locked' === data.code && data.user_data ) {
-				$( document ).trigger( 'heartbeat-tick.update_lock_notice', {
-					changeset_locked_data: data.user_data
-				} );
-			}
 		} );
 		request.always( function( data ) {
 			if ( data.setting_validities ) {
@@ -7247,7 +7242,7 @@
 							}
 						} else {
 							notification = new api.Notification( 'unknown_error', _.extend( notificationArgs, {
-								message: api.l10n.serverSaveError
+								message: api.l10n.unknownRequestFail
 							} ) );
 						}
 
@@ -7273,12 +7268,6 @@
 								parent.send( 'changeset-uuid', api.settings.changeset.uuid );
 							}
 							api.previewer.send( 'changeset-uuid', api.settings.changeset.uuid );
-						}
-
-						if ( 'changeset_locked' === response.code && response.user_data ) {
-							$( document ).trigger( 'heartbeat-tick.update_lock_notice', {
-								changeset_locked_data: response.user_data
-							} );
 						}
 					} );
 
@@ -7624,7 +7613,7 @@
 
 			// Set default states.
 			changesetStatus( api.settings.changeset.status );
-			changesetLocked( api.settings.changeset.locked );
+			changesetLocked( Boolean( api.settings.changeset.lockUser ) );
 			changesetDate( api.settings.changeset.publishDate );
 			selectedChangesetDate( api.settings.changeset.publishDate );
 			selectedChangesetStatus( '' === api.settings.changeset.status || 'auto-draft' === api.settings.changeset.status ? 'publish' : api.settings.changeset.status );
@@ -7730,68 +7719,151 @@
 		 * @since 4.9.0
 		 */
 		( function checkAndDisplayLockNotice() {
-			var template, body, request, takeOverButton, errorMessage, focusAndToggleLockNotice;
+			var LockedNotification;
 
-			body = $( 'body' );
-			template = $( wp.template( 'customize-changeset-locked-notice' )() );
-			takeOverButton = template.find( '.customize-notice-take-over-button' );
-			errorMessage = template.find( '.error' );
+			LockedNotification = api.OverlayNotification.extend({
 
-			takeOverButton.on( 'click', function( event ) {
-				event.preventDefault();
-				takeOverButton.prop( 'disabled', true );
-				request = wp.ajax.post( 'customize_take_over_changeset', {
-				    wp_customize: 'on',
-				    customize_theme: api.settings.theme.stylesheet,
-				    customize_changeset_uuid: api.settings.changeset.uuid,
-				    nonce: api.settings.nonce.customize_take_over_changeset
-			    } );
+				/**
+				 * Template ID.
+				 *
+				 * @type {string}
+				 */
+				templateId: 'customize-changeset-locked-notification',
 
-				request.done( function() {
-					api.state( 'changesetLocked' ).set( false );
-					template.addClass( 'hidden' );
-					errorMessage.addClass( 'hidden' );
-				} );
+				/**
+				 * Lock user.
+				 *
+				 * @type {object}
+				 */
+				lockUser: null,
 
-				request.fail( function( response ) {
-					if ( response.data.message ) {
-						errorMessage.removeClass( 'hidden' ).text( response.data.message );
-					}
-				} );
+				/**
+				 * Initialize.
+				 *
+				 * @since 4.9.0
+				 *
+				 * @param {string} [code] - Code.
+				 * @param {object} [params] - Params.
+				 */
+				initialize: function( code, params ) {
+					var notification = this, _code, _params;
+					_code = code || 'changeset_locked';
+					_params = _.extend(
+						{
+							type: 'warning',
+							containerClasses: '',
+							lockUser: {}
+						},
+						params
+					);
+					_params.containerClasses += ' notification-changeset-locked';
+					api.OverlayNotification.prototype.initialize.call( notification, _code, _params );
+				},
 
-				request.always( function() {
-					takeOverButton.prop( 'disabled', false );
-				} );
-			} );
+				/**
+				 * Render notification.
+				 *
+				 * @since 4.9.0
+				 *
+				 * @return {jQuery}
+				 */
+				render: function() {
+					var notification = this, li, data, takeOverButton, request;
+					data = _.extend(
+						{
+							allowOverride: false,
+							returnUrl: api.settings.url['return'],
+							previewUrl: api.previewer.previewUrl.get(),
+							frontendPreviewUrl: api.previewer.getFrontendPreviewUrl()
+						},
+						this
+					);
 
-			body.append( template );
+					li = api.OverlayNotification.prototype.render.call( data );
 
-			focusAndToggleLockNotice = function() {
-				var locked = api.state( 'changesetLocked' ).get();
+					takeOverButton = li.find( '.customize-notice-take-over-button' );
+					takeOverButton.on( 'click', function( event ) {
+						event.preventDefault();
+						if ( request ) {
+							return;
+						}
 
-				template.toggleClass( 'hidden', ! locked );
-				if ( true === locked ) {
-					template.find( '.button' ).first().focus();
+						takeOverButton.addClass( 'disabled' );
+						request = wp.ajax.post( 'customize_override_changeset_lock', {
+							wp_customize: 'on',
+							customize_theme: api.settings.theme.stylesheet,
+							customize_changeset_uuid: api.settings.changeset.uuid,
+							nonce: api.settings.nonce.override_lock
+						} );
+
+						request.done( function() {
+							api.notifications.remove( notification.code ); // Remove self.
+							api.state( 'changesetLocked' ).set( false );
+						} );
+
+						request.fail( function( response ) {
+							var message = response.message || api.l10n.unknownRequestFail;
+							li.find( '.notice-error' ).prop( 'hidden', false ).text( message );
+
+							request.always( function() {
+								takeOverButton.removeClass( 'disabled' );
+							} );
+						} );
+
+						request.always( function() {
+							request = null;
+						} );
+					} );
+
+					return li;
 				}
-			};
+			});
 
-			focusAndToggleLockNotice();
-			api.state( 'changesetLocked' ).bind( 'change', focusAndToggleLockNotice );
+			// Show initial notification.
+			if ( api.settings.changeset.lockUser ) {
+				api.notifications.add( new LockedNotification( 'changeset_locked', {
+					lockUser: api.settings.changeset.lockUser,
+					allowOverride: true
+				} ) );
+			}
 
-			$( document ).on( 'heartbeat-send.check_changeset_lock', function ( event, data ) {
+			// Check for lock when sending heartbeat requests.
+			$( document ).on( 'heartbeat-send.update_lock_notice', function( event, data ) {
 				data.check_changeset_lock = true;
 			});
 
-			$( document ).on( 'heartbeat-tick.update_lock_notice', function ( event, data ) {
-				if ( data.changeset_locked_data && data.changeset_locked_data.user_id && ! api.state( 'changesetLocked' ).get() ) {
-					template.find( '.customize-changeset-locked-avatar' ).html( data.changeset_locked_data.user_avatar );
-					template.find( '.customize-take-over-message' ).text( api.l10n.takenOverMessage.replace( /%s/g, String( data.changeset_locked_data.display_name ) ) );
-					template.find( '.customize-notice-take-over-button' ).remove();
-					api.state( 'changesetLocked' ).set( true );
-				} else {
-					api.state( 'changesetLocked' ).set( false );
+			// Handle heartbeat ticks.
+			$( document ).on( 'heartbeat-tick.update_lock_notice', function( event, data ) {
+				var notification, code = 'changeset_locked';
+				if ( ! data.customize_changeset_lock_user ) {
+					return;
 				}
+				api.settings.changeset.lockUser = data.customize_changeset_lock_user;
+
+				// Update notification when a different user takes over.
+				notification = api.notifications( code );
+				if ( notification && notification.lockUser.id !== api.settings.changeset.lockUser.id ) {
+					api.notifications.remove( code );
+				}
+
+				api.notifications.add( new LockedNotification( code, {
+					lockUser: api.settings.changeset.lockUser
+				} ) );
+				api.state( 'changesetLocked' ).set( true );
 			} );
+
+			// Handle locking in response to changeset save errors.
+			function handleSaveError( response ) {
+				if ( 'changeset_locked' === response.code ) {
+					api.settings.changeset.lockUser = response.lock_user;
+					api.notifications.add( new LockedNotification( 'changeset_locked', {
+						lockUser: response.lock_user,
+						allowOverride: true
+					} ) );
+				}
+			}
+			api.bind( 'changeset-error', handleSaveError );
+			api.bind( 'error', handleSaveError );
 		} )();
 
 		// Set up initial notifications.

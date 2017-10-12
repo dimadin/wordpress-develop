@@ -2635,7 +2635,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 				'currentUserCanPublish',
 				'publishDate',
 				'statusChoices',
-				'locked',
+				'lockUser',
 			),
 			array_keys( $data['changeset'] )
 		);

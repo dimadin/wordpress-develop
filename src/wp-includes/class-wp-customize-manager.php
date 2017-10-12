@@ -379,7 +379,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_load_themes',              array( $this, 'handle_load_themes_request' ) );
 		add_filter( 'heartbeat_settings',                         array( $this, 'wp_heartbeat_settings_customizer_filter' ) );
 		add_filter( 'heartbeat_received',                         array( $this, 'check_changeset_lock_with_heartbeat' ), 10, 3 );
-		add_action( 'wp_ajax_customize_take_over_changeset',      array( $this, 'take_over_changeset_request' ) );
+		add_action( 'wp_ajax_customize_override_changeset_lock',  array( $this, 'handle_override_changeset_lock_request' ) );
 		add_action( 'wp_ajax_customize_dismiss_autosave_or_lock', array( $this, 'handle_dismiss_autosave_or_lock_request' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
@@ -2324,15 +2324,6 @@ final class WP_Customize_Manager {
 			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
 				wp_send_json_error( 'cannot_edit_changeset_post' );
 			}
-
-			$user = $this->check_changeset_lock();
-			if ( $user ) {
-				wp_send_json_error( array(
-					'message' => __( 'Changeset is being edited by other user.' ),
-					'code' => 'changeset_locked',
-					'user_data' => $user,
-				) );
-			}
 		}
 
 		if ( ! empty( $_POST['customize_changeset_data'] ) ) {
@@ -2391,7 +2382,19 @@ final class WP_Customize_Manager {
 			}
 		}
 
+		$lock_user_id = null;
 		$autosave = ! empty( $_POST['customize_changeset_autosave'] );
+		if ( ! $is_new_changeset ) {
+			$lock_user_id = wp_check_post_lock( $this->changeset_post_id() );
+		}
+
+		// Force request to autosave when changeset is locked.
+		if ( $lock_user_id && ! $autosave ) {
+			$autosave = true;
+			$changeset_status = null;
+			$changeset_date_gmt = null;
+		}
+
 		if ( $autosave && ! defined( 'DOING_AUTOSAVE' ) ) { // Back-compat.
 			define( 'DOING_AUTOSAVE', true );
 		}
@@ -2403,6 +2406,18 @@ final class WP_Customize_Manager {
 			'data' => $input_changeset_data,
 			'autosave' => $autosave,
 		) );
+
+		// If the changeset was locked and an autosave request wasn't itself an error, then now explicitly return with a failure.
+		if ( $lock_user_id && ! is_wp_error( $r ) ) {
+			$r = new WP_Error(
+				'changeset_locked',
+				__( 'Changeset is being edited by other user.' ),
+				array(
+					'lock_user' => $this->get_lock_user_data( $lock_user_id ),
+				)
+			);
+		}
+
 		if ( is_wp_error( $r ) ) {
 			$response = array(
 				'message' => $r->get_error_message(),
@@ -2429,7 +2444,7 @@ final class WP_Customize_Manager {
 			}
 
 			if ( 'publish' !== $response['changeset_status'] ) {
-				$this->set_changeset_lock( $changeset_post->ID );
+				$this->set_changeset_lock( $changeset_post->ID ); // @todo And if not auto-draft?
 			}
 
 			if ( 'future' === $response['changeset_status'] ) {
@@ -3075,87 +3090,69 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Check locked changeset with heartbeat api.
+	 * Get lock user data.
 	 *
 	 * @since 4.9.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array|null User data formatted for client.
+	 */
+	protected function get_lock_user_data( $user_id ) {
+		if ( ! $user_id ) {
+			return null;
+		}
+		$lock_user = get_userdata( $user_id );
+		if ( ! $lock_user ) {
+			return null;
+		}
+		return array(
+			'id' => $lock_user->ID,
+			'name' => $lock_user->display_name,
+			'avatar' => get_avatar_url( $lock_user->ID, array( 'size' => 128 ) ),
+		);
+	}
+
+	/**
+	 * Check locked changeset with heartbeat API.
+	 *
+	 * @since 4.9.0
+	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
 	 * @param string $screen_id The screen id.
 	 * @return array The Heartbeat response.
 	 */
 	public function check_changeset_lock_with_heartbeat( $response, $data, $screen_id ) {
-		if ( array_key_exists( 'check_changeset_lock', $data ) && 'customize' === $screen_id && current_user_can( 'customize' ) ) {
-			$user = $this->check_changeset_lock();
-			if ( $user ) {
-				$response['changeset_locked_data'] = $user;
-			}
+		if ( array_key_exists( 'check_changeset_lock', $data ) && 'customize' === $screen_id && current_user_can( 'customize' ) && $this->changeset_post_id() ) {
+			$lock_user_id = wp_check_post_lock( $this->changeset_post_id() );
 
-			// Refreshing time will ensure that the user is sitting on customizer and has not closed the customizer tab.
-			$this->refresh_changeset_lock( $this->changeset_post_id() );
+			if ( $lock_user_id ) {
+				$response['customize_changeset_lock_user'] = $this->get_lock_user_data( $lock_user_id );
+			} else {
+
+				// Refreshing time will ensure that the user is sitting on customizer and has not closed the customizer tab.
+				$this->refresh_changeset_lock( $this->changeset_post_id() );
+			}
 		}
 
 		return $response;
 	}
 
 	/**
-	 * Check to see if the changeset is currently being edited by another user.
-	 *
-	 * @since 4.9.0
-	 *
-	 * @return array|false User data of the user with lock. False if the changeset does not exist, changeset is not locked,
-	 *                   the user with lock does not exist, or the changeset is locked by current user.
-	 */
-	public function check_changeset_lock() {
-		$changeset_post_id = $this->changeset_post_id();
-
-		if ( ! $changeset_post_id ) {
-			return false;
-		}
-
-		$lock = get_post_meta( $changeset_post_id, '_edit_lock', true );
-
-		if ( ! $lock ) {
-		    return false;
-		}
-
-		$lock = explode( ':', $lock );
-		$time = intval( $lock[0] );
-		$user_id = isset( $lock[1] ) ? intval( $lock[1] ) : false;
-
-		if ( ! $user_id || ! get_userdata( $user_id ) ) {
-			return false;
-		}
-
-		/** This filter is documented in wp-admin/includes/ajax-actions.php */
-		$time_window = apply_filters( 'wp_check_post_lock_window', 150 ); // @todo Create another filter for changeset? Or do not use filter here?
-
-		if ( $time && $time > time() - $time_window && $user_id !== get_current_user_id() ) {
-			$user = get_userdata( $user_id );
-			return array(
-				'user_id' => $user_id,
-				'display_name' => $user->display_name,
-				'user_avatar' => get_avatar( $user->ID, 64 ),
-			);
-		}
-
-		return false;
-	}
-
-	/**
-	 * Removes changeset lock when take over request is sent via ajax.
+	 * Removes changeset lock when take over request is sent via Ajax.
 	 *
 	 * @since 4.9.0
 	 */
-	public function take_over_changeset_request() {
+	public function handle_override_changeset_lock_request() {
 		if ( ! $this->is_preview() ) {
 			wp_send_json_error( 'not_preview', 400 );
 		}
 
-		if ( ! check_ajax_referer( 'customize_take_over_changeset', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'customize_override_changeset_lock', 'nonce', false ) ) {
 			wp_send_json_error( array(
 				'code' => 'invalid_nonce',
-				'message' => esc_html__( 'Security check failed.' ),
-			), 403 );
+				'message' => __( 'Security check failed.' ),
+			) );
 		}
 
 		$changeset_post_id = $this->changeset_post_id();
@@ -3163,15 +3160,15 @@ final class WP_Customize_Manager {
 		if ( empty( $changeset_post_id ) ) {
 			wp_send_json_error( array(
 				'code' => 'no_changeset_found_to_take_over',
-				'message' => esc_html__( 'No changeset found to take over' ),
-			), 404 );
+				'message' => __( 'No changeset found to take over' ),
+			) );
 		}
 
 		if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
 			wp_send_json_error( array(
 				'code' => 'cannot_remove_changeset_lock',
-				'message' => esc_html__( 'Sorry you are not allowed to take over.' ),
-			), 403 );
+				'message' => __( 'Sorry you are not allowed to take over.' ),
+			) );
 		}
 
 		$this->set_changeset_lock( $changeset_post_id, true );
@@ -3881,18 +3878,6 @@ final class WP_Customize_Manager {
 			) );
 			$control->print_template();
 		}
-
-		$user = $this->check_changeset_lock();
-		$display_name = '';
-		$user_avatar = '';
-		$hidden_class = 'hidden';
-		$preview_url = add_query_arg( 'customize_changeset_uuid', $this->changeset_uuid(), $this->get_preview_url() );
-
-		if ( $user ) {
-			$hidden_class = '';
-			$display_name = $user['display_name'];
-			$user_avatar = $user['user_avatar'];
-		}
 		?>
 
 		<script type="text/html" id="tmpl-customize-control-default-content">
@@ -4039,6 +4024,39 @@ final class WP_Customize_Manager {
 			</li>
 		</script>
 
+		<script type="text/html" id="tmpl-customize-changeset-locked-notification">
+			<li class="notice notice-{{ data.type || 'info' }} {{ data.containerClasses || '' }}" data-code="{{ data.code }}" data-type="{{ data.type }}">
+				<div class="notification-message customize-changeset-locked-message">
+					<img class="customize-changeset-locked-avatar" src="{{ data.lockUser.avatar }}" alt="{{ data.lockUser.name }}">
+					<p class="currently-editing">
+						<# if ( data.message ) { #>
+							{{{ data.message }}}
+						<# } else if ( data.allowOverride ) { #>
+							<?php
+							/* translators: %s: User who is customizing the changeset in customizer. */
+							printf( __( '%s is already customizing this site. Do you want to take over?' ), '{{ data.lockUser.name }}' );
+							?>
+						<# } else { #>
+							<?php
+							/* translators: %s: User who is customizing the changeset in customizer. */
+							printf( __( '%s is already customizing this site. Please wait until they are done to try customizing.' ), '{{ data.lockUser.name }}' );
+							?>
+						<# } #>
+					</p>
+					<p class="notice notice-error notice-alt" hidden></p>
+					<p class="action-buttons">
+						<# if ( data.returnUrl !== data.previewUrl ) { #>
+							<a class="button customize-notice-go-back-button" href="{{ data.returnUrl }}"><?php _e( 'Go back' ); ?></a>
+						<# } #>
+						<a class="button customize-notice-preview-button" href="{{ data.frontendPreviewUrl }}"><?php _e( 'Preview' ); ?></a>
+						<# if ( data.allowOverride ) { #>
+							<button class="button button-primary wp-tab-last customize-notice-take-over-button"><?php _e( 'Take over' ); ?></button>
+						<# } #>
+					</p>
+				</div>
+			</li>
+		</script>
+
 		<?php
 		/* The following template is obsolete in core but retained for plugins. */
 		?>
@@ -4083,31 +4101,6 @@ final class WP_Customize_Manager {
 					<label for="{{ choiceId }}">{{ choice.label }}</label>
 				</span>
 			<# } ); #>
-		</script>
-
-		<script type="text/html" id="tmpl-customize-changeset-locked-notice">
-			<div id="customize-changeset-lock-dialog" class="notification-dialog-wrap <?php echo $hidden_class; ?>">
-				<div class="notification-dialog-background"></div>
-				<div class="notification-dialog">
-					<div class="customize-changeset-locked-message">
-						<div class="customize-changeset-locked-avatar"><?php echo $user_avatar; ?></div>
-						<p class="currently-editing wp-tab-first customize-take-over-message" tabindex="0">
-							<?php
-								/* translators: %s: Display name of the user who is customizing the changeset in customizer. */
-								printf( esc_html__( '%s is already customizing this site. Do you want to take over?' ), $display_name );
-							?>
-						</p>
-						<p class="error hidden"></p>
-						<p>
-							<?php if ( $this->get_preview_url() !== $this->get_return_url() ) { ?>
-								<a class="button customize-notice-go-back-button" href="<?php echo esc_url( $this->get_return_url() ); ?>"><?php esc_html_e( 'Go back' ); ?></a>
-							<?php } ?>
-							<a class="button customize-notice-preview-button" href="<?php echo esc_url( $preview_url ); ?>"><?php esc_html_e( 'Preview' ); ?></a>
-							<button class="button button-primary wp-tab-last customize-notice-take-over-button"><?php esc_html_e( 'Take over' ); ?></button>
-						</p>
-					</div>
-				</div>
-			</div>
 		</script>
 		<?php
 	}
@@ -4436,7 +4429,7 @@ final class WP_Customize_Manager {
 			'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() ),
 			'switch_themes' => wp_create_nonce( 'switch_themes' ),
 			'dismiss_autosave_or_lock' => wp_create_nonce( 'customize_dismiss_autosave_or_lock' ),
-			'customize_take_over_changeset' => wp_create_nonce( 'customize_take_over_changeset' ),
+			'override_lock' => wp_create_nonce( 'customize_override_changeset_lock' ),
 			'trash' => wp_create_nonce( 'trash_customize_changeset' ),
 		);
 
@@ -4525,6 +4518,11 @@ final class WP_Customize_Manager {
 			$initial_date = current_time( 'mysql', false );
 		}
 
+		$lock_user_id = false;
+		if ( $this->changeset_post_id() ) {
+			$lock_user_id = wp_check_post_lock( $this->changeset_post_id() );
+		}
+
 		$settings = array(
 			'changeset' => array(
 				'uuid' => $this->changeset_uuid(),
@@ -4536,7 +4534,7 @@ final class WP_Customize_Manager {
 				'currentUserCanPublish' => $current_user_can_publish,
 				'publishDate' => $initial_date,
 				'statusChoices' => $status_choices,
-				'locked' => (bool) $this->check_changeset_lock(),
+				'lockUser' => $lock_user_id ? $this->get_lock_user_data( $lock_user_id ) : null,
 			),
 			'initialServerDate' => current_time( 'mysql', false ),
 			'dateFormat' => get_option( 'date_format' ),

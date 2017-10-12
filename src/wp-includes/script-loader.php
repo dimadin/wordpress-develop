@@ -574,7 +574,7 @@ function wp_default_scripts( &$scripts ) {
 		'collapseSidebar'    => _x( 'Hide Controls', 'label for hide controls button without length constraints' ),
 		'expandSidebar'      => _x( 'Show Controls', 'label for hide controls button without length constraints' ),
 		'untitledBlogName'   => __( '(Untitled)' ),
-		'serverSaveError'    => __( 'Failed connecting to the server. Please try saving again.' ),
+		'unknownRequestFail' => __( 'Looks like something&#8217;s gone wrong. Wait a couple seconds, and then try again.' ),
 		'themeDownloading'   => __( 'Downloading your new theme&hellip;' ),
 		'themePreviewWait'   => __( 'Setting up your live preview. This may take a bit.' ),
 		'revertingChanges'   => __( 'Reverting unpublished changes&hellip;' ),
