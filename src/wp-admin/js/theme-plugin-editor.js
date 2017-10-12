@@ -475,7 +475,7 @@ wp.themePluginEditor = (function( $ ) {
 		TreeitemLink.prototype.handleKeydown = function (event) {
 			var tgt = event.currentTarget,
 				flag = false,
-				char = event.key,
+				_char = event.key,
 				clickEvent;
 
 			function isPrintableCharacter(str) {
@@ -483,13 +483,13 @@ wp.themePluginEditor = (function( $ ) {
 			}
 
 			function printableCharacter(item) {
-				if (char == '*') {
+				if (_char == '*') {
 					item.tree.expandAllSiblingItems(item);
 					flag = true;
 				}
 				else {
-					if (isPrintableCharacter(char)) {
-						item.tree.setFocusByFirstCharacter(item, char);
+					if (isPrintableCharacter(_char)) {
+						item.tree.setFocusByFirstCharacter(item, _char);
 						flag = true;
 					}
 				}
@@ -507,7 +507,7 @@ wp.themePluginEditor = (function( $ ) {
 					this.stopDefaultClick = true;
 				}
 				else {
-					if (isPrintableCharacter(char)) {
+					if (isPrintableCharacter(_char)) {
 						printableCharacter(this);
 					}
 				}
@@ -577,7 +577,7 @@ wp.themePluginEditor = (function( $ ) {
 						break;
 
 					default:
-						if (isPrintableCharacter(char)) {
+						if (isPrintableCharacter(_char)) {
 							printableCharacter(this);
 						}
 						break;
@@ -856,8 +856,9 @@ wp.themePluginEditor = (function( $ ) {
 
 		};
 
-		TreeLinks.prototype.setFocusByFirstCharacter = function (currentItem, char) {
-			var start, index, char = char.toLowerCase();
+		TreeLinks.prototype.setFocusByFirstCharacter = function (currentItem, _char) {
+			var start, index;
+			_char = _char.toLowerCase();
 
 			// Get start index for search based on position of currentItem
 			start = this.treeitems.indexOf(currentItem) + 1;
@@ -866,11 +867,11 @@ wp.themePluginEditor = (function( $ ) {
 			}
 
 			// Check remaining slots in the menu
-			index = this.getIndexFirstChars(start, char);
+			index = this.getIndexFirstChars(start, _char);
 
 			// If not found in remaining slots, check from beginning
 			if (index === -1) {
-				index = this.getIndexFirstChars(0, char);
+				index = this.getIndexFirstChars(0, _char);
 			}
 
 			// If match was found...
@@ -879,10 +880,10 @@ wp.themePluginEditor = (function( $ ) {
 			}
 		};
 
-		TreeLinks.prototype.getIndexFirstChars = function (startIndex, char) {
+		TreeLinks.prototype.getIndexFirstChars = function (startIndex, _char) {
 			for (var i = startIndex; i < this.firstChars.length; i++) {
 				if (this.treeitems[i].isVisible) {
-					if (char === this.firstChars[i]) {
+					if (_char === this.firstChars[i]) {
 						return i;
 					}
 				}
