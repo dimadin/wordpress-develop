@@ -618,7 +618,6 @@ final class WP_Customize_Manager {
 					'posts_per_page' => 1,
 					'order' => 'DESC',
 					'orderby' => 'date',
-					'author' => 'any',
 				) );
 				$unpublished_changeset_post = array_shift( $unpublished_changeset_posts );
 				if ( ! empty( $unpublished_changeset_post ) && wp_is_uuid( $unpublished_changeset_post->post_name ) ) {

@@ -7719,6 +7719,15 @@
 		 * @since 4.9.0
 		 */
 		( function checkAndDisplayLockNotice() {
+
+			/**
+			 * A notification that is displayed in a full-screen overlay with information about the locked changeset.
+			 *
+			 * @since 4.9.0
+			 * @class
+			 * @augments wp.customize.Notification
+			 * @augments wp.customize.OverlayNotification
+			 */
 			var LockedNotification = api.OverlayNotification.extend({
 
 				/**
