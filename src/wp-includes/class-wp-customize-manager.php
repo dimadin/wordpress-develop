@@ -3220,11 +3220,14 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.7.0
 	 * @see _wp_customize_publish_changeset()
+	 * @global wpdb $wpdb
 	 *
 	 * @param int $changeset_post_id ID for customize_changeset post. Defaults to the changeset for the current manager instance.
 	 * @return true|WP_Error True or error info.
 	 */
 	public function _publish_changeset_values( $changeset_post_id ) {
+		global $wpdb;
+
 		$publishing_changeset_data = $this->get_changeset_post_data( $changeset_post_id );
 		if ( is_wp_error( $publishing_changeset_data ) ) {
 			return $publishing_changeset_data;
@@ -3361,6 +3364,30 @@ final class WP_Customize_Manager {
 		$this->_changeset_data    = $previous_changeset_data;
 		$this->_changeset_post_id = $previous_changeset_post_id;
 		$this->_changeset_uuid    = $previous_changeset_uuid;
+
+		/*
+		 * Convert all autosave revisions into their own auto-drafts so that users can be prompted to
+		 * restore them when a changeset is published, but they had been locked out from including
+		 * their changes in the changeset.
+		 */
+		$revisions = wp_get_post_revisions( $changeset_post_id, array( 'check_enabled' => false ) );
+		foreach ( $revisions as $revision ) {
+			if ( false !== strpos( $revision->post_name, "{$changeset_post_id}-autosave" ) ) {
+				$wpdb->update(
+					$wpdb->posts,
+					array(
+						'post_status' => 'auto-draft',
+						'post_type' => 'customize_changeset',
+						'post_name' => wp_generate_uuid4(),
+						'post_parent' => 0,
+					),
+					array(
+						'ID' => $revision->ID,
+					)
+				);
+				clean_post_cache( $revision->ID );
+			}
+		}
 
 		return true;
 	}
