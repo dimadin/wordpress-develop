@@ -361,16 +361,23 @@ wp.themePluginEditor = (function( $ ) {
 	 */
 	component.initFileBrowser = function initFileBrowser() {
 
+		var $templateside = $( '#templateside' );
+
 		// Collapse all folders.
-		$( '#templateside [role="group"]' ).parent().attr( 'aria-expanded', false );
+		$templateside.find( '[role="group"]' ).parent().attr( 'aria-expanded', false );
 
 		// Expand ancestors to the current file.
-		$( '#templateside .notice' ).parents( '[aria-expanded]' ).attr( 'aria-expanded', true );
+		$templateside.find( '.notice' ).parents( '[aria-expanded]' ).attr( 'aria-expanded', true );
 
 		// Find Tree elements and enhance them.
-		$( '#templateside [role="tree"]' ).each( function() {
+		$templateside.find( '[role="tree"]' ).each( function() {
 			var treeLinks = new TreeLinks( this );
 			treeLinks.init();
+		} );
+
+		// Scroll the current file into view.
+		$templateside.find( '.current-file' ).each( function() {
+			this.scrollIntoView( false );
 		} );
 	};
 
