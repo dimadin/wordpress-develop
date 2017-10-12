@@ -7819,12 +7819,30 @@
 				}
 			});
 
-			// Show initial notification.
-			if ( api.settings.changeset.lockUser ) {
+			/**
+			 * Start lock.
+			 *
+			 * @since 4.9.0
+			 *
+			 * @param {object} [args] - Args.
+			 * @param {object} [args.lockUser] - Lock user data.
+			 * @param {boolean} [args.allowOverride=false] - Whether override is allowed.
+			 * @returns {void}
+			 */
+			function startLock( args ) {
+				if ( args && args.lockUser ) {
+					api.settings.changeset.lockUser = args.lockUser;
+				}
+				api.state( 'changesetLocked' ).set( true );
 				api.notifications.add( new LockedNotification( 'changeset_locked', {
 					lockUser: api.settings.changeset.lockUser,
-					allowOverride: true
+					allowOverride: Boolean( args && args.allowOverride )
 				} ) );
+			}
+
+			// Show initial notification.
+			if ( api.settings.changeset.lockUser ) {
+				startLock( { allowOverride: true } );
 			}
 
 			// Check for lock when sending heartbeat requests.
@@ -7838,7 +7856,6 @@
 				if ( ! data.customize_changeset_lock_user ) {
 					return;
 				}
-				api.settings.changeset.lockUser = data.customize_changeset_lock_user;
 
 				// Update notification when a different user takes over.
 				notification = api.notifications( code );
@@ -7846,20 +7863,17 @@
 					api.notifications.remove( code );
 				}
 
-				api.notifications.add( new LockedNotification( code, {
-					lockUser: api.settings.changeset.lockUser
-				} ) );
-				api.state( 'changesetLocked' ).set( true );
+				startLock( {
+					lockUser: data.customize_changeset_lock_user
+				} );
 			} );
 
 			// Handle locking in response to changeset save errors.
 			function handleSaveError( response ) {
-				if ( 'changeset_locked' === response.code ) {
-					api.settings.changeset.lockUser = response.lock_user;
-					api.notifications.add( new LockedNotification( 'changeset_locked', {
-						lockUser: response.lock_user,
-						allowOverride: true
-					} ) );
+				if ( 'changeset_locked' === response.code && response.lock_user ) {
+					startLock( {
+						lockUser: response.lock_user
+					} );
 				}
 			}
 			api.bind( 'changeset-error', handleSaveError );
