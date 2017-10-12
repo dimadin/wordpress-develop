@@ -89,11 +89,11 @@ wp.themePluginEditor = (function( $ ) {
 			pointer: component.themeOrPlugin + '_editor_notice'
 		});
 
-		// hide modal
+		// Hide modal.
 		component.warning.remove();
 		$( 'body' ).removeClass( 'modal-open' );
 
-		// return focus - is this a trap?
+		// Return focus - is this a trap?
 		component.instance.codemirror.focus();
 	};
 
@@ -151,7 +151,7 @@ wp.themePluginEditor = (function( $ ) {
 			component.removeNotice( component.lastSaveNoticeCode );
 		}
 
-		request.done( function ( response ) {
+		request.done( function( response ) {
 			component.lastSaveNoticeCode = 'file_saved';
 			component.addNotice({
 				code: component.lastSaveNoticeCode,
@@ -162,7 +162,7 @@ wp.themePluginEditor = (function( $ ) {
 			component.dirty = false;
 		} );
 
-		request.fail( function ( response ) {
+		request.fail( function( response ) {
 			var notice = $.extend(
 				{
 					code: 'save_error',
@@ -354,6 +354,7 @@ wp.themePluginEditor = (function( $ ) {
 	};
 
 	/* jshint ignore:start */
+	/* jscs:disable */
 
 	/**
 	 * Creates a new TreeitemLink.
@@ -898,6 +899,7 @@ wp.themePluginEditor = (function( $ ) {
 	})();
 
 	/* jshint ignore:end */
+	/* jscs:enable */
 
 	/**
 	 * Initialization of the file browser's folder states.
