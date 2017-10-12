@@ -3037,8 +3037,20 @@ img {
 	height: calc( 100vh - 280px );
 }
 
-#templateside {
-	margin-top: 31px;
+#templateside > h2 {
+	padding-top: 6px;
+	padding-bottom: 6px;
+	margin: 0;
+	border-bottom: solid 1px #ccc;
+}
+
+#templateside ol,
+#templateside ul {
+	margin: .5em 0;
+	padding: 0;
+}
+#templateside > ul {
+	margin-top: 0;
 	overflow: auto;
 	padding: 2px;
 	height: calc(100vh - 280px);
@@ -3202,19 +3214,12 @@ img {
 	word-wrap: break-word;
 }
 
-#templateside h2,
 #postcustomstuff p.submit {
 	margin: 0;
 }
 
 #templateside h4 {
 	margin: 1em 0 0;
-}
-
-#templateside ol,
-#templateside ul {
-	margin: .5em 0;
-	padding: 0;
 }
 
 #templateside li {
