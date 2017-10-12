@@ -377,7 +377,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_trash',                    array( $this, 'handle_changeset_trash_request' ) );
 		add_action( 'wp_ajax_customize_refresh_nonces',           array( $this, 'refresh_nonces' ) );
 		add_action( 'wp_ajax_customize_load_themes',              array( $this, 'handle_load_themes_request' ) );
-		add_filter( 'heartbeat_settings',                         array( $this, 'wp_heartbeat_settings_customizer_filter' ) );
+		add_filter( 'heartbeat_settings',                         array( $this, 'add_customize_screen_to_heartbeat_settings' ) );
 		add_filter( 'heartbeat_received',                         array( $this, 'check_changeset_lock_with_heartbeat' ), 10, 3 );
 		add_action( 'wp_ajax_customize_override_changeset_lock',  array( $this, 'handle_override_changeset_lock_request' ) );
 		add_action( 'wp_ajax_customize_dismiss_autosave_or_lock', array( $this, 'handle_dismiss_autosave_or_lock_request' ) );
@@ -3084,16 +3084,14 @@ final class WP_Customize_Manager {
 	 * Filter heartbeat settings for the Customizer.
 	 *
 	 * @since 4.9.0
-	 * @param array $settings  Current settings to filter.
-	 * @return array
+	 * @param array $settings Current settings to filter.
+	 * @return array Heartbeat settings.
 	 */
-	public function wp_heartbeat_settings_customizer_filter( $settings ) {
+	public function add_customize_screen_to_heartbeat_settings( $settings ) {
 		global $pagenow;
-		if ( 'customize.php' !== $pagenow ) {
-			return $settings;
+		if ( 'customize.php' === $pagenow ) {
+			$settings['screenId'] = 'customize';
 		}
-
-		$settings['screenId'] = 'customize';
 		return $settings;
 	}
 
