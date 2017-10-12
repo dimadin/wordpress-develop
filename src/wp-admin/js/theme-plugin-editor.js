@@ -66,7 +66,7 @@ wp.themePluginEditor = (function( $ ) {
 			} );
 		}
 
-		$( component.initFileBrowser )
+		$( component.initFileBrowser );
 
 		$( window ).on( 'beforeunload', function() {
 			if ( component.dirty ) {
@@ -913,7 +913,7 @@ wp.themePluginEditor = (function( $ ) {
 			var t = new TreeLinks(trees[i]);
 			t.init();
 		}
-	}
+	};
 
 	return component;
 })( jQuery );
