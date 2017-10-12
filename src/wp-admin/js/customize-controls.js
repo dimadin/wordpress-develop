@@ -7779,28 +7779,11 @@
 
 					li = api.OverlayNotification.prototype.render.call( data );
 
-					li.find( '.customize-notice-preview-button, .customize-notice-go-back-button' ).on( 'click', function( event ) {
-						var link = $( this );
-						event.preventDefault();
-						if ( request ) {
-							return;
+					// Try to autosave the changeset now.
+					api.requestChangesetUpdate( {}, { autosave: true } ).fail( function( response ) {
+						if ( ! response.autosaved ) {
+							li.find( '.notice-error' ).prop( 'hidden', false ).text( response.message || api.l10n.unknownRequestFail );
 						}
-						link.addClass( 'disabled' );
-						request = api.requestChangesetUpdate( {}, { autosave: true } );
-						request.fail( function( response ) {
-							if ( response.autosaved ) {
-								location.href = link.prop( 'href' );
-							} else {
-								li.find( '.notice-error' ).prop( 'hidden', false ).text( response.message || api.l10n.unknownRequestFail );
-								link.removeClass( 'disabled' );
-							}
-						} );
-						request.done( function( response ) {
-							location.href = link.prop( 'href' );
-						} );
-						request.always( function() {
-							request = null;
-						} );
 					} );
 
 					takeOverButton = li.find( '.customize-notice-take-over-button' );
