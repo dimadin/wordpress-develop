@@ -355,6 +355,7 @@ wp.themePluginEditor = (function( $ ) {
 
 	/* jshint ignore:start */
 	/* jscs:disable */
+	/* eslint-disable */
 
 	/**
 	 * Creates a new TreeitemLink.
@@ -900,6 +901,7 @@ wp.themePluginEditor = (function( $ ) {
 
 	/* jshint ignore:end */
 	/* jscs:enable */
+	/* eslint-enable */
 
 	/**
 	 * Initialization of the file browser's folder states.
