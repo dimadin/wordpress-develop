@@ -353,6 +353,27 @@ wp.themePluginEditor = (function( $ ) {
 		component.instance = editor;
 	};
 
+	/**
+	 * Initialization of the file browser's folder states.
+	 *
+	 * @since 4.9.0
+	 * @returns {void}
+	 */
+	component.initFileBrowser = function initFileBrowser() {
+
+		// Collapse all folders.
+		$( '#templateside [role="group"]' ).parent().attr( 'aria-expanded', false );
+
+		// Expand ancestors to the current file.
+		$( '#templateside .notice' ).parents( '[aria-expanded]' ).attr( 'aria-expanded', true );
+
+		// Find Tree elements and enhance them.
+		$( '#templateside [role="tree"]' ).each( function() {
+			var treeLinks = new TreeLinks( this );
+			treeLinks.init();
+		} );
+	};
+
 	/* jshint ignore:start */
 	/* jscs:disable */
 	/* eslint-disable */
@@ -902,27 +923,6 @@ wp.themePluginEditor = (function( $ ) {
 	/* jshint ignore:end */
 	/* jscs:enable */
 	/* eslint-enable */
-
-	/**
-	 * Initialization of the file browser's folder states.
-	 *
-	 * @since 4.9.0
-	 * @returns {void}
-	 */
-	component.initFileBrowser = function initFileBrowser() {
-
-		// Collapse all folders.
-		$( '#templateside [role="group"]' ).parent().attr( 'aria-expanded', false );
-
-		// Expand ancestors to the current file.
-		$( '#templateside .notice' ).parents( '[aria-expanded]' ).attr( 'aria-expanded', true );
-
-		// Find Tree elements and enhance them.
-		$( '#templateside [role="tree"]' ).each( function() {
-			var treeLinks = new TreeLinks( this );
-			treeLinks.init();
-		} );
-	};
 
 	return component;
 })( jQuery );
