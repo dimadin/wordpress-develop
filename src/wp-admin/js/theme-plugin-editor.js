@@ -6,8 +6,9 @@ if ( ! window.wp ) {
 
 wp.themePluginEditor = (function( $ ) {
 	'use strict';
+	var component, TreeLinks;
 
-	var component = {
+	component = {
 		l10n: {
 			lintError: {
 				singular: '',
@@ -352,6 +353,8 @@ wp.themePluginEditor = (function( $ ) {
 		component.instance = editor;
 	};
 
+	/* jshint ignore:start */
+
 	/**
 	 * Creates a new TreeitemLink.
 	 *
@@ -644,7 +647,7 @@ wp.themePluginEditor = (function( $ ) {
 	 * @see {@link https://www.w3.org/TR/wai-aria-practices-1.1/examples/treeview/treeview-2/treeview-2b.html|W3C Treeview Example}
 	 * @license W3C-20150513
 	 */
-	var TreeLinks = (function () {
+	TreeLinks = (function () {
 		/*
 		 *   This content is licensed according to the W3C Software License at
 		 *   https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document
@@ -893,6 +896,8 @@ wp.themePluginEditor = (function( $ ) {
 
 		return TreeLinks;
 	})();
+
+	/* jshint ignore:end */
 
 	/**
 	 * Initialization of the file browser's folder states.
