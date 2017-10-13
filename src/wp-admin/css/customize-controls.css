@@ -506,8 +506,7 @@ body.trashing #publish-settings {
 	margin-bottom: 0;
 }
 
-#customize-controls .customize-info .customize-section-description,
-#customize-outer-theme-controls .customize-section-description {
+#customize-controls .customize-info .customize-section-description {
 	margin-bottom: 15px;
 }
 
@@ -562,9 +561,6 @@ body.trashing #publish-settings {
 #customize-controls .control-section:hover > .accordion-section-title,
 #customize-controls .control-section .accordion-section-title:hover,
 #customize-controls .control-section.open .accordion-section-title,
-#customize-outer-theme-controls .control-section .accordion-section-title:hover,
-#customize-outer-theme-controls .control-section.open .accordion-section-title,
-#customize-outer-theme-controls .control-section .accordion-section-title:focus,
 #customize-controls .control-section .accordion-section-title:focus {
 	color: #0073aa;
 	background: #f3f3f5;
@@ -1724,8 +1720,7 @@ p.customize-section-description {
 .control-panel-themes .accordion-section-title span.customize-action,
 #customize-controls .customize-section-title span.customize-action,
 #customize-controls .control-section-themes .accordion-section-title span.customize-action,
-#customize-controls .customize-section-title span.customize-action,
-#customize-outer-theme-controls .customize-section-title span.customize-action {
+#customize-controls .customize-section-title span.customize-action {
 	font-size: 13px;
 	display: block;
 	font-weight: 400;
