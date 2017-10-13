@@ -379,7 +379,7 @@ body.trashing #publish-settings {
 	box-sizing: content-box;
 	width: 100%;
 	margin-left: -12px;
-	padding: 12px 12px 10px;
+	padding: 12px;
 	background: #ffffff;
 	border-bottom: 1px solid #ddd;
 	margin-bottom: 0;
