@@ -330,7 +330,9 @@
 				}
 			} );
 
-			api.section( 'publish_settings' ).collapse();
+			if ( api.section.has( 'publish_settings' ) ) {
+				api.section( 'publish_settings' ).collapse();
+			}
 
 			$( 'body' ).addClass( 'adding-widget' );
 
