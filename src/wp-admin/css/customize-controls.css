@@ -2832,6 +2832,10 @@ body.adding-widget .add-new-widget:before,
 		display: none;
 	}
 
+	.preview-only #customize-save-button-wrapper {
+		margin-top: -46px;
+	}
+
 	.customize-controls-preview-toggle .preview:before,
 	.customize-controls-preview-toggle .controls:before {
 		font: normal 20px/1 dashicons;
