@@ -6828,6 +6828,14 @@
 		api.section( 'publish_settings', function( section ) {
 			var updateButtonsState, trashControl, updateSectionActive, isSectionActive, statusControl, dateControl, toggleDateControl, publishWhenTime, pollInterval, updateTimeArrivedPoller, timeArrivedPollingInterval = 1000;
 
+			api.bind( 'ready', function() {
+				api.previewedDevice.bind( function( value ) {
+					if ( 'desktop' !== value ) {
+						section.collapse();
+					}
+				} );
+			} );
+
 			trashControl = new api.Control( 'trash_changeset', {
 				type: 'button',
 				section: section.id,
