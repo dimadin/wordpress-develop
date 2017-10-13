@@ -6834,11 +6834,6 @@
 						section.collapse();
 					}
 				} );
-				section.expanded.bind( function( isExpanded ) {
-				    if ( isExpanded ) {
-					    api.previewedDevice.set( 'desktop' );
-				    }
-				} );
 			} );
 
 			trashControl = new api.Control( 'trash_changeset', {
