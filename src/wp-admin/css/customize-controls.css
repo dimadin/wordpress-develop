@@ -127,9 +127,18 @@ body:not(.ready) #customize-save-button-wrapper .save {
 	margin: 0;
 }
 
-.outer-section-open .wp-full-overlay.expanded #customize-preview {
+.outer-section-open .wp-full-overlay.expanded .wp-full-overlay-main {
 	left: 300px;
 	opacity: 0.4;
+}
+
+.outer-section-open .wp-full-overlay.expanded.preview-tablet .wp-full-overlay-main,
+.outer-section-open .wp-full-overlay.expanded.preview-mobile .wp-full-overlay-main,
+.adding-menu-items .wp-full-overlay.expanded.preview-tablet .wp-full-overlay-main,
+.adding-menu-items .wp-full-overlay.expanded.preview-mobile .wp-full-overlay-main,
+.adding-widget .wp-full-overlay.expanded.preview-tablet .wp-full-overlay-main,
+.adding-widget .wp-full-overlay.expanded.preview-mobile .wp-full-overlay-main {
+	left: 64%;
 }
 
 #customize-outer-theme-controls li.notice {
@@ -2783,6 +2792,14 @@ body.adding-widget .add-new-widget:before,
 	.media-widget-control .media-widget-buttons .button.change-media,
 	.media-widget-control .media-widget-buttons .button.select-media {
 		margin-top: 12px;
+	}
+}
+
+@media screen and ( max-width: 1200px ) {
+	.outer-section-open .wp-full-overlay.expanded.preview-mobile .wp-full-overlay-main,
+	.adding-menu-items .wp-full-overlay.expanded.preview-mobile .wp-full-overlay-main,
+	.adding-widget .wp-full-overlay.expanded.preview-mobile .wp-full-overlay-main {
+		left: 67%;
 	}
 }
 
