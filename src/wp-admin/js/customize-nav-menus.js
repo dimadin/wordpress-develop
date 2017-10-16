@@ -1391,14 +1391,17 @@
 		 * This method selects a single location by default so we can support
 		 * creating a menu for a specific menu location.
 		 *
-		 * @param {string} locationId - The ID of the location to select.
-		 *  Specifying `null` or `undefined` will clear all selections.
+		 * @since 4.9.0
+		 *
+		 * @param {string|null} locationId - The ID of the location to select.
+		 *  Specifying `null` will clear all selections.
+		 * @returns {void}
 		 */
 		selectDefaultLocation: function ( locationId ) {
 			var locationControl = api.control( this.id + '[locations]' ),
 				locationSelections = {};
 
-			if ( locationId !== undefined && locationId !== null ) {
+			if ( locationId !== null ) {
 				locationSelections[ locationId ] = true;
 			}
 
@@ -2384,11 +2387,15 @@
 		 * This method sets the selected locations and allows us to do things like
 		 * set the default location for a new menu.
 		 *
+		 * @since 4.9.0
+		 *
 		 * @param {Object.<string,boolean>} selections - A map of location selections.
+		 * @returns {void}
 		 */
 		setSelections: function ( selections ) {
 			this.container.find( '.menu-location' ).each( function( i, checkboxNode ) {
-				checkboxNode.checked = !! selections[ checkboxNode.dataset.locationId ];
+				var locationId = checkboxNode.dataset.locationId;
+				checkboxNode.checked = locationId in selections ? selections[ locationId ] : false;
 			} );
 		}
 	});
