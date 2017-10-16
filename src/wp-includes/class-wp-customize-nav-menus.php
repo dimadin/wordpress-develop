@@ -794,7 +794,7 @@ final class WP_Customize_Nav_Menus {
 			return new WP_Error( 'status_forbidden', __( 'Status is forbidden' ) );
 		}
 
-		$postarr['post_status'] = 'auto-draft';
+		$postarr['post_status'] = 'auto-draft'; // @todo Should this be 'draft' if 'auto-draft' !== get_post_status( $this->manager->changeset_post_id )?
 
 		// Auto-drafts are allowed to have empty post_names, so it has to be explicitly set.
 		if ( empty( $postarr['post_name'] ) ) {
@@ -804,6 +804,7 @@ final class WP_Customize_Nav_Menus {
 			$postarr['meta_input'] = array();
 		}
 		$postarr['meta_input']['_customize_draft_post_name'] = $postarr['post_name'];
+		$postarr['meta_input']['_customize_changeset_uuid'] = $this->manager->changeset_uuid();
 		unset( $postarr['post_name'] );
 
 		add_filter( 'wp_insert_post_empty_content', '__return_false', 1000 );
