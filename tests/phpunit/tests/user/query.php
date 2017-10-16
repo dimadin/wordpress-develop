@@ -1434,4 +1434,36 @@ class Tests_User_Query extends WP_UnitTestCase {
 		/* must not include user that has same string in other fields */
 		$this->assertEquals( array(), $ids );
 	}
+
+	/**
+	 * @ticket 16841
+	 */
+	public function test_get_single_capability_by_user_query() {
+		$wp_user_search = new WP_User_Query( array( 'capability' => 'install_plugins' ) );
+		$users          = $wp_user_search->get_results();
+
+		$this->assertCount( 3, $users );
+	}
+
+	/**
+	 * @ticket 16841
+	 */
+	public function test_get_multiple_capabilities_by_user_query() {
+		$wp_user_search = new WP_User_Query( array( 'capability__in' => array( 'publish_posts', 'edit_posts' ) ) );
+		$users          = $wp_user_search->get_results();
+
+		// All except the two subscribers which have neither capability.
+		$this->assertCount( 11, $users );
+	}
+
+	/**
+	 * @ticket 16841
+	 */
+	public function test_get_single_capability_by_string() {
+		$wp_user_search = new WP_User_Query( array( 'capability' => 'read' ) );
+		$users          = $wp_user_search->get_results();
+
+		// The ones from wpSetUpBeforeClass() plus the default admin.
+		$this->assertCount( 13, $users );
+	}
 }

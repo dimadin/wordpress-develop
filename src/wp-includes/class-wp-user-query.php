@@ -93,6 +93,9 @@ class WP_User_Query {
 			'role' => '',
 			'role__in' => array(),
 			'role__not_in' => array(),
+			'capability' => '',
+			'capability__in' => array(),
+			'capability__not_in' => array(),
 			'meta_key' => '',
 			'meta_value' => '',
 			'meta_compare' => '',
@@ -133,6 +136,7 @@ class WP_User_Query {
 	 *              querying for all users with using -1.
 	 * @since 4.7.0 Added 'nicename', 'nicename__in', 'nicename__not_in', 'login', 'login__in',
 	 *              and 'login__not_in' parameters.
+	 * @since 5.0.0 Added 'capability', 'capability__in', and 'capability__not_in' parameters.
 	 *
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
@@ -149,6 +153,11 @@ class WP_User_Query {
 	 *                                             roles. Default empty array.
 	 *     @type array        $role__not_in        An array of role names to exclude. Users matching one or more of these
 	 *                                             roles will not be included in results. Default empty array.
+	 *     @type string       $capability          An capability that users must match to be included in results. Default empty.
+	 *     @type array        $capability__in      An array of capability names. Matched users must have at least one of these
+	 *                                             capabilities. Default empty array.
+	 *     @type array        $capability__not_in  An array of capability names to exclude. Users matching one or more of these
+	 *                                             capabilities will not be included in results. Default empty array.
 	 *     @type string       $meta_key            User meta key. Default empty.
 	 *     @type string       $meta_value          User meta value. Default empty.
 	 *     @type string       $meta_compare        Comparison operator to test the `$meta_value`. Accepts '=', '!=',
@@ -342,6 +351,8 @@ class WP_User_Query {
 			$this->meta_query->parse_query_vars( $this->meta_query->queries );
 		}
 
+
+		// Roles.
 		$roles = array();
 		if ( isset( $qv['role'] ) ) {
 			if ( is_array( $qv['role'] ) ) {
@@ -360,6 +371,68 @@ class WP_User_Query {
 		if ( isset( $qv['role__not_in'] ) ) {
 			$role__not_in = (array) $qv['role__not_in'];
 		}
+
+		// Capabilities.
+		if ( isset( $qv['capability'] ) || isset( $qv['capability__in'] ) || isset( $qv['capability__not_in'] ) ) {
+			global $wp_roles;
+
+			$available_roles = $wp_roles->roles;
+		}
+
+		$capabilities = array();
+		if ( isset( $qv['capability'] ) ) {
+			// Todo: Add support for arrays? How should these queries be resolved?
+			if ( is_string( $qv['capability'] ) && ! empty( $qv['capability'] ) ) {
+				$capabilities[] = $qv['capability'];
+			}
+		}
+
+		$capability__in = array();
+		if ( isset( $qv['capability__in'] ) ) {
+			$capability__in = (array) $qv['capability__in'];
+		}
+
+		$capability__not_in = array();
+		if ( isset( $qv['capability__not_in'] ) ) {
+			$capability__not_in = (array) $qv['capability__not_in'];
+		}
+
+		$caps_with_roles = array();
+
+		foreach ( $available_roles as $role => $role_data ) {
+			$role_caps = array_keys( array_filter( $role_data['capabilities'] ) );
+
+			foreach ( $capabilities as $cap ) {
+				if ( in_array( $cap, $role_caps, true ) ) {
+					//$roles[] = $role;
+					$caps_with_roles[ $cap ][] = $role;
+				}
+			}
+
+			foreach ( $capability__in as $cap ) {
+				if ( in_array( $cap, $role_caps, true ) ) {
+					$role__in[] = $role;
+				}
+			}
+
+			foreach ( $capability__not_in as $cap ) {
+				if ( in_array( $cap, $role_caps, true ) ) {
+					$role__not_in[] = $role;
+				}
+			}
+		}
+
+		// Support querying by capabilities added directly to users.
+		if ( ! empty( $capabilities ) ) {
+			$role__in = array_merge( $role__in, $capabilities );
+
+			if ( isset( $caps_with_roles[ $capabilities[0] ] ) ) {
+				$role__in = array_merge( $role__in, $caps_with_roles[ $capabilities[0] ] );
+			}
+		}
+
+		$role__in     = array_merge( $role__in, $capability__in );
+		$role__not_in = array_merge( $role__not_in, $capability__not_in );
 
 		if ( $blog_id && ( ! empty( $roles ) || ! empty( $role__in ) || ! empty( $role__not_in ) || is_multisite() ) ) {
 			$role_queries  = array();
