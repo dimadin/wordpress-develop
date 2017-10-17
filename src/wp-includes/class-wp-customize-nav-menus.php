@@ -1177,7 +1177,7 @@ final class WP_Customize_Nav_Menus {
 	}
 
 	/**
-	 * Sanitize post IDs for auto-draft posts created for nav menu items to be published.
+	 * Sanitize post IDs for posts created for nav menu items to be published.
 	 *
 	 * @since 4.7.0
 	 *
@@ -1191,7 +1191,7 @@ final class WP_Customize_Nav_Menus {
 				continue;
 			}
 			$post = get_post( $post_id );
-			if ( 'auto-draft' !== $post->post_status ) {
+			if ( 'auto-draft' !== $post->post_status && 'draft' !== $post->post_status ) {
 				continue;
 			}
 			$post_type_obj = get_post_type_object( $post->post_type );
@@ -1222,6 +1222,13 @@ final class WP_Customize_Nav_Menus {
 		$post_ids = $setting->post_value();
 		if ( ! empty( $post_ids ) ) {
 			foreach ( $post_ids as $post_id ) {
+
+				// Prevent overriding the status that a user may have prematurely updated the post to.
+				$current_status = get_post_status( $post_id );
+				if ( 'auto-draft' !== $current_status && 'draft' !== $current_status ) {
+					continue;
+				}
+
 				$target_status = 'attachment' === get_post_type( $post_id ) ? 'inherit' : 'publish';
 				$args = array(
 					'ID' => $post_id,
