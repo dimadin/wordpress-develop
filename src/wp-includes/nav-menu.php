@@ -1052,7 +1052,7 @@ function _wp_delete_customize_changeset_dependent_auto_drafts( $post_id ) {
 	}
 	remove_action( 'delete_post', '_wp_delete_customize_changeset_dependent_auto_drafts' );
 	foreach ( $data['nav_menus_created_posts']['value'] as $post_id ) {
-		if ( ! empty( $post_id ) && 'auto-draft' === get_post_status( $post_id ) ) {
+		if ( ! empty( $post_id ) && ( 'auto-draft' === get_post_status( $post_id ) || 'draft' === get_post_status( $post_id ) ) ) {
 			wp_delete_post( $post_id, true );
 		}
 	}
