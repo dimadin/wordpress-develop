@@ -1742,6 +1742,8 @@ function _post_states($post) {
 		} elseif ( 'draft' !== $post_status ) {
 			$post_states['draft'] = __( 'Draft' );
 		}
+	} elseif ( 'trash' === $post->post_status && get_post_meta( $post->ID, '_customize_changeset_uuid', true ) ) {
+		$post_states[] = __( 'Customization Draft' );
 	}
 	if ( 'pending' == $post->post_status && 'pending' != $post_status )
 		$post_states['pending'] = _x('Pending', 'post status');
