@@ -3086,8 +3086,29 @@ function _wp_keep_alive_customize_changeset_dependent_auto_drafts( $new_status, 
 		return;
 	}
 
-	$post_args = array();
+	$data = json_decode( $post->post_content, true );
+	if ( empty( $data['nav_menus_created_posts']['value'] ) ) {
+		return;
+	}
 
+	/*
+	 * Actually, in lieu of keeping alive, trash any customization drafts here if the changeset itself is
+	 * getting trashed. This is needed because when a changeset transitions to a draft, then any of the
+	 * dependent auto-draft post/page stubs will also get transitioned to customization drafts which
+	 * are then visible in the WP Admin. We cannot wait for the deletion of the changeset in which
+	 * _wp_delete_customize_changeset_dependent_auto_drafts() will be called, since they need to be
+	 * trashed to remove from visibility immediately.
+	 */
+	if ( 'trash' === $new_status ) {
+		foreach ( $data['nav_menus_created_posts']['value'] as $post_id ) {
+			if ( ! empty( $post_id ) && 'draft' === get_post_status( $post_id ) ) {
+				wp_trash_post( $post_id );
+			}
+		}
+		return;
+	}
+
+	$post_args = array();
 	if ( 'auto-draft' === $new_status ) {
 		/*
 		 * Keep the post date for the post matching the changeset
@@ -3107,10 +3128,6 @@ function _wp_keep_alive_customize_changeset_dependent_auto_drafts( $new_status, 
 		$post_args['post_status'] = 'draft';
 	}
 
-	$data = json_decode( $post->post_content, true );
-	if ( empty( $data['nav_menus_created_posts']['value'] ) ) {
-		return;
-	}
 	foreach ( $data['nav_menus_created_posts']['value'] as $post_id ) {
 		if ( empty( $post_id ) || 'auto-draft' !== get_post_status( $post_id ) ) {
 			continue;
