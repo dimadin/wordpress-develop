@@ -229,7 +229,7 @@ if ( $can_publish ) : // Contributors don't get to choose the date of publish ?>
 			<?php
 			echo sprintf(
 				/* translators: %s is the URL to the Customizer */
-				__( 'This is a customization draft and it will be published automatically with its <a href="%s">other customized changes</a>.' ),
+				__( 'This draft comes from your <a href="%s">unpublished customization changes</a>. You can edit, but there&#8217;s no need to publish now. It will be published automatically with those changes.' ),
 				esc_url(
 					add_query_arg(
 						'changeset_uuid',
