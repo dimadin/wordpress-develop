@@ -794,7 +794,11 @@ final class WP_Customize_Nav_Menus {
 			return new WP_Error( 'status_forbidden', __( 'Status is forbidden' ) );
 		}
 
-		$postarr['post_status'] = 'auto-draft'; // @todo Should this be 'draft' if 'auto-draft' !== get_post_status( $this->manager->changeset_post_id )?
+		/*
+		 * If the changeset is a draft, this will change to draft the next time the changeset
+		 * is updated; otherwise, auto-draft will persist in autosave revisions, until save.
+		 */
+		$postarr['post_status'] = 'auto-draft';
 
 		// Auto-drafts are allowed to have empty post_names, so it has to be explicitly set.
 		if ( empty( $postarr['post_name'] ) ) {
