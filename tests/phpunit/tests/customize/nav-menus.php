@@ -719,11 +719,25 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 			'post_author' => $administrator_user_id,
 		) );
 
+		$draft_post_id = $this->factory()->post->create( array(
+			'post_status' => 'draft',
+			'post_title' => 'Draft',
+			'post_author' => $administrator_user_id,
+		) );
+
+		$private_post_id = $this->factory()->post->create( array(
+			'post_status' => 'private',
+			'post_title' => 'Private',
+			'post_author' => $administrator_user_id,
+		) );
+
 		$value = array(
 			'bad',
 			$contributor_post_id,
 			$author_post_id,
 			$administrator_post_id,
+			$draft_post_id,
+			$private_post_id,
 		);
 
 		wp_set_current_user( $contributor_user_id );
@@ -736,7 +750,7 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 
 		wp_set_current_user( $administrator_user_id );
 		$sanitized = $menus->sanitize_nav_menus_created_posts( $value );
-		$this->assertEquals( array( $contributor_post_id, $author_post_id, $administrator_post_id ), $sanitized );
+		$this->assertEquals( array( $contributor_post_id, $author_post_id, $administrator_post_id, $draft_post_id ), $sanitized );
 	}
 
 	/**
