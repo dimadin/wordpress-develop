@@ -1438,25 +1438,22 @@
 				}
 			};
 
-			// Edit menu button.
-			control.container.find( '.edit-menu' ).on( 'click', function() {
-				var menuId = control.setting();
-				api.section( 'nav_menu[' + menuId + ']' ).focus();
-			});
-			control.setting.bind( 'change', function() {
-				if ( 0 === control.setting() ) {
-					control.container.find( '.edit-menu' ).addClass( 'hidden' );
-				} else {
-					control.container.find( '.edit-menu' ).removeClass( 'hidden' );
-				}
-			});
-
-			// Create menu button.
+			// Create and Edit menu buttons.
 			control.container.find( '.create-menu' ).on( 'click', function () {
 				var addMenuSection = api.section( 'add_menu' );
 				addMenuSection.selectDefaultLocation( this.dataset.locationId );
 				addMenuSection.focus();
 			} );
+			control.container.find( '.edit-menu' ).on( 'click', function() {
+				var menuId = control.setting();
+				api.section( 'nav_menu[' + menuId + ']' ).focus();
+			});
+			control.setting.bind( 'change', function() {
+				var menuIsSelected = 0 !== control.setting();
+				control.container.find( '.create-menu' ).toggleClass( 'hidden', menuIsSelected );
+				control.container.find( '.edit-menu' ).toggleClass( 'hidden', ! menuIsSelected );
+			});
+
 
 			// Add/remove menus from the available options when they are added and removed.
 			api.bind( 'add', function( setting ) {
