@@ -333,12 +333,15 @@ class Tests_Theme extends WP_UnitTestCase {
 		) );
 		$this->assertEquals( get_post( $nav_created_post_ids[0] )->post_date, get_post( $wp_customize->changeset_post_id() )->post_date );
 		$this->assertEquals( get_post( $nav_created_post_ids[1] )->post_date, get_post( $wp_customize->changeset_post_id() )->post_date );
+		$this->assertEquals( 'auto-draft', get_post_status( $nav_created_post_ids[0] ) );
+		$this->assertEquals( 'auto-draft', get_post_status( $nav_created_post_ids[1] ) );
 		$wp_customize->save_changeset_post( array(
 			'status' => 'draft',
 			'data' => $data,
 		) );
-		$expected_year = date( 'Y' ) + 100;
-		$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $nav_created_post_ids[0] )->post_date ) ) );
-		$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $nav_created_post_ids[1] )->post_date ) ) );
+		$this->assertEquals( get_post( $nav_created_post_ids[0] )->post_date, get_post( $wp_customize->changeset_post_id() )->post_date );
+		$this->assertEquals( get_post( $nav_created_post_ids[1] )->post_date, get_post( $wp_customize->changeset_post_id() )->post_date );
+		$this->assertEquals( 'draft', get_post_status( $nav_created_post_ids[0] ) );
+		$this->assertEquals( 'draft', get_post_status( $nav_created_post_ids[1] ) );
 	}
 }
