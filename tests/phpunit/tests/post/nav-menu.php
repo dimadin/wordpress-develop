@@ -578,13 +578,13 @@ class Test_Nav_Menus extends WP_UnitTestCase {
 		$wp_customize->save_changeset_post( array(
 			'data' => $data,
 		) );
-		$this->assertInstanceOf( 'WP_Post', get_post( $auto_draft_post_id ) );
-		$this->assertInstanceOf( 'WP_Post', get_post( $draft_post_id ) );
-		$this->assertInstanceOf( 'WP_Post', get_post( $private_post_id ) );
+		$this->assertEquals( 'auto-draft', get_post_status( $auto_draft_post_id ) );
+		$this->assertEquals( 'draft', get_post_status( $draft_post_id ) );
+		$this->assertEquals( 'private', get_post_status( $private_post_id ) );
 		wp_delete_post( $wp_customize->changeset_post_id(), true );
-		$this->assertNotInstanceOf( 'WP_Post', get_post( $nav_created_post_ids[0] ) );
-		$this->assertNotInstanceOf( 'WP_Post', get_post( $nav_created_post_ids[1] ) );
-		$this->assertInstanceOf( 'WP_Post', get_post( $private_post_id ) );
+		$this->assertFalse( get_post_status( $auto_draft_post_id ) );
+		$this->assertEquals( 'trash', get_post_status( $draft_post_id ) );
+		$this->assertEquals( 'private', get_post_status( $private_post_id ) );
 	}
 
 	/**
