@@ -541,6 +541,7 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		// Non-existent post types allowed as of #39610.
 		$r = $menus->insert_auto_draft_post( array( 'post_title' => 'Non-existent', 'post_type' => 'nonexistent' ) );
 		$this->assertInstanceOf( 'WP_Post', $r );
+		$this->assertEquals( $this->wp_customize->changeset_uuid(), get_post_meta( $r->ID, '_customize_changeset_uuid', true ) );
 
 		$r = $menus->insert_auto_draft_post( array( 'post_type' => 'post' ) );
 		$this->assertInstanceOf( 'WP_Error', $r );
@@ -555,6 +556,7 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		$this->assertEquals( 'Hello World', $r->post_title );
 		$this->assertEquals( '', $r->post_name );
 		$this->assertEquals( 'hello-world', get_post_meta( $r->ID, '_customize_draft_post_name', true ) );
+		$this->assertEquals( $this->wp_customize->changeset_uuid(), get_post_meta( $r->ID, '_customize_changeset_uuid', true ) );
 		$this->assertEquals( 'post', $r->post_type );
 
 		$r = $menus->insert_auto_draft_post( array( 'post_title' => 'Hello World', 'post_type' => 'post', 'post_name' => 'greetings-world', 'post_content' => 'Hi World' ) );
@@ -563,6 +565,7 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		$this->assertEquals( 'post', $r->post_type );
 		$this->assertEquals( '', $r->post_name );
 		$this->assertEquals( 'greetings-world', get_post_meta( $r->ID, '_customize_draft_post_name', true ) );
+		$this->assertEquals( $this->wp_customize->changeset_uuid(), get_post_meta( $r->ID, '_customize_changeset_uuid', true ) );
 		$this->assertEquals( 'Hi World', $r->post_content );
 	}
 
