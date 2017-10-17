@@ -3,20 +3,22 @@ if ( ! window.wp ) {
 	window.wp = {};
 }
 import { CSSLint } from 'csslint';
-window.CSSLint       = CSSLint;
-window.wp.CSSLint    = CSSLint;
+window.CSSLint    = CSSLint;
+window.wp.CSSLint = CSSLint;
 
 import { jsonlint } from 'jsonlint';
-window.jsonlint      = jsonlint;
-window.wp.jsonlint   = jsonlint;
+window.jsonlint    = jsonlint;
+window.wp.jsonlint = jsonlint;
 
 import { HTMLHint } from 'htmlhint';
-window.HTMLHint      = HTMLHint;
-window.wp.HTMLHint   = HTMLHint;
+window.HTMLHint    = HTMLHint;
+window.wp.HTMLHint = HTMLHint;
+
+import { JSHINT } from 'jshint';
+window.JSHINT    = JSHINT;
+window.wp.JSHINT = JSHINT;
 
 require( './htmlhint-kses' );
-
-
 
 var CodeMirror = require( '../../../../node_modules/codemirror/lib/codemirror' );
 require( '../../../../node_modules/codemirror/lib/codemirror.js' );
@@ -95,6 +97,5 @@ require( '../../../../node_modules/codemirror/mode/shell/shell.js' );
 require( '../../../../node_modules/codemirror/mode/sql/sql.js' );
 require( '../../../../node_modules/codemirror/mode/xml/xml.js' );
 require( '../../../../node_modules/codemirror/mode/yaml/yaml.js' );
-
 
 window.wp.CodeMirror = CodeMirror;
