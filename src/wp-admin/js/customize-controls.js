@@ -5083,8 +5083,8 @@
 			element.sync( control.setting );
 			element.set( control.setting() );
 
-			if ( control.params.editor_settings ) {
-				control.initSyntaxHighlightingEditor( control.params.editor_settings );
+			if ( control.params.editorSettings ) {
+				control.initSyntaxHighlightingEditor( control.params.editorSettings );
 			} else {
 				control.initPlainTextareaEditor();
 			}

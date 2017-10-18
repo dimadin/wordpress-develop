@@ -69,8 +69,8 @@ class WP_Customize_Code_Editor_Control extends WP_Customize_Control {
 	 */
 	public function json() {
 		$json = parent::json();
-		$json['code_type'] = $this->code_type; // @todo camelCase?
-		$json['editor_settings'] = $this->editor_settings; // @todo camelCase?
+		$json['codeType'] = $this->code_type;
+		$json['editorSettings'] = $this->editor_settings;
 		return $json;
 	}
 
