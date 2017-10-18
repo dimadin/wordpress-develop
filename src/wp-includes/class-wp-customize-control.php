@@ -478,100 +478,13 @@ class WP_Customize_Control {
 	 * Control content can alternately be rendered in JS. See WP_Customize_Control::print_template().
 	 *
 	 * @since 3.4.0
+	 * @since 4.3.0 Most core control types are rendered with a content template instead.
 	 */
 	protected function render_content() {
 		$input_id = '_customize-input-' . $this->id;
 		$description_id = '_customize-description-' . $this->id;
 		$describedby_attr = ( ! empty( $this->description ) ) ? ' aria-describedby="' . esc_attr( $description_id ) . '" ' : '';
 		switch ( $this->type ) {
-			case 'checkbox':
-				?>
-				<span class="customize-inside-control-row">
-					<input
-						id="<?php echo esc_attr( $input_id ); ?>"
-						<?php echo $describedby_attr; ?>
-						type="checkbox"
-						value="<?php echo esc_attr( $this->value() ); ?>"
-						<?php $this->link(); ?>
-						<?php checked( $this->value() ); ?>
-					/>
-					<label for="<?php echo esc_attr( $input_id ); ?>"><?php echo esc_html( $this->label ); ?></label>
-					<?php if ( ! empty( $this->description ) ) : ?>
-						<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
-				</span>
-				<?php
-				break;
-			case 'radio':
-				if ( empty( $this->choices ) ) {
-					return;
-				}
-
-				$name = '_customize-radio-' . $this->id;
-				?>
-				<?php if ( ! empty( $this->label ) ) : ?>
-					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-				<?php endif; ?>
-				<?php if ( ! empty( $this->description ) ) : ?>
-					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description ; ?></span>
-				<?php endif; ?>
-
-				<?php foreach ( $this->choices as $value => $label ) : ?>
-					<span class="customize-inside-control-row">
-						<input
-							id="<?php echo esc_attr( $input_id . '-radio-' . $value ); ?>"
-							type="radio"
-							<?php echo $describedby_attr; ?>
-							value="<?php echo esc_attr( $value ); ?>"
-							name="<?php echo esc_attr( $name ); ?>"
-							<?php $this->link(); ?>
-							<?php checked( $this->value(), $value ); ?>
-							/>
-						<label for="<?php echo esc_attr( $input_id . '-radio-' . $value ); ?>"><?php echo esc_html( $label ); ?></label>
-					</span>
-				<?php endforeach; ?>
-				<?php
-				break;
-			case 'select':
-				if ( empty( $this->choices ) ) {
-					return;
-				}
-
-				?>
-				<?php if ( ! empty( $this->label ) ) : ?>
-					<label for="<?php echo esc_attr( $input_id ); ?>" class="customize-control-title"><?php echo esc_html( $this->label ); ?></label>
-				<?php endif; ?>
-				<?php if ( ! empty( $this->description ) ) : ?>
-					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
-				<?php endif; ?>
-
-				<select id="<?php echo esc_attr( $input_id ); ?>" <?php echo $describedby_attr; ?> <?php $this->link(); ?>>
-					<?php
-					foreach ( $this->choices as $value => $label ) {
-						echo '<option value="' . esc_attr( $value ) . '"' . selected( $this->value(), $value, false ) . '>' . $label . '</option>';
-					}
-					?>
-				</select>
-				<?php
-				break;
-			case 'textarea':
-				?>
-				<?php if ( ! empty( $this->label ) ) : ?>
-					<label for="<?php echo esc_attr( $input_id ); ?>" class="customize-control-title"><?php echo esc_html( $this->label ); ?></label>
-				<?php endif; ?>
-				<?php if ( ! empty( $this->description ) ) : ?>
-					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
-				<?php endif; ?>
-				<textarea
-					id="<?php echo esc_attr( $input_id ); ?>"
-					rows="5"
-					<?php echo $describedby_attr; ?>
-					<?php $this->input_attrs(); ?>
-					<?php $this->link(); ?>>
-					<?php echo esc_textarea( $this->value() ); ?>
-				</textarea>
-				<?php
-				break;
 			case 'dropdown-pages':
 				?>
 				<?php if ( ! empty( $this->label ) ) : ?>
@@ -634,26 +547,6 @@ class WP_Customize_Control {
 						<button type="button" class="button add-content"><?php _e( 'Add' ); ?></button>
 					</div>
 				<?php endif; ?>
-				<?php
-				break;
-			default:
-				?>
-				<?php if ( ! empty( $this->label ) ) : ?>
-					<label for="<?php echo esc_attr( $input_id ); ?>" class="customize-control-title"><?php echo esc_html( $this->label ); ?></label>
-				<?php endif; ?>
-				<?php if ( ! empty( $this->description ) ) : ?>
-					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
-				<?php endif; ?>
-				<input
-					id="<?php echo esc_attr( $input_id ); ?>"
-					type="<?php echo esc_attr( $this->type ); ?>"
-					<?php echo $describedby_attr; ?>
-					<?php $this->input_attrs(); ?>
-					<?php if ( ! isset( $this->input_attrs['value'] ) ) : ?>
-						value="<?php echo esc_attr( $this->value() ); ?>"
-					<?php endif; ?>
-					<?php $this->link(); ?>
-					/>
 				<?php
 				break;
 		}
