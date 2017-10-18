@@ -763,10 +763,10 @@
 	 * @param {object} [options]
 	 * @param {number} [options.delay] Delay in milliseconds.
 	 * @param {jQuery} [options.focusTarget] A target for user focus that
-	 *	defaults to the highlighted element. If the user focuses the target
+	 * 	defaults to the highlighted element. If the user focuses the target
 	 * 	before the delay passes, the reminder is canceled. This option exists
-	 *  to accommodate compound buttons containing auxiliary UI,
-	 *  such as the Publish button augmented with a Settings button.
+	 * 	to accommodate compound buttons containing auxiliary UI,
+	 * 	such as the Publish button augmented with a Settings button.
 	 * @returns {Function} An idempotent function that cancels the reminder.
 	 */
 	api.utils.highlightButton = function highlightButton( button, options ) {
@@ -783,7 +783,7 @@
 			canceled = true;
 		}
 
-		// Remove animation class in case it was already applied
+		// Remove animation class in case it was already applied.
 		button.removeClass( animationClass );
 
 		focusTarget.on( 'focusin', cancelReminder );
