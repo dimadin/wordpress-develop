@@ -69,9 +69,8 @@ class WP_Customize_Code_Editor_Control extends WP_Customize_Control {
 	 */
 	public function json() {
 		$json = parent::json();
-		$json['code_type'] = $this->code_type;
-		$json['editor_settings'] = $this->editor_settings;
-		$json['input_attrs'] = $this->input_attrs;
+		$json['code_type'] = $this->code_type; // @todo camelCase?
+		$json['editor_settings'] = $this->editor_settings; // @todo camelCase?
 		return $json;
 	}
 
@@ -100,7 +99,7 @@ class WP_Customize_Code_Editor_Control extends WP_Customize_Control {
 		<# } #>
 		<div class="customize-control-notifications-container"></div>
 		<textarea id="{{ elementIdPrefix }}_editor"
-			<# _.each( _.extend( { 'class': 'code' }, data.input_attrs ), function( value, key ) { #>
+			<# _.each( _.extend( { 'class': 'code' }, data.inputAttrs ), function( value, key ) { #>
 				{{{ key }}}="{{ value }}"
 			<# }); #>
 			></textarea>

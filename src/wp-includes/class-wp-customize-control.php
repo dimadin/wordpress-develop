@@ -316,6 +316,11 @@ class WP_Customize_Control {
 		$this->json['label'] = $this->label;
 		$this->json['description'] = $this->description;
 		$this->json['instanceNumber'] = $this->instance_number;
+		$this->json['inputAttrs'] = $this->input_attrs;
+		$this->json['choices'] = array();
+		foreach ( $this->choices as $value => $text ) {
+			$this->json['choices'][] = compact( 'value', 'text' );
+		}
 
 		if ( 'dropdown-pages' === $this->type ) {
 			$this->json['allow_addition'] = $this->allow_addition;
