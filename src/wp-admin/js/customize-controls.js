@@ -7615,12 +7615,33 @@
 				previewerAlive = state.instance( 'previewerAlive' ),
 				editShortcutVisibility  = state.instance( 'editShortcutVisibility' ),
 				changesetLocked = state.instance( 'changesetLocked' ),
-				populateChangesetUuidParam;
+				populateChangesetUuidParam,
+				cancelScheduleButtonReminder = null;
+
+			function highlightScheduleButton() {
+				if ( ! cancelScheduleButtonReminder ) {
+					cancelScheduleButtonReminder = api.utils.highlightButton( btnWrapper, {
+						delay: 1000,
+						// Only abort the reminder when the save button is focused.
+						// If the user clicks the settings button to toggle the
+						// settings closed, we'll still remind them.
+						focusTarget: saveBtn
+					} );
+				}
+			}
+			function cancelHighlightScheduleButton() {
+				if ( cancelScheduleButtonReminder ) {
+					cancelScheduleButtonReminder();
+					cancelScheduleButtonReminder = null;
+				}
+			}
 
 			state.bind( 'change', function() {
 				var canSave;
 
-				btnWrapper.removeClass( 'button-see-me' );
+				if ( 'future' !== selectedChangesetStatus() ) {
+					cancelHighlightScheduleButton();
+				}
 
 				if ( ! activated() ) {
 					saveBtn.val( api.l10n.activate );
@@ -7645,12 +7666,12 @@
 						if ( saved() && selectedChangesetStatus() === changesetStatus() ) {
 							if ( changesetDate.get() !== selectedChangesetDate.get() ) {
 								saveBtn.val( api.l10n.schedule );
-								btnWrapper.addClass( 'button-see-me' );
+								highlightScheduleButton();
 							} else {
 								saveBtn.val( api.l10n.scheduled );
 							}
 						} else {
-							btnWrapper.addClass( 'button-see-me' );
+							highlightScheduleButton();
 							saveBtn.val( api.l10n.schedule );
 						}
 					} else if ( ! api.settings.changeset.currentUserCanPublish ) {
