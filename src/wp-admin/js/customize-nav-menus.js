@@ -1397,7 +1397,7 @@
 		 *  Specifying `null` will clear all selections.
 		 * @returns {void}
 		 */
-		selectDefaultLocation: function ( locationId ) {
+		selectDefaultLocation: function( locationId ) {
 			var locationControl = api.control( this.id + '[locations]' ),
 				locationSelections = {};
 
@@ -1439,7 +1439,7 @@
 			};
 
 			// Create and Edit menu buttons.
-			control.container.find( '.create-menu' ).on( 'click', function () {
+			control.container.find( '.create-menu' ).on( 'click', function() {
 				var addMenuSection = api.section( 'add_menu' );
 				addMenuSection.selectDefaultLocation( this.dataset.locationId );
 				addMenuSection.focus();
@@ -2389,7 +2389,7 @@
 		 * @param {Object.<string,boolean>} selections - A map of location selections.
 		 * @returns {void}
 		 */
-		setSelections: function ( selections ) {
+		setSelections: function( selections ) {
 			this.container.find( '.menu-location' ).each( function( i, checkboxNode ) {
 				var locationId = checkboxNode.dataset.locationId;
 				checkboxNode.checked = locationId in selections ? selections[ locationId ] : false;
