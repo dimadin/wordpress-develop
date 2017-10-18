@@ -1142,6 +1142,20 @@
 				};
 			}
 			api.Section.prototype.onChangeExpanded.call( section, expanded, args );
+		},
+
+		/**
+		 * Highlight how a user may create new menu items.
+		 *
+		 * This method reminds the user to create new menu items and how.
+		 * It's exposed this way because this class knows best which UI needs
+		 * highlighted but those expanding this section know more about why and
+		 * when the affordance should be highlighted.
+		 *
+		 * @since 4.9.0
+		 */
+		highlightNewItemAffordance: function () {
+			api.utils.highlightButton( this.contentContainer.find( '.add-new-menu-item' ), { delay: 2000 } );
 		}
 	});
 
@@ -1383,7 +1397,12 @@
 			wp.a11y.speak( api.Menus.data.l10n.menuAdded );
 
 			// Focus on the new menu section.
-			api.section( customizeId ).focus(); // @todo should we focus on the new menu's control and open the add-items panel? Thinking user flow...
+			var editMenuSection = api.section( customizeId );
+			editMenuSection.focus( {
+				completeCallback: function() {
+					editMenuSection.highlightNewItemAffordance();
+				}
+			} ); // @todo should we focus on the new menu's control and open the add-items panel? Thinking user flow...api.section( customizeId ).focus(); // @todo should we focus on the new menu's control and open the add-items panel? Thinking user flow...
 		},
 
 		/**
