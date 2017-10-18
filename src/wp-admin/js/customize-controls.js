@@ -3364,10 +3364,10 @@
 			];
 			if ( control.params.templateId ) {
 				control.templateSelector = control.params.templateId;
+			} else if ( document.getElementById( 'tmpl-customize-control-' + control.params.type + '-content' ) ) {
+				control.templateSelector = 'customize-control-' + control.params.type + '-content';
 			} else if ( _.contains( standardTypes, control.params.type ) && control.container.is( ':empty' ) ) {
 				control.templateSelector = 'customize-control-default-content';
-			} else {
-				control.templateSelector = 'customize-control-' + control.params.type + '-content';
 			}
 
 			control.deferred = {
