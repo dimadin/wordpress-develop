@@ -1454,7 +1454,6 @@
 				control.container.find( '.edit-menu' ).toggleClass( 'hidden', ! menuIsSelected );
 			});
 
-
 			// Add/remove menus from the available options when they are added and removed.
 			api.bind( 'add', function( setting ) {
 				var option, menuId, matches = setting.id.match( navMenuIdRegex );
