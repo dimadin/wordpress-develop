@@ -418,6 +418,12 @@ class WP_Customize_Control {
 	 * @since 3.4.0
 	 */
 	protected function render() {
+
+		// Bypass rendering anything if content templates will be able to fully construct the control.
+		if ( __CLASS__ === get_class( $this ) && 'dropdown-pages' !== $this->type ) {
+			return;
+		}
+
 		$id    = 'customize-control-' . str_replace( array( '[', ']' ), array( '-', '' ), $this->id );
 		$class = 'customize-control customize-control-' . $this->type;
 
