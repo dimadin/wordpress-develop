@@ -891,6 +891,24 @@ final class WP_Customize_Manager {
 	 */
 	public function wp_loaded() {
 
+		// Unconditionally register core types for panels, sections, and controls in case plugin unhooks all customize_register actions.
+		$this->register_panel_type( 'WP_Customize_Panel' );
+		$this->register_panel_type( 'WP_Customize_Themes_Panel' );
+		$this->register_section_type( 'WP_Customize_Section' );
+		$this->register_section_type( 'WP_Customize_Sidebar_Section' );
+		$this->register_section_type( 'WP_Customize_Themes_Section' );
+		$this->register_control_type( 'WP_Customize_Color_Control' );
+		$this->register_control_type( 'WP_Customize_Media_Control' );
+		$this->register_control_type( 'WP_Customize_Upload_Control' );
+		$this->register_control_type( 'WP_Customize_Image_Control' );
+		$this->register_control_type( 'WP_Customize_Background_Image_Control' );
+		$this->register_control_type( 'WP_Customize_Background_Position_Control' );
+		$this->register_control_type( 'WP_Customize_Cropped_Image_Control' );
+		$this->register_control_type( 'WP_Customize_Site_Icon_Control' );
+		$this->register_control_type( 'WP_Customize_Theme_Control' );
+		$this->register_control_type( 'WP_Customize_Code_Editor_Control' );
+		$this->register_control_type( 'WP_Customize_Date_Time_Control' );
+
 		/**
 		 * Fires once WordPress has loaded, allowing scripts and styles to be initialized.
 		 *
@@ -4725,24 +4743,6 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function register_controls() {
-
-		/* Panel, Section, and Control Types */
-		$this->register_panel_type( 'WP_Customize_Panel' );
-		$this->register_panel_type( 'WP_Customize_Themes_Panel' );
-		$this->register_section_type( 'WP_Customize_Section' );
-		$this->register_section_type( 'WP_Customize_Sidebar_Section' );
-		$this->register_section_type( 'WP_Customize_Themes_Section' );
-		$this->register_control_type( 'WP_Customize_Color_Control' );
-		$this->register_control_type( 'WP_Customize_Media_Control' );
-		$this->register_control_type( 'WP_Customize_Upload_Control' );
-		$this->register_control_type( 'WP_Customize_Image_Control' );
-		$this->register_control_type( 'WP_Customize_Background_Image_Control' );
-		$this->register_control_type( 'WP_Customize_Background_Position_Control' );
-		$this->register_control_type( 'WP_Customize_Cropped_Image_Control' );
-		$this->register_control_type( 'WP_Customize_Site_Icon_Control' );
-		$this->register_control_type( 'WP_Customize_Theme_Control' );
-		$this->register_control_type( 'WP_Customize_Code_Editor_Control' );
-		$this->register_control_type( 'WP_Customize_Date_Time_Control' );
 
 		/* Themes (controls are loaded via ajax) */
 
