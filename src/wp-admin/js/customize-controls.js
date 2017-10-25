@@ -3474,12 +3474,18 @@
 			}
 			_.extend( settings, control.params.settings );
 
-			// Note: Settings can be an array or an object.
-			_.each( settings, function( setting, key ) {
-				if ( _.isObject( setting ) ) { // @todo Or check if instance of api.Setting?
-					control.settings[ key ] = setting;
-				} else {
-					deferredSettingIds.push( setting );
+			// Note: Settings can be an array or an object, with values being either setting IDs or Setting (or Value) objects.
+			_.each( settings, function( value, key ) {
+				var setting;
+				if ( _.isObject( value ) && _.isFunction( value.extended ) && value.extended( api.Value ) ) {
+					control.settings[ key ] = value;
+				} else if ( _.isString( value ) ) {
+					setting = api( value );
+					if ( setting ) {
+						control.settings[ key ] = setting;
+					} else {
+						deferredSettingIds.push( value );
+					}
 				}
 			} );
 
