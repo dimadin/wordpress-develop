@@ -3500,6 +3500,7 @@
 				// Identify the main setting.
 				control.setting = control.settings['default'] || null;
 
+				control.linkElements(); // Link initial elements present in server-rendered content.
 				control.embed();
 			};
 
@@ -3511,7 +3512,7 @@
 
 			// After the control is embedded on the page, invoke the "ready" method.
 			control.deferred.embedded.done( function () {
-				control.linkElements();
+				control.linkElements(); // Link any additional elements after template is rendered by renderContent().
 				control.setupNotifications();
 				control.ready();
 			});
