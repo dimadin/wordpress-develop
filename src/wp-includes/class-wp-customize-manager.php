@@ -4744,17 +4744,6 @@ final class WP_Customize_Manager {
 		$this->register_control_type( 'WP_Customize_Code_Editor_Control' );
 		$this->register_control_type( 'WP_Customize_Date_Time_Control' );
 
-		/* Publish Settings */
-
-		// Note the controls for this section are added via JS.
-		$this->add_section( 'publish_settings', array(
-			'title' => __( 'Publish Settings' ),
-			'priority' => 0,
-			'capability' => 'customize',
-			'type' => 'outer',
-			'active_callback' => array( $this, 'is_theme_active' ),
-		) );
-
 		/* Themes (controls are loaded via ajax) */
 
 		$this->add_panel( new WP_Customize_Themes_Panel( $this, 'themes', array(
