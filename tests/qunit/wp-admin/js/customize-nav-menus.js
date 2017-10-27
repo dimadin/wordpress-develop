@@ -115,6 +115,7 @@ jQuery( window ).load( function (){
 	// @todo Add tests for api.Menus.MenuControl
 	// @todo Add tests for api.Menus.applySavedData
 	// @todo Add tests for api.Menus.focusMenuItemControl
+	// @todo Add tests for api.Menus.createNavMenu
 
 	test( 'api.Menus.getMenuControl() should return the expected control', function() {
 		var control = api.Menus.getMenuControl( primaryMenuId );
