@@ -5,8 +5,9 @@
  * @package WordPress
  * @subpackage Customize
  * @since 4.4.0
- * @deprecated Since 4.9.0 when this was replaced with a basic section type.
+ * @deprecated 4.9.0 This file is no longer used due to new menu creation UX.
  */
+_deprecated_file( basename( __FILE__ ), '4.9.0' );
 
 /**
  * Customize Menu Section Class
@@ -14,6 +15,7 @@
  * Implements the new-menu-ui toggle button instead of a regular section.
  *
  * @since 4.3.0
+ * @deprecated 4.9.0 This class is no longer used due to new menu creation UX.
  *
  * @see WP_Customize_Section
  */

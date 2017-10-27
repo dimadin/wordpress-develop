@@ -3015,7 +3015,7 @@
 	 *
 	 * @constructor
 	 * @augments wp.customize.Control
-	 * @deprecated Since 4.9.0 when it fell out of use due to new menu creation UX.
+	 * @deprecated 4.9.0 This class is no longer used due to new menu creation UX.
 	 */
 	api.Menus.NewMenuControl = api.Control.extend({
 		/**

@@ -5,13 +5,15 @@
  * @package WordPress
  * @subpackage Customize
  * @since 4.4.0
- * @deprecated Since 4.9.0 when it fell out of use due to new menu creation UX.
+ * @deprecated 4.9.0 This file is no longer used due to new menu creation UX.
  */
+_deprecated_file( basename( __FILE__ ), '4.9.0' );
 
 /**
  * Customize control class for new menus.
  *
  * @since 4.3.0
+ * @deprecated 4.9.0 This class is no longer used due to new menu creation UX.
  *
  * @see WP_Customize_Control
  */
