@@ -5,6 +5,7 @@
  * @package WordPress
  * @subpackage Customize
  * @since 4.4.0
+ * @deprecated Since 4.9.0 when this was replaced with a basic section type.
  */
 
 /**

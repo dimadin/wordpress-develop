@@ -3008,6 +3008,101 @@
 	} );
 
 	/**
+	 * wp.customize.Menus.NewMenuControl
+	 *
+	 * Customizer control for creating new menus and handling deletion of existing menus.
+	 * Note that 'new_menu' must match the WP_Customize_New_Menu_Control::$type.
+	 *
+	 * @constructor
+	 * @augments wp.customize.Control
+	 * @deprecated Since 4.9.0 when it fell out of use due to new menu creation UX.
+	 */
+	api.Menus.NewMenuControl = api.Control.extend({
+		/**
+		 * Set up the control.
+		 */
+		ready: function() {
+			this._bindHandlers();
+		},
+
+		_bindHandlers: function() {
+			var self = this,
+				name = $( '#customize-control-new_menu_name input' ),
+				submit = $( '#create-new-menu-submit' );
+			name.on( 'keydown', function( event ) {
+				if ( 13 === event.which ) { // Enter.
+					self.submit();
+				}
+			} );
+			submit.on( 'click', function( event ) {
+				self.submit();
+				event.stopPropagation();
+				event.preventDefault();
+			} );
+		},
+
+		/**
+		 * Create the new menu with the name supplied.
+		 */
+		submit: function() {
+
+			var control = this,
+				container = control.container.closest( '.accordion-section-new-menu' ),
+				nameInput = container.find( '.menu-name-field' ).first(),
+				name = nameInput.val(),
+				menuSection,
+				customizeId,
+				placeholderId = api.Menus.generatePlaceholderAutoIncrementId();
+
+			if ( ! name ) {
+				nameInput.addClass( 'invalid' );
+				nameInput.focus();
+				return;
+			}
+
+			customizeId = 'nav_menu[' + String( placeholderId ) + ']';
+
+			// Register the menu control setting.
+			api.create( customizeId, customizeId, {}, {
+				type: 'nav_menu',
+				transport: api.Menus.data.settingTransport,
+				previewer: api.previewer
+			} );
+			api( customizeId ).set( $.extend(
+				{},
+				api.Menus.data.defaultSettingValues.nav_menu,
+				{
+					name: name
+				}
+			) );
+
+			/*
+			 * Add the menu section (and its controls).
+			 * Note that this will automatically create the required controls
+			 * inside via the Section's ready method.
+			 */
+			menuSection = new api.Menus.MenuSection( customizeId, {
+				panel: 'nav_menus',
+				title: displayNavMenuName( name ),
+				customizeAction: api.Menus.data.l10n.customizingMenus,
+				type: 'nav_menu',
+				priority: 10,
+				menu_id: placeholderId
+			} );
+			api.section.add( menuSection );
+
+			// Clear name field.
+			nameInput.val( '' );
+			nameInput.removeClass( 'invalid' );
+
+			wp.a11y.speak( api.Menus.data.l10n.menuAdded );
+
+			// Focus on the new menu section.
+			api.section( customizeId ).focus(); // @todo should we focus on the new menu's control and open the add-items panel? Thinking user flow...
+		}
+	});
+
+	/**
 	 * Extends wp.customize.controlConstructor with control constructor for
 	 * menu_location, menu_item, nav_menu, and new_menu.
 	 */
@@ -3016,6 +3111,7 @@
 		nav_menu_item: api.Menus.MenuItemControl,
 		nav_menu: api.Menus.MenuControl,
 		nav_menu_name: api.Menus.MenuNameControl,
+		new_menu: api.Menus.NewMenuControl,
 		nav_menu_locations: api.Menus.MenuLocationsControl,
 		nav_menu_auto_add: api.Menus.MenuAutoAddControl
 	});

@@ -113,7 +113,6 @@ jQuery( window ).load( function (){
 	// @todo Add tests for api.Menus.MenuLocationsControl
 	// @todo Add tests for api.Menus.MenuAutoAddControl
 	// @todo Add tests for api.Menus.MenuControl
-	// @todo Add tests for api.Menus.NewMenuControl
 	// @todo Add tests for api.Menus.applySavedData
 	// @todo Add tests for api.Menus.focusMenuItemControl
 
