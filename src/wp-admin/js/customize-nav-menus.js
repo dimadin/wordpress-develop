@@ -3094,7 +3094,7 @@
 			wp.a11y.speak( api.Menus.data.l10n.menuAdded );
 
 			// Focus on the new menu section.
-			menuSection.focus(); // @todo should we focus on the new menu's control and open the add-items panel? Thinking user flow...
+			menuSection.focus();
 		}
 	});
 
