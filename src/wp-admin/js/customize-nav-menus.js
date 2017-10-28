@@ -1401,7 +1401,7 @@
 
 				if ( checkbox.prop( 'checked' ) ) {
 					navMenuLocationSetting = api( 'nav_menu_locations[' + checkbox.data( 'location-id' ) + ']' );
-					navMenuLocationSetting.set( placeholderId );
+					navMenuLocationSetting.set( menuSection.params.menu_id );
 
 					// Reset state for next new menu
 					checkbox.prop( 'checked', false );
