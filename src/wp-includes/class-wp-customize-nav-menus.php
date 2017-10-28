@@ -688,11 +688,12 @@ final class WP_Customize_Nav_Menus {
 		}
 
 		// Add the add-new-menu section and controls.
-		$this->manager->add_section( new WP_Customize_New_Menu_Section( $this->manager, 'add_menu', array(
+		$this->manager->add_section( 'add_menu', array(
+			'type'     => 'new_menu',
 			'title'    => __( 'New Menu' ),
 			'panel'    => 'nav_menus',
 			'priority' => 20,
-		) ) );
+		) );
 
 		$this->manager->add_setting( new WP_Customize_Filter_Setting( $this->manager, 'nav_menus_created_posts', array(
 			'transport' => 'postMessage',
