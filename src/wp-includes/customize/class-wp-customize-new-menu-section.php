@@ -42,4 +42,19 @@ class WP_Customize_New_Menu_Section extends WP_Customize_Section {
 		parent::__construct( $manager, $id, $args );
 	}
 
+	/**
+	 * Render the section, and the controls that have been added to it.
+	 *
+	 * @since 4.3.0
+	 */
+	protected function render() {
+		?>
+		<li id="accordion-section-<?php echo esc_attr( $this->id ); ?>" class="accordion-section-new-menu">
+			<button type="button" class="button add-new-menu-item add-menu-toggle" aria-expanded="false">
+				<?php echo esc_html( $this->title ); ?>
+			</button>
+			<ul class="new-menu-section-content"></ul>
+		</li>
+		<?php
+	}
 }
