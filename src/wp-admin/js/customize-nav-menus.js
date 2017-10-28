@@ -1415,7 +1415,7 @@
 				completeCallback: function() {
 					menuSection.highlightNewItemButton();
 				}
-			} ); // @todo should we focus on the new menu's control and open the add-items panel? Thinking user flow...
+			} );
 		},
 
 		/**
