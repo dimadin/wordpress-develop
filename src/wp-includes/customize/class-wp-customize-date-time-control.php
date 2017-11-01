@@ -98,6 +98,9 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 	public function content_template() {
 		$data = array_merge( $this->json(), $this->get_month_choices() );
 		$timezone_info = $this->get_timezone_info();
+
+		/* translators: 1: month, 2: day, 3: year, 4: hour, 5: minute */
+		$format = sprintf( __( '%1$s %2$s, %3$s @ %4$s:%5$s' ), '__MONTH__', '__DAY__', '__YEAR__', '__HOUR__', '__MINUTE__' );
 		?>
 
 		<# _.defaults( data, <?php echo wp_json_encode( $data ); ?> ); #>
@@ -116,6 +119,8 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 			<fieldset class="day-row">
 				<legend class="title-day {{ ! data.includeTime ? 'screen-reader-text' : '' }}"><?php esc_html_e( 'Date' ); ?></legend>
 				<div class="day-fields clear">
+					<?php $fields = array(); ?>
+					<?php ob_start(); ?>
 					<label for="{{ idPrefix }}date-time-month" class="screen-reader-text"><?php esc_html_e( 'Month' ); ?></label>
 					<select id="{{ idPrefix }}date-time-month" class="date-input month" data-component="month">
 						<# _.each( data.month_choices, function( choice ) {
@@ -129,11 +134,31 @@ class WP_Customize_Date_Time_Control extends WP_Customize_Control {
 							</option>
 						<# } ); #>
 					</select>
+					<?php $fields['__MONTH__'] = ob_get_clean(); ?>
+
+					<?php ob_start(); ?>
 					<label for="{{ idPrefix }}date-time-day" class="screen-reader-text"><?php esc_html_e( 'Day' ); ?></label>
 					<input id="{{ idPrefix }}date-time-day" type="number" size="2" autocomplete="off" class="date-input day" data-component="day" min="1" max="31" />
-					<span class="time-special-char date-time-separator">,</span>
+					<?php $fields['__DAY__'] = ob_get_clean(); ?>
+
+					<?php ob_start(); ?>
 					<label for="{{ idPrefix }}date-time-year" class="screen-reader-text"><?php esc_html_e( 'Year' ); ?></label>
 					<input id="{{ idPrefix }}date-time-year" type="number" size="4" autocomplete="off" class="date-input year" data-component="year" min="{{ data.minYear }}" max="{{ data.maxYear }}">
+					<?php $fields['__YEAR__'] = ob_get_clean(); ?>
+
+					<?php
+					$tokens = preg_split( '/(__\w+__)/', $format, -1, PREG_SPLIT_DELIM_CAPTURE );
+					foreach ( $tokens as $token ) {
+						if ( '__HOUR__' === $token ) {
+							break;
+						}
+						if ( isset( $fields[ $token ] ) ) {
+							echo $fields[ $token ];
+						} else {
+							echo "<span class='time-special-char date-time-separator'>$token</span>"; // @todo What if this is token right before __HOUR__: is associated with year or hour?
+						}
+					}
+					?>
 				</div>
 			</fieldset>
 			<# if ( data.includeTime ) { #>
