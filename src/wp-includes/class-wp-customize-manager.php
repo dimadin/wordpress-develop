@@ -1270,7 +1270,7 @@ final class WP_Customize_Manager {
 		if ( ! empty( $starter_content_auto_draft_post_ids ) ) {
 			$existing_posts_query = new WP_Query( array(
 				'post__in' => $starter_content_auto_draft_post_ids,
-				'post_status' => 'auto-draft',
+				'post_status' => array( 'auto-draft', 'draft' ),
 				'post_type' => $post_types,
 				'posts_per_page' => -1,
 			) );
@@ -1450,6 +1450,9 @@ final class WP_Customize_Manager {
 
 			$this->set_post_value( $nav_menu_setting_id, array(
 				'name' => isset( $nav_menu['name'] ) ? $nav_menu['name'] : $nav_menu_location,
+				'description' => '',
+				'parent' => 0,
+				'auto_add' => false,
 			) );
 			$this->pending_starter_content_settings_ids[] = $nav_menu_setting_id;
 
@@ -1475,6 +1478,30 @@ final class WP_Customize_Manager {
 				} else {
 					$nav_menu_item['object_id'] = 0;
 				}
+
+				$nav_menu_item = array_merge(
+					// Copied from \WP_Customize_Nav_Menu_Item_Setting::$default.
+					array(
+						// The $menu_item_data for wp_update_nav_menu_item().
+						'object_id'        => 0,
+						'object'           => '', // Taxonomy name.
+						'menu_item_parent' => 0, // A.K.A. menu-item-parent-id; note that post_parent is different, and not included.
+						'position'         => 0, // A.K.A. menu_order.
+						'type'             => 'custom', // Note that type_label is not included here.
+						'title'            => '',
+						'url'              => '',
+						'target'           => '',
+						'attr_title'       => '',
+						'description'      => '',
+						'classes'          => '',
+						'xfn'              => '',
+						'status'           => 'publish',
+						'original_title'   => '',
+						'nav_menu_term_id' => 0, // This will be supplied as the $menu_id arg for wp_update_nav_menu_item().
+						'_invalid'         => false,
+					),
+					$nav_menu_item
+				);
 
 				if ( empty( $changeset_data[ $nav_menu_item_setting_id ] ) || ! empty( $changeset_data[ $nav_menu_item_setting_id ]['starter_content'] ) ) {
 					$this->set_post_value( $nav_menu_item_setting_id, $nav_menu_item );
@@ -2736,7 +2763,23 @@ final class WP_Customize_Manager {
 				$merged_setting_params = array_merge( $data[ $changeset_setting_id ], $setting_params );
 
 				// Skip updating setting params if unchanged (ensuring the user_id is not overwritten).
-				if ( $data[ $changeset_setting_id ] === $merged_setting_params ) {
+				$new_params = $data[ $changeset_setting_id ];
+				$old_params = $merged_setting_params;
+				unset( $new_params['value'], $old_params['value'] );
+				$is_everything_except_value_the_same = ( $old_params === $new_params );
+
+				// @todo This is so ugly.
+				$is_value_same = false;
+				if ( array_key_exists( 'value', $data[ $changeset_setting_id ] ) && array_key_exists( 'value', $merged_setting_params ) ) {
+					$new_value = $data[ $changeset_setting_id ]['value'];
+					$old_value = $merged_setting_params['value'];
+					if ( $setting instanceof WP_Customize_Nav_Menu_Item_Setting ) {
+						unset( $new_value['original_title'], $old_value['original_title'] );
+						unset( $new_value['type_label'], $old_value ['type_label'] );
+					}
+					$is_value_same = ( $new_value === $old_value );
+				}
+				if ( $is_everything_except_value_the_same && $is_value_same ) {
 					continue;
 				}
 

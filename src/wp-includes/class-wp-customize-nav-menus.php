@@ -317,7 +317,7 @@ final class WP_Customize_Nav_Menus {
 			$stub_post_query = new WP_Query( array_merge(
 				$query,
 				array(
-					'post_status' => 'auto-draft',
+					'post_status' => array( 'auto-draft', 'draft' ),
 					'post__in' => $nav_menus_created_posts_setting->value(),
 					'posts_per_page' => -1,
 				)
