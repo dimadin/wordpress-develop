@@ -2549,11 +2549,24 @@
 		 * @returns {void}
 		 */
 		showDetails: function ( theme, callback ) {
-			var section = this;
+			var section = this, panel = api.panel( 'themes' );
 			section.currentTheme = theme.id;
 			section.overlay.html( section.template( theme ) )
 				.fadeIn( 'fast' )
 				.focus();
+
+			function disableSwitchButtons() {
+				return ! panel.canSwitchTheme( theme.id );
+			}
+
+			// Temporary special function since supplying SFTP credentials does not work yet. See #42184.
+			function disableInstallButtons() {
+				return disableSwitchButtons() || true === api.settings.theme._filesystemCredentialsNeeded;
+			}
+
+			section.overlay.find( 'button.preview, button.preview-theme' ).toggleClass( 'disabled', disableSwitchButtons() );
+			section.overlay.find( 'button.theme-install' ).toggleClass( 'disabled', disableInstallButtons() );
+
 			section.$body.addClass( 'modal-open' );
 			section.containFocus( section.overlay );
 			section.updateLimits();
@@ -5115,18 +5128,13 @@
 			function disableInstallButtons() {
 				return disableSwitchButtons() || true === api.settings.theme._filesystemCredentialsNeeded;
 			}
-			function updateButtons( container ) {
-				var _container = container || control.container;
-				_container.find( 'button.preview, button.preview-theme' ).toggleClass( 'disabled', disableSwitchButtons() );
-				_container.find( 'button.theme-install' ).toggleClass( 'disabled', disableInstallButtons() );
+			function updateButtons() {
+				control.container.find( 'button.preview, button.preview-theme' ).toggleClass( 'disabled', disableSwitchButtons() );
+				control.container.find( 'button.theme-install' ).toggleClass( 'disabled', disableInstallButtons() );
 			}
 
-			api.state( 'selectedChangesetStatus' ).bind( function() {
-				updateButtons();
-			} );
-			api.state( 'changesetStatus' ).bind( function() {
-				updateButtons();
-			} );
+			api.state( 'selectedChangesetStatus' ).bind( updateButtons );
+			api.state( 'changesetStatus' ).bind( updateButtons );
 			updateButtons();
 
 			control.container.on( 'touchmove', '.theme', function() {
@@ -5153,7 +5161,6 @@
 				event.preventDefault(); // Keep this AFTER the key filter above
 				section = api.section( control.section() );
 				section.showDetails( control.params.theme, function() {
-					updateButtons( section.overlay.find( '.theme-actions' ) );
 
 					// Temporary special function since supplying SFTP credentials does not work yet. See #42184.
 					if ( api.settings.theme._filesystemCredentialsNeeded ) {
