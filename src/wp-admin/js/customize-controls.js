@@ -3039,7 +3039,6 @@
 		 * @returns {boolean} Whether the theme can be switched to.
 		 */
 		canSwitchTheme: function canSwitchTheme( slug ) {
-			var panel = this;
 			if ( slug && slug === api.settings.theme.stylesheet ) {
 				return true;
 			}
