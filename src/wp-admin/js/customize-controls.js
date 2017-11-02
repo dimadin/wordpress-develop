@@ -3063,6 +3063,7 @@
 			}
 			toggleDisabledNotifications();
 			api.state( 'selectedChangesetStatus' ).bind( toggleDisabledNotifications );
+			api.state( 'changesetStatus' ).bind( toggleDisabledNotifications );
 
 			// Collapse panel to customize the current theme.
 			panel.contentContainer.on( 'click', '.customize-theme', function() {
