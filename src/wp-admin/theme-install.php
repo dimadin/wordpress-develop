@@ -171,7 +171,15 @@ if ( ! apply_filters( 'customize_changeset_branching', false ) ) {
 
 	<?php if ( ! $is_customize_preview_available ) : ?>
 		<div class="notice notice-info">
-			<p><?php _e( 'Live preview for inactive themes is not currently available because there are drafted or scheduled changes for the active theme.' ); ?></p>
+			<p>
+				<?php
+				printf(
+					/* translators: %s is URL to Customizer with the Publish Settings section auto-focused */
+					__( 'Because you have drafted or scheduled changes, live previewing other themes is currently disabled. Please <a href="%s">publish your changes</a>, or wait until they publish to preview new themes. ' ),
+					add_query_arg( 'autofocus[section]', 'publish_settings', admin_url( 'customize.php' ) )
+				);
+				?>
+			</p>
 		</div>
 	<?php endif; ?>
 
