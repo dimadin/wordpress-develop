@@ -128,12 +128,10 @@ $is_customize_preview_available = true;
 /** This filter is documented in wp-includes/class-wp-customize-manager.php */
 if ( ! apply_filters( 'customize_changeset_branching', false ) ) {
 	$is_customize_preview_available = count( get_posts( array(
+		'post_type' => 'customize_changeset',
 		'post_status' => array_diff( get_post_stati(), array( 'auto-draft', 'publish', 'trash', 'inherit', 'private' ) ),
 		'author' => 'any',
 		'posts_per_page' => 1,
-		'order' => 'DESC',
-		'orderby' => 'date',
-		'post_type' => 'customize_changeset',
 		'no_found_rows' => true,
 		'cache_results' => true,
 		'update_post_meta_cache' => false,
