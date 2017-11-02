@@ -148,6 +148,26 @@ wp_enqueue_script( 'theme' );
 wp_enqueue_script( 'updates' );
 
 require_once( ABSPATH . 'wp-admin/admin-header.php' );
+
+$is_customize_preview_available = true;
+
+/** This filter is documented in wp-includes/class-wp-customize-manager.php */
+if ( ! apply_filters( 'customize_changeset_branching', false ) ) {
+	$is_customize_preview_available = count( get_posts( array(
+		'post_status' => array_diff( get_post_stati(), array( 'auto-draft', 'publish', 'trash', 'inherit', 'private' ) ),
+		'author' => 'any',
+		'posts_per_page' => 1,
+		'order' => 'DESC',
+		'orderby' => 'date',
+		'post_type' => 'customize_changeset',
+		'no_found_rows' => true,
+		'cache_results' => true,
+		'update_post_meta_cache' => false,
+		'update_post_term_cache' => false,
+		'lazy_load_term_meta' => false,
+	) ) ) === 0;
+}
+
 ?>
 
 <div class="wrap">
@@ -176,6 +196,14 @@ if ( ! validate_current_theme() || isset( $_GET['broken'] ) ) : ?>
 <?php elseif ( isset( $_GET['delete-active-child'] ) ) : ?>
 	<div id="message4" class="error"><p><?php _e( 'You cannot delete a theme while it has an active child theme.' ); ?></p></div>
 <?php
+endif;
+
+if ( ! $is_customize_preview_available ) :
+	?>
+	<div class="notice notice-info">
+		<p><?php _e( 'Live preview for inactive themes is not currently available because there are drafted or scheduled changes for the active theme.' ); ?></p>
+	</div>
+	<?php
 endif;
 
 $ct = wp_get_theme();
@@ -296,7 +324,7 @@ foreach ( $themes as $theme ) :
 			$aria_label = sprintf( _x( 'Activate %s', 'theme' ), '{{ data.name }}' );
 			?>
 			<a class="button activate" href="<?php echo $theme['actions']['activate']; ?>" aria-label="<?php echo esc_attr( $aria_label ); ?>"><?php _e( 'Activate' ); ?></a>
-			<?php if ( current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) ) { ?>
+			<?php if ( current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) && $is_customize_preview_available ) { ?>
 				<a class="button button-primary load-customize hide-if-no-customize" href="<?php echo $theme['actions']['customize']; ?>"><?php _e( 'Live Preview' ); ?></a>
 			<?php } ?>
 		<?php } ?>
@@ -431,7 +459,9 @@ $can_install = current_user_can( 'install_themes' );
 				$aria_label = sprintf( _x( 'Activate %s', 'theme' ), '{{ data.name }}' );
 				?>
 				<a class="button activate" href="{{{ data.actions.activate }}}" aria-label="<?php echo $aria_label; ?>"><?php _e( 'Activate' ); ?></a>
-				<a class="button button-primary load-customize hide-if-no-customize" href="{{{ data.actions.customize }}}"><?php _e( 'Live Preview' ); ?></a>
+				<?php if ( $is_customize_preview_available ) : ?>
+					<a class="button button-primary load-customize hide-if-no-customize" href="{{{ data.actions.customize }}}"><?php _e( 'Live Preview' ); ?></a>
+				<?php endif; ?>
 			<# } #>
 		</div>
 	</div>
@@ -492,7 +522,9 @@ $can_install = current_user_can( 'install_themes' );
 				<# if ( data.actions.activate ) { #>
 					<a href="{{{ data.actions.activate }}}" class="button activate" aria-label="<?php echo $aria_label; ?>"><?php _e( 'Activate' ); ?></a>
 				<# } #>
-				<a href="{{{ data.actions.customize }}}" class="button button-primary load-customize hide-if-no-customize"><?php _e( 'Live Preview' ); ?></a>
+				<?php if ( $is_customize_preview_available ) : ?>
+					<a href="{{{ data.actions.customize }}}" class="button button-primary load-customize hide-if-no-customize"><?php _e( 'Live Preview' ); ?></a>
+				<?php endif; ?>
 			</div>
 
 			<# if ( ! data.active && data.actions['delete'] ) { #>

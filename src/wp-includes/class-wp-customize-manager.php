@@ -782,11 +782,10 @@ final class WP_Customize_Manager {
 		 *
 		 * @since 4.9.0
 		 *
-		 * @param bool                 $allow_branching Whether branching is allowed. If `false`, the default,
-		 *                                              then only one saved changeset exists at a time.
-		 * @param WP_Customize_Manager $wp_customize    Manager instance.
+		 * @param bool $allow_branching Whether branching is allowed. If `false`, the default,
+		 *                              then only one saved changeset exists at a time.
 		 */
-		$this->branching = apply_filters( 'customize_changeset_branching', $this->branching, $this );
+		$this->branching = apply_filters( 'customize_changeset_branching', $this->branching );
 
 		return $this->branching;
 	}

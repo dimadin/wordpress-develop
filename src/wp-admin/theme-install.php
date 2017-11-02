@@ -123,6 +123,25 @@ get_current_screen()->set_help_sidebar(
 
 include(ABSPATH . 'wp-admin/admin-header.php');
 
+$is_customize_preview_available = true;
+
+/** This filter is documented in wp-includes/class-wp-customize-manager.php */
+if ( ! apply_filters( 'customize_changeset_branching', false ) ) {
+	$is_customize_preview_available = count( get_posts( array(
+		'post_status' => array_diff( get_post_stati(), array( 'auto-draft', 'publish', 'trash', 'inherit', 'private' ) ),
+		'author' => 'any',
+		'posts_per_page' => 1,
+		'order' => 'DESC',
+		'orderby' => 'date',
+		'post_type' => 'customize_changeset',
+		'no_found_rows' => true,
+		'cache_results' => true,
+		'update_post_meta_cache' => false,
+		'update_post_term_cache' => false,
+		'lazy_load_term_meta' => false,
+	) ) ) === 0;
+}
+
 ?>
 <div class="wrap">
 	<h1 class="wp-heading-inline"><?php echo esc_html( $title ); ?></h1>
@@ -149,6 +168,12 @@ include(ABSPATH . 'wp-admin/admin-header.php');
 	<div class="error hide-if-js">
 		<p><?php _e( 'The Theme Installer screen requires JavaScript.' ); ?></p>
 	</div>
+
+	<?php if ( ! $is_customize_preview_available ) : ?>
+		<div class="notice notice-info">
+			<p><?php _e( 'Live preview for inactive themes is not currently available because there are drafted or scheduled changes for the active theme.' ); ?></p>
+		</div>
+	<?php endif; ?>
 
 	<div class="upload-theme">
 	<?php install_themes_upload(); ?>
@@ -277,7 +302,7 @@ if ( $tab ) {
 				<# if ( data.activate_url ) { #>
 					<a class="button button-primary activate" href="{{ data.activate_url }}" aria-label="<?php echo esc_attr( $aria_label ); ?>"><?php _e( 'Activate' ); ?></a>
 				<# } #>
-				<# if ( data.customize_url ) { #>
+				<# if ( data.customize_url && <?php echo wp_json_encode( $is_customize_preview_available ); ?> ) { #>
 					<a class="button load-customize" href="{{ data.customize_url }}"><?php _e( 'Live Preview' ); ?></a>
 				<# } else { #>
 					<button class="button preview install-theme-preview"><?php _e( 'Preview' ); ?></button>
