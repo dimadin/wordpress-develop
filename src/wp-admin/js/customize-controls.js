@@ -3031,6 +3031,22 @@
 		},
 
 		/**
+		 * Determine whether a given theme can be switched to, or in general.
+		 *
+		 * @since 4.9.0
+		 *
+		 * @param {string} [slug] - Theme slug.
+		 * @returns {boolean} Whether the theme can be switched to.
+		 */
+		canSwitchTheme: function canSwitchTheme( slug ) {
+			var panel = this;
+			if ( slug && slug === api.settings.theme.stylesheet ) {
+				return true;
+			}
+			return 'publish' === api.state( 'selectedChangesetStatus' ).get() && ( '' === api.state( 'changesetStatus' ).get() || 'auto-draft' === api.state( 'changesetStatus' ).get() );
+		},
+
+		/**
 		 * Attach events.
 		 *
 		 * @since 4.9.0
@@ -3052,7 +3068,7 @@
 			}
 
 			function toggleDisabledNotifications() {
-				if ( 'publish' === api.state( 'selectedChangesetStatus' ).get() && ( '' === api.state( 'changesetStatus' ).get() || 'auto-draft' === api.state( 'changesetStatus' ).get() ) ) {
+				if ( panel.canSwitchTheme() ) {
 					panel.notifications.remove( 'theme_switch_unavailable' );
 				} else {
 					panel.notifications.add( new api.Notification( 'theme_switch_unavailable', {
@@ -3174,7 +3190,7 @@
 			}
 
 			// Prevent loading a non-active theme preview when there is a drafted/scheduled changeset.
-			if ( 'publish' !== api.state( 'selectedChangesetStatus' ).get() && slug !== api.settings.theme.stylesheet ) {
+			if ( panel.canSwitchTheme( slug ) ) {
 				deferred.reject({
 					errorCode: 'theme_switch_unavailable'
 				});
@@ -3267,10 +3283,10 @@
 		 * @returns {jQuery.promise} Promise.
 		 */
 		loadThemePreview: function( themeId ) {
-			var deferred = $.Deferred(), onceProcessingComplete, urlParser, queryParams;
+			var panel = this, deferred = $.Deferred(), onceProcessingComplete, urlParser, queryParams;
 
 			// Prevent loading a non-active theme preview when there is a drafted/scheduled changeset.
-			if ( 'publish' !== api.state( 'selectedChangesetStatus' ).get() && themeId !== api.settings.theme.stylesheet ) {
+			if ( ! panel.canSwitchTheme( themeId ) ) {
 				return deferred.reject().promise();
 			}
 
@@ -5090,10 +5106,10 @@
 		 * @since 4.2.0
 		 */
 		ready: function() {
-			var control = this;
+			var control = this, panel = api.panel( 'themes' );
 
 			function disableSwitchButtons() {
-				return 'publish' !== api.state( 'selectedChangesetStatus' ).get() && control.params.theme.id !== api.settings.theme.stylesheet;
+				return ! panel.canSwitchTheme( control.params.theme.id );
 			}
 
 			// Temporary special function since supplying SFTP credentials does not work yet. See #42184.
@@ -5108,7 +5124,10 @@
 
 			api.state( 'selectedChangesetStatus' ).bind( function() {
 				updateButtons();
-			});
+			} );
+			api.state( 'changesetStatus' ).bind( function() {
+				updateButtons();
+			} );
 			updateButtons();
 
 			control.container.on( 'touchmove', '.theme', function() {
