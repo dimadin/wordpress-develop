@@ -3052,7 +3052,7 @@
 			}
 
 			function toggleDisabledNotifications() {
-				if ( 'publish' === api.state( 'selectedChangesetStatus' ).get() ) {
+				if ( 'publish' === api.state( 'selectedChangesetStatus' ).get() && ( '' === api.state( 'changesetStatus' ).get() || 'auto-draft' === api.state( 'changesetStatus' ).get() ) ) {
 					panel.notifications.remove( 'theme_switch_unavailable' );
 				} else {
 					panel.notifications.add( new api.Notification( 'theme_switch_unavailable', {
