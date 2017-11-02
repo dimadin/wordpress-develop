@@ -60,6 +60,39 @@ if ( $wp_customize->changeset_post_id() ) {
 	}
 }
 
+$is_theme_switch_unavailable = (
+	! $wp_customize->is_theme_active()
+	&&
+	! $wp_customize->branching()
+	&&
+	$wp_customize->changeset_post_id()
+	&&
+	in_array(
+		get_post_status( $wp_customize->changeset_post_id() ),
+		array_diff( get_post_stati(), array( 'auto-draft', 'publish', 'trash', 'inherit', 'private' ) ),
+		true
+	)
+);
+if ( $is_theme_switch_unavailable ) {
+	$message = sprintf(
+		/* translators: %s is URL to Customizer with the Publish Settings section auto-focused */
+		__( 'Because you have drafted or scheduled changes, live previewing other themes is currently disabled. Please <a href="%s">publish your changes</a>, or wait until they publish to preview new themes. ' ),
+		add_query_arg(
+			array(
+				'autofocus[section]' => 'publish_settings',
+				'return' => admin_url( 'themes.php' ),
+			),
+			admin_url( 'customize.php' )
+		)
+	);
+
+	wp_die(
+		'<h1>' . __( 'Cheatin&#8217; uh?' ) . '</h1>' .
+		'<p>' . $message . '</p>',
+		403
+	);
+}
+
 
 wp_reset_vars( array( 'url', 'return', 'autofocus' ) );
 if ( ! empty( $url ) ) {
