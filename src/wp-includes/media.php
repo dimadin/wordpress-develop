@@ -1666,7 +1666,7 @@ function gallery_shortcode( $attr ) {
 	$atts = shortcode_atts( array(
 		'order'      => 'ASC',
 		'orderby'    => 'menu_order ID',
-		'id'         => null,
+		'id'         => $post ? $post->ID : null,
 		'itemtag'    => $html5 ? 'figure'     : 'dl',
 		'icontag'    => $html5 ? 'div'        : 'dt',
 		'captiontag' => $html5 ? 'figcaption' : 'dd',
@@ -1677,10 +1677,9 @@ function gallery_shortcode( $attr ) {
 		'link'       => ''
 	), $attr, 'gallery' );
 
-	if ( null !== $atts['id'] ) {
-		$id = intval( $atts['id'] );
-	} else {
-		$id = $post ? intval( $post->ID ) : null;
+	$id = $atts['id'];
+	if ( null !== $id ) {
+		$id = intval( $id );
 	}
 
 	if ( ! empty( $atts['include'] ) ) {
