@@ -1676,7 +1676,7 @@ function gallery_shortcode( $attr ) {
 		'exclude'    => '',
 		'link'       => ''
 	), $attr, 'gallery' );
-	
+
 	if ( null !== $atts['id'] ) {
 		$id = intval( $atts['id'] );
 	} else {
@@ -1690,7 +1690,7 @@ function gallery_shortcode( $attr ) {
 		foreach ( $_attachments as $key => $val ) {
 			$attachments[$val->ID] = $_attachments[$key];
 		}
-	} elseif ( $id !== null  ) {
+	} elseif ( null !== $id ) {
 		if ( ! empty( $atts['exclude'] ) ) {
 			$attachments = get_children( array( 'post_parent' => $id, 'exclude' => $atts['exclude'], 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
 		} else {
