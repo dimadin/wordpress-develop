@@ -221,10 +221,13 @@ class WP_Widget_Text extends WP_Widget {
 			remove_filter( 'widget_text', 'do_shortcode', $widget_text_do_shortcode_priority );
 		}
 
-		// Nullify the $post global during widget rendering to prevent shortcodes from running with the unexpected context.
-		$suspended_post = null;
-		if ( isset( $post ) ) {
-			$suspended_post = $post;
+		// Override global $post so filters (and shortcodes) apply in a consistent context.
+		$original_post = $post;
+		if ( is_singular() ) {
+			// Make sure post is always the queried object on singular queries (not from another sub-query that failed to clean up the global $post).
+			$post = get_queried_object();
+		} else {
+			// Nullify the $post global during widget rendering to prevent shortcodes from running with the unexpected context on archive queries.
 			$post = null;
 		}
 
@@ -278,9 +281,7 @@ class WP_Widget_Text extends WP_Widget {
 		}
 
 		// Restore post global.
-		if ( isset( $suspended_post ) ) {
-			$post = $suspended_post;
-		}
+		$post = $original_post;
 
 		// Undo suspension of legacy plugin-supplied shortcode handling.
 		if ( $should_suspend_legacy_shortcode_support ) {
