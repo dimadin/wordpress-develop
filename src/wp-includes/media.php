@@ -1682,6 +1682,11 @@ function gallery_shortcode( $attr ) {
 		$id = intval( $id );
 	}
 
+	// Short-circuit if no attachments are selected and there is no post context explicitly provided (including 0).
+	if ( empty( $atts['include'] ) && null === $id ) {
+		return '';
+	}
+
 	if ( ! empty( $atts['include'] ) ) {
 		$_attachments = get_posts( array( 'include' => $atts['include'], 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
 
@@ -1689,12 +1694,10 @@ function gallery_shortcode( $attr ) {
 		foreach ( $_attachments as $key => $val ) {
 			$attachments[$val->ID] = $_attachments[$key];
 		}
-	} elseif ( null !== $id ) {
-		if ( ! empty( $atts['exclude'] ) ) {
-			$attachments = get_children( array( 'post_parent' => $id, 'exclude' => $atts['exclude'], 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
-		} else {
-			$attachments = get_children( array( 'post_parent' => $id, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
-		}
+	} elseif ( ! empty( $atts['exclude'] ) ) {
+		$attachments = get_children( array( 'post_parent' => $id, 'exclude' => $atts['exclude'], 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
+	} else {
+		$attachments = get_children( array( 'post_parent' => $id, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
 	}
 
 	if ( empty( $attachments ) ) {
