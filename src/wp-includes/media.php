@@ -1666,7 +1666,7 @@ function gallery_shortcode( $attr ) {
 	$atts = shortcode_atts( array(
 		'order'      => 'ASC',
 		'orderby'    => 'menu_order ID',
-		'id'         => $post ? $post->ID : 0,
+		'id'         => null,
 		'itemtag'    => $html5 ? 'figure'     : 'dl',
 		'icontag'    => $html5 ? 'div'        : 'dt',
 		'captiontag' => $html5 ? 'figcaption' : 'dd',
@@ -1676,8 +1676,12 @@ function gallery_shortcode( $attr ) {
 		'exclude'    => '',
 		'link'       => ''
 	), $attr, 'gallery' );
-
-	$id = intval( $atts['id'] );
+	
+	if ( null !== $atts['id'] ) {
+		$id = intval( $atts['id'] );
+	} else {
+		$id = $post ? intval( $post->ID ) : null;
+	}
 
 	if ( ! empty( $atts['include'] ) ) {
 		$_attachments = get_posts( array( 'include' => $atts['include'], 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
@@ -1686,10 +1690,12 @@ function gallery_shortcode( $attr ) {
 		foreach ( $_attachments as $key => $val ) {
 			$attachments[$val->ID] = $_attachments[$key];
 		}
-	} elseif ( ! empty( $atts['exclude'] ) ) {
-		$attachments = get_children( array( 'post_parent' => $id, 'exclude' => $atts['exclude'], 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
-	} else {
-		$attachments = get_children( array( 'post_parent' => $id, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
+	} elseif ( $id !== null  ) {
+		if ( ! empty( $atts['exclude'] ) ) {
+			$attachments = get_children( array( 'post_parent' => $id, 'exclude' => $atts['exclude'], 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
+		} else {
+			$attachments = get_children( array( 'post_parent' => $id, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
+		}
 	}
 
 	if ( empty( $attachments ) ) {
