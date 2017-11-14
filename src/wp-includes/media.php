@@ -1662,11 +1662,13 @@ function gallery_shortcode( $attr ) {
 		return $output;
 	}
 
+	$id_supplied = isset( $attr['id'] );
+
 	$html5 = current_theme_supports( 'html5', 'gallery' );
 	$atts = shortcode_atts( array(
 		'order'      => 'ASC',
 		'orderby'    => 'menu_order ID',
-		'id'         => $post ? $post->ID : null,
+		'id'         => $post ? $post->ID : 0,
 		'itemtag'    => $html5 ? 'figure'     : 'dl',
 		'icontag'    => $html5 ? 'div'        : 'dt',
 		'captiontag' => $html5 ? 'figcaption' : 'dd',
@@ -1677,13 +1679,10 @@ function gallery_shortcode( $attr ) {
 		'link'       => ''
 	), $attr, 'gallery' );
 
-	$id = $atts['id'];
-	if ( null !== $id ) {
-		$id = intval( $id );
-	}
+	$id = intval( $atts['id'] );
 
 	// Short-circuit if no attachments are selected and there is no post context explicitly provided (including 0).
-	if ( empty( $atts['include'] ) && null === $id ) {
+	if ( empty( $atts['include'] ) && empty( $id ) && ! $id_supplied ) {
 		return '';
 	}
 
