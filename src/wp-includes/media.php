@@ -1662,8 +1662,6 @@ function gallery_shortcode( $attr ) {
 		return $output;
 	}
 
-	$id_supplied = isset( $attr['id'] );
-
 	$html5 = current_theme_supports( 'html5', 'gallery' );
 	$atts = shortcode_atts( array(
 		'order'      => 'ASC',
@@ -1680,11 +1678,6 @@ function gallery_shortcode( $attr ) {
 	), $attr, 'gallery' );
 
 	$id = intval( $atts['id'] );
-
-	// Short-circuit if no attachments are selected and there is no post context explicitly provided (including 0).
-	if ( empty( $atts['include'] ) && empty( $id ) && ! $id_supplied ) {
-		return '';
-	}
 
 	if ( ! empty( $atts['include'] ) ) {
 		$_attachments = get_posts( array( 'include' => $atts['include'], 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $atts['order'], 'orderby' => $atts['orderby'] ) );
