@@ -250,7 +250,7 @@ class WP_Widget_Text extends WP_Widget {
 		}
 
 		// Prevent dumping out all attachments from the media library.
-		add_filter( 'shortcode_atts_gallery', array( $this, '_filter_gallery_shortcode_attrs' ), 1000 );
+		add_filter( 'shortcode_atts_gallery', array( $this, '_filter_gallery_shortcode_attrs' ) );
 
 		/**
 		 * Filters the content of the Text widget.
@@ -303,7 +303,7 @@ class WP_Widget_Text extends WP_Widget {
 
 		// Restore post global.
 		$post = $original_post;
-		remove_filter( 'shortcode_atts_gallery', array( $this, '_filter_gallery_shortcode_attrs' ), 1000 );
+		remove_filter( 'shortcode_atts_gallery', array( $this, '_filter_gallery_shortcode_attrs' ) );
 
 		// Undo suspension of legacy plugin-supplied shortcode handling.
 		if ( $should_suspend_legacy_shortcode_support ) {
