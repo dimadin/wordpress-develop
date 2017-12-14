@@ -3,6 +3,8 @@
 (function ($, _, Backbone) {
 	'use strict';
 
+	window.wp = window.wp || {};
+
 	var WPPlaylistView = Backbone.View.extend(/** @lends WPPlaylistView.prototype */{
 		/**
 		 * @constructs
@@ -168,11 +170,18 @@
 		}
 	});
 
-    $(document).ready(function () {
-		$('.wp-playlist').each( function() {
-			return new WPPlaylistView({ el: this });
+	function initialize() {
+		// Only initialize new playlists
+		$( '.wp-playlist:not(:has(.mejs-container))' ).each( function() {
+			new WPPlaylistView( { el: this } );
 		} );
-    });
+	}
+
+	window.wp.playlist = {
+		initialize: initialize
+	};
+
+	$(document).ready( initialize );
 
 	window.WPPlaylistView = WPPlaylistView;
 
