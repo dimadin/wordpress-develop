@@ -407,6 +407,8 @@ class WP_Widget_Text extends WP_Widget {
 	 * @since 4.9.2
 	 */
 	public function enqueue_preview_scripts() {
+		require_once( dirname( dirname( __FILE__ ) ) . '/media.php' );
+
 		wp_playlist_scripts( 'audio' );
 		wp_playlist_scripts( 'video' );
 	}
@@ -418,7 +420,6 @@ class WP_Widget_Text extends WP_Widget {
 	 */
 	public function enqueue_admin_scripts() {
 		wp_enqueue_editor();
-
 		wp_enqueue_script( 'text-widgets' );
 		wp_add_inline_script( 'text-widgets', 'wp.textWidgets.init();', 'after' );
 	}
