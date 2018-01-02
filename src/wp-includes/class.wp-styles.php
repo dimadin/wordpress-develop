@@ -128,6 +128,34 @@ class WP_Styles extends WP_Dependencies {
 	}
 
 	/**
+	 * Get the HTML element attributes for a stylesheet.
+	 *
+	 * Does not include the `href` attribute.
+	 *
+	 * @since 4.6.0
+	 *
+	 * @param  string $handle The stylesheet handle.
+	 * @return array Attribues.
+	 */
+	public function get_style_additional_attributes( $handle ) {
+		$obj = $this->registered[ $handle ];
+		if ( null === $obj->ver ) {
+			$ver = '';
+		} else {
+			$ver = $obj->ver ? $obj->ver : $this->default_version;
+		}
+
+		$attributes = array(
+			'rel' => isset($obj->extra['alt']) && $obj->extra['alt'] ? 'alternate stylesheet' : 'stylesheet',
+			'id' => $handle . '-css',
+			'title' => isset($obj->extra['title']) ? $obj->extra['title'] : '',
+			'type' => 'text/css',
+			'media' => isset( $obj->args ) ? $obj->args : 'all'
+		);
+		return $attributes;
+	}
+
+	/**
 	 * Processes a style dependency.
 	 *
 	 * @since 2.6.0
@@ -200,7 +228,7 @@ class WP_Styles extends WP_Dependencies {
 		 * @param string $href   The stylesheet's source URL.
 		 * @param string $media  The stylesheet's media attribute.
 		 */
-		$tag = apply_filters( 'style_loader_tag', "<link rel='$rel' id='$handle-css' $title href='$href' type='text/css' media='$media' />\n", $handle, $href, $media);
+		$tag = apply_filters( 'style_loader_tag', "<link href='$href'" . $this->get_style_attribute_html( $handle ) . " />\n", $handle, $href, $media);
 		if ( 'rtl' === $this->text_direction && isset($obj->extra['rtl']) && $obj->extra['rtl'] ) {
 			if ( is_bool( $obj->extra['rtl'] ) || 'replace' === $obj->extra['rtl'] ) {
 				$suffix = isset( $obj->extra['suffix'] ) ? $obj->extra['suffix'] : '';
@@ -240,6 +268,23 @@ class WP_Styles extends WP_Dependencies {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Get the concatenated HTML element attributes for a stylesheet
+	 *
+	 * @since 4.6.0
+	 *
+	 * @param  string $handle The stylesheet handle.
+	 * @return string Concatenated attributes.
+	 */
+	public function get_style_attribute_html( $handle ) {
+		$attributes = $this->get_style_additional_attributes( $handle );
+		$html = '';
+		foreach ( $attributes as $attribute => $attribute_value ) {
+			$html .=  sprintf( " %s='%s'", esc_attr_name( $attribute ), esc_attr( $attribute_value ) );
+		}
+		return $html;
 	}
 
 	/**

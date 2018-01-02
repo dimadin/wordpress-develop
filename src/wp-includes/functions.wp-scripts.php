@@ -130,6 +130,7 @@ function wp_add_inline_script( $handle, $data, $position = 'after' ) {
  *
  * @since 2.1.0
  * @since 4.3.0 A return value was added.
+ * @since 4.6.0 Introduced the `$attributes` parameter.
  *
  * @param string           $handle    Name of the script. Should be unique.
  * @param string           $src       Full URL of the script, or path of the script relative to the WordPress root directory.
@@ -140,13 +141,21 @@ function wp_add_inline_script( $handle, $data, $position = 'after' ) {
  *                                    If set to null, no version is added.
  * @param bool             $in_footer Optional. Whether to enqueue the script before </body> instead of in the <head>.
  *                                    Default 'false'.
+ * @param array            $args {
+ *     Optional script arguments.
+ *
+ *     @type array $attributes Array of script element attributes.
+ *                             Default: array( 'type' => 'text/javascript' )
+ * }
  * @return bool Whether the script has been registered. True on success, false on failure.
  */
-function wp_register_script( $handle, $src, $deps = array(), $ver = false, $in_footer = false ) {
+function wp_register_script( $handle, $src, $deps = array(), $ver = false, $in_footer = false, $attributes = array() ) {
 	$wp_scripts = wp_scripts();
 	_wp_scripts_maybe_doing_it_wrong( __FUNCTION__ );
 
-	$registered = $wp_scripts->add( $handle, $src, $deps, $ver );
+	$attributes = wp_parse_args( $attributes, array( 'type' => 'text/javascript' ) );
+
+	$registered = $wp_scripts->add( $handle, $src, $deps, $ver, array( 'attributes' => $attributes ) );
 	if ( $in_footer ) {
 		$wp_scripts->add_data( $handle, 'group', 1 );
 	}
@@ -249,6 +258,7 @@ function wp_deregister_script( $handle ) {
  * @see WP_Dependencies::enqueue()
  *
  * @since 2.1.0
+ * @since 4.6.0 Introduced the `$attributes` parameter.
  *
  * @param string           $handle    Name of the script. Should be unique.
  * @param string           $src       Full URL of the script, or path of the script relative to the WordPress root directory.
@@ -259,18 +269,25 @@ function wp_deregister_script( $handle ) {
  *                                    If set to null, no version is added.
  * @param bool             $in_footer Optional. Whether to enqueue the script before </body> instead of in the <head>.
  *                                    Default 'false'.
+ * @param array            $args {
+ *     Optional script arguments.
+ *
+ *     @type array $attributes Array of script element attributes.
+ *                             Default: array( 'type' => 'text/javascript' )
+ * }
  */
-function wp_enqueue_script( $handle, $src = false, $deps = array(), $ver = false, $in_footer = false ) {
+function wp_enqueue_script( $handle, $src = false, $deps = array(), $ver = false, $in_footer = false, $attributes = array() ) {
 	$wp_scripts = wp_scripts();
 
 	_wp_scripts_maybe_doing_it_wrong( __FUNCTION__ );
 
+	$attributes = wp_parse_args( $attributes, array( 'type' => 'text/javascript' ) );
 
 	if ( $src || $in_footer ) {
 		$_handle = explode( '?', $handle );
 
 		if ( $src ) {
-			$wp_scripts->add( $_handle[0], $src, $deps, $ver );
+			$wp_scripts->add( $_handle[0], $src, $deps, $ver, array( 'attributes' => $attributes ) );
 		}
 
 		if ( $in_footer ) {

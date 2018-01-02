@@ -724,4 +724,31 @@ class Tests_Dependencies_Scripts extends WP_UnitTestCase {
 
 		$this->assertEquals( $expected, get_echo( 'wp_print_scripts' ) );
 	}
+
+	/**
+	 * @ticket 22249
+	 */
+	function test_wp_register_script_should_allow_arbitrary_element_attributes() {
+		wp_register_script( 'cool-script', '/cool-script.js', array(), '1', false, array( 'async' => 'async' ) );
+
+		wp_enqueue_script( 'cool-script' );
+
+		$header = get_echo( 'wp_print_head_scripts' );
+		$expected_header  = "<script type='text/javascript' src='/cool-script.js?ver=1' async='async'></script>\n";
+
+		$this->assertEquals( $expected_header, $header );
+	}
+
+	/**
+	 * @ticket 22249
+	 */
+	function test_wp_enqueue_script_should_allow_arbitrary_element_attributes() {
+		wp_enqueue_script( 'cool-script', '/cool-script.js', array(), '1', false, array( 'async' => 'async' ) );
+
+		$header = get_echo( 'wp_print_head_scripts' );
+		$expected_header  = "<script type='text/javascript' src='/cool-script.js?ver=1' async='async'></script>\n";
+
+		$this->assertEquals( $expected_header, $header );
+	}
+
 }
