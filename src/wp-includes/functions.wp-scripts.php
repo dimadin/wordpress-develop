@@ -34,17 +34,19 @@ function wp_scripts() {
  * @param string $function Function name.
  */
 function _wp_scripts_maybe_doing_it_wrong( $function ) {
-	if ( did_action( 'init' ) ) {
+	if ( did_action( 'init' ) || did_action( 'admin_enqueue_scripts' ) || did_action( 'wp_enqueue_scripts' ) || did_action( 'login_enqueue_scripts' ) ) {
 		return;
 	}
 
-	_doing_it_wrong( $function, sprintf(
-		/* translators: 1: wp_enqueue_scripts, 2: admin_enqueue_scripts, 3: login_enqueue_scripts */
-		__( 'Scripts and styles should not be registered or enqueued until the %1$s, %2$s, or %3$s hooks.' ),
-		'<code>wp_enqueue_scripts</code>',
-		'<code>admin_enqueue_scripts</code>',
-		'<code>login_enqueue_scripts</code>'
-	), '3.3.0' );
+	_doing_it_wrong(
+		$function, sprintf(
+			/* translators: 1: wp_enqueue_scripts, 2: admin_enqueue_scripts, 3: login_enqueue_scripts */
+			__( 'Scripts and styles should not be registered or enqueued until the %1$s, %2$s, or %3$s hooks.' ),
+			'<code>wp_enqueue_scripts</code>',
+			'<code>admin_enqueue_scripts</code>',
+			'<code>login_enqueue_scripts</code>'
+		), '3.3.0'
+	);
 }
 
 /**
@@ -108,12 +110,14 @@ function wp_add_inline_script( $handle, $data, $position = 'after' ) {
 	_wp_scripts_maybe_doing_it_wrong( __FUNCTION__ );
 
 	if ( false !== stripos( $data, '</script>' ) ) {
-		_doing_it_wrong( __FUNCTION__, sprintf(
-			/* translators: 1: <script>, 2: wp_add_inline_script() */
-			__( 'Do not pass %1$s tags to %2$s.' ),
-			'<code>&lt;script&gt;</code>',
-			'<code>wp_add_inline_script()</code>'
-		), '4.5.0' );
+		_doing_it_wrong(
+			__FUNCTION__, sprintf(
+				/* translators: 1: <script>, 2: wp_add_inline_script() */
+				__( 'Do not pass %1$s tags to %2$s.' ),
+				'<code>&lt;script&gt;</code>',
+				'<code>wp_add_inline_script()</code>'
+			), '4.5.0'
+		);
 		$data = trim( preg_replace( '#<script[^>]*>(.*)</script>#is', '$1', $data ) );
 	}
 
@@ -130,7 +134,6 @@ function wp_add_inline_script( $handle, $data, $position = 'after' ) {
  *
  * @since 2.1.0
  * @since 4.3.0 A return value was added.
- * @since 4.6.0 Introduced the `$attributes` parameter.
  *
  * @param string           $handle    Name of the script. Should be unique.
  * @param string           $src       Full URL of the script, or path of the script relative to the WordPress root directory.
@@ -141,21 +144,13 @@ function wp_add_inline_script( $handle, $data, $position = 'after' ) {
  *                                    If set to null, no version is added.
  * @param bool             $in_footer Optional. Whether to enqueue the script before </body> instead of in the <head>.
  *                                    Default 'false'.
- * @param array            $args {
- *     Optional script arguments.
- *
- *     @type array $attributes Array of script element attributes.
- *                             Default: array( 'type' => 'text/javascript' )
- * }
  * @return bool Whether the script has been registered. True on success, false on failure.
  */
-function wp_register_script( $handle, $src, $deps = array(), $ver = false, $in_footer = false, $attributes = array() ) {
+function wp_register_script( $handle, $src, $deps = array(), $ver = false, $in_footer = false ) {
 	$wp_scripts = wp_scripts();
 	_wp_scripts_maybe_doing_it_wrong( __FUNCTION__ );
 
-	$attributes = wp_parse_args( $attributes, array( 'type' => 'text/javascript' ) );
-
-	$registered = $wp_scripts->add( $handle, $src, $deps, $ver, array( 'attributes' => $attributes ) );
+	$registered = $wp_scripts->add( $handle, $src, $deps, $ver );
 	if ( $in_footer ) {
 		$wp_scripts->add_data( $handle, 'group', 1 );
 	}
@@ -175,7 +170,6 @@ function wp_register_script( $handle, $src, $deps = array(), $ver = false, $in_f
  *         key: value,
  *         ...
  *     }
- *
  *
  * @see WP_Dependencies::localize()
  * @link https://core.trac.wordpress.org/ticket/11520
@@ -225,12 +219,31 @@ function wp_deregister_script( $handle ) {
 		( 'wp-login.php' === $GLOBALS['pagenow'] && 'login_enqueue_scripts' !== $current_filter )
 	) {
 		$no = array(
-			'jquery', 'jquery-core', 'jquery-migrate', 'jquery-ui-core', 'jquery-ui-accordion',
-			'jquery-ui-autocomplete', 'jquery-ui-button', 'jquery-ui-datepicker', 'jquery-ui-dialog',
-			'jquery-ui-draggable', 'jquery-ui-droppable', 'jquery-ui-menu', 'jquery-ui-mouse',
-			'jquery-ui-position', 'jquery-ui-progressbar', 'jquery-ui-resizable', 'jquery-ui-selectable',
-			'jquery-ui-slider', 'jquery-ui-sortable', 'jquery-ui-spinner', 'jquery-ui-tabs',
-			'jquery-ui-tooltip', 'jquery-ui-widget', 'underscore', 'backbone',
+			'jquery',
+			'jquery-core',
+			'jquery-migrate',
+			'jquery-ui-core',
+			'jquery-ui-accordion',
+			'jquery-ui-autocomplete',
+			'jquery-ui-button',
+			'jquery-ui-datepicker',
+			'jquery-ui-dialog',
+			'jquery-ui-draggable',
+			'jquery-ui-droppable',
+			'jquery-ui-menu',
+			'jquery-ui-mouse',
+			'jquery-ui-position',
+			'jquery-ui-progressbar',
+			'jquery-ui-resizable',
+			'jquery-ui-selectable',
+			'jquery-ui-slider',
+			'jquery-ui-sortable',
+			'jquery-ui-spinner',
+			'jquery-ui-tabs',
+			'jquery-ui-tooltip',
+			'jquery-ui-widget',
+			'underscore',
+			'backbone',
 		);
 
 		if ( in_array( $handle, $no ) ) {
@@ -258,7 +271,7 @@ function wp_deregister_script( $handle ) {
  * @see WP_Dependencies::enqueue()
  *
  * @since 2.1.0
- * @since 4.6.0 Introduced the `$attributes` parameter.
+ * @since 4.9.2 Introduced the `$attributes` parameter.
  *
  * @param string           $handle    Name of the script. Should be unique.
  * @param string           $src       Full URL of the script, or path of the script relative to the WordPress root directory.
@@ -276,7 +289,7 @@ function wp_deregister_script( $handle ) {
  *                             Default: array( 'type' => 'text/javascript' )
  * }
  */
-function wp_enqueue_script( $handle, $src = false, $deps = array(), $ver = false, $in_footer = false, $attributes = array() ) {
+function wp_enqueue_script( $handle, $src = '', $deps = array(), $ver = false, $in_footer = false, $attributes = array() ) {
 	$wp_scripts = wp_scripts();
 
 	_wp_scripts_maybe_doing_it_wrong( __FUNCTION__ );
@@ -347,6 +360,6 @@ function wp_script_is( $handle, $list = 'enqueued' ) {
  * @param mixed  $value  String containing the data to be added.
  * @return bool True on success, false on failure.
  */
-function wp_script_add_data( $handle, $key, $value ){
+function wp_script_add_data( $handle, $key, $value ) {
 	return wp_scripts()->add_data( $handle, $key, $value );
 }

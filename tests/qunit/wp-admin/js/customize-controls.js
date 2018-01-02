@@ -1,4 +1,4 @@
-/* global wp, test, ok, equal, module */
+/* global JSON, wp, test, ok, equal, module */
 
 wp.customize.settingConstructor.abbreviation = wp.customize.Setting.extend({
 	validate: function( value ) {
@@ -82,6 +82,47 @@ jQuery( window ).load( function (){
 
 	};
 
+	module( 'Customizer notifications collection' );
+	test( 'Notifications collection exists', function() {
+		ok( wp.customize.notifications );
+		equal( wp.customize.notifications.defaultConstructor, wp.customize.Notification );
+	} );
+
+	test( 'Notification objects are rendered as part of notifications collection', function() {
+		var container = jQuery( '#customize-notifications-test' ), items, collection;
+
+		collection = new wp.customize.Notifications({
+			container: container
+		});
+		collection.add( 'mycode-1', new wp.customize.Notification( 'mycode-1' ) );
+		collection.render();
+		items = collection.container.find( 'li' );
+		equal( items.length, 1 );
+		equal( items.first().data( 'code' ), 'mycode-1' );
+
+		collection.add( 'mycode-2', new wp.customize.Notification( 'mycode-2', {
+			dismissible: true
+		} ) );
+		collection.render();
+		items = collection.container.find( 'li' );
+		equal( items.length, 2 );
+		equal( items.first().data( 'code' ), 'mycode-2' );
+		equal( items.last().data( 'code' ), 'mycode-1' );
+
+		equal( items.first().find( '.notice-dismiss' ).length, 1 );
+		equal( items.last().find( '.notice-dismiss' ).length, 0 );
+
+		collection.remove( 'mycode-2' );
+		collection.render();
+		items = collection.container.find( 'li' );
+		equal( items.length, 1 );
+		equal( items.first().data( 'code' ), 'mycode-1' );
+
+		collection.remove( 'mycode-1' );
+		collection.render();
+		ok( collection.container.is( ':hidden' ), 'Notifications area is hidden.' );
+	} );
+
 	module( 'Customizer Previewed Device' );
 	test( 'Previewed device defaults to desktop.', function () {
 		equal( wp.customize.previewedDevice.get(), 'desktop' );
@@ -144,7 +185,7 @@ jQuery( window ).load( function (){
 			assert.equal( 1, notificationContainerElement.length );
 			assert.ok( notificationContainerElement.is( '.customize-control-notifications-container' ) );
 			assert.equal( 0, notificationContainerElement.find( '> ul > li' ).length );
-			assert.equal( 'none', notificationContainerElement.css( 'display' ) );
+			assert.equal( 0, notificationContainerElement.height() );
 
 			settingNotification = new wp.customize.Notification( 'setting_invalidity', 'Invalid setting' );
 			controlOnlyNotification = new wp.customize.Notification( 'control_invalidity', 'Invalid control' );
@@ -152,7 +193,7 @@ jQuery( window ).load( function (){
 			control.notifications.add( controlOnlyNotification.code, controlOnlyNotification );
 
 			// Note that renderNotifications is being called manually here since rendering normally happens asynchronously.
-			control.renderNotifications();
+			control.notifications.render();
 
 			assert.equal( 2, notificationContainerElement.find( '> ul > li' ).length );
 			assert.notEqual( 'none', notificationContainerElement.css( 'display' ) );
@@ -160,14 +201,13 @@ jQuery( window ).load( function (){
 			assert.equal( 1, _.size( control.settings['default'].notifications._value ) );
 
 			control.notifications.remove( controlOnlyNotification.code );
-			control.renderNotifications();
+			control.notifications.render();
 			assert.equal( 1, notificationContainerElement.find( '> ul > li' ).length );
 			assert.notEqual( 'none', notificationContainerElement.css( 'display' ) );
 
 			control.settings['default'].notifications.remove( settingNotification.code );
-			control.renderNotifications();
+			control.notifications.render();
 			assert.equal( 0, notificationContainerElement.find( '> ul > li' ).length );
-			assert.ok( notificationContainerElement.is( ':animated' ) ); // It is being slid down.
 			notificationContainerElement.stop().hide(); // Clean up.
 
 			doneEmbedded();
@@ -211,9 +251,14 @@ jQuery( window ).load( function (){
 		section = wp.customize.section( id );
 		ok( ! section.params.content );
 		ok( !! section.container );
-		ok( section.container.is( '.control-section.control-section-default' ) );
-		ok( 1 === section.container.find( '> .accordion-section-title' ).length );
-		ok( 1 === section.container.find( '> .accordion-section-content' ).length );
+		ok( !! section.headContainer );
+		ok( !! section.contentContainer );
+		ok( section.container.has( section.headContainer ) );
+		ok( section.container.has( section.contentContainer ) );
+		ok( section.headContainer.is( '.control-section.control-section-default' ) );
+		ok( 1 === section.headContainer.find( '> .accordion-section-title' ).length );
+		ok( section.contentContainer.is( '.accordion-section-content' ) );
+		equal( section.headContainer.attr( 'aria-owns' ), section.contentContainer.attr( 'id' ) );
 	} );
 
 	module( 'Customizer Custom Type (titleless) Section with Template in Fixture' );
@@ -225,9 +270,14 @@ jQuery( window ).load( function (){
 		section = wp.customize.section( id );
 		ok( ! section.params.content );
 		ok( !! section.container );
+		ok( !! section.headContainer );
+		ok( !! section.contentContainer );
+		ok( section.container.has( section.headContainer ) );
+		ok( section.container.has( section.contentContainer ) );
 		ok( section.container.is( '.control-section.control-section-titleless' ) );
-		ok( 0 === section.container.find( '> .accordion-section-title' ).length );
-		ok( 1 === section.container.find( '> .accordion-section-content' ).length );
+		ok( 0 === section.headContainer.find( '> .accordion-section-title' ).length );
+		ok( section.contentContainer.is( '.accordion-section-content' ) );
+		equal( section.headContainer.attr( 'aria-owns' ), section.contentContainer.attr( 'id' ) );
 	} );
 	module( 'Customizer Custom Type Section Lacking Specific Template' );
 	test( 'Fixture section has expected content', function () {
@@ -235,9 +285,14 @@ jQuery( window ).load( function (){
 		section = wp.customize.section( id );
 		ok( ! section.params.content );
 		ok( !! section.container );
-		ok( section.container.is( '.control-section.control-section-' + section.params.type ) );
-		ok( 1 === section.container.find( '> .accordion-section-title' ).length );
-		ok( 1 === section.container.find( '> .accordion-section-content' ).length );
+		ok( !! section.headContainer );
+		ok( !! section.contentContainer );
+		ok( section.container.has( section.headContainer ) );
+		ok( section.container.has( section.contentContainer ) );
+		ok( section.headContainer.is( '.control-section.control-section-' + section.params.type ) );
+		ok( 1 === section.headContainer.find( '> .accordion-section-title' ).length );
+		ok( section.contentContainer.is( '.accordion-section-content' ) );
+		equal( section.headContainer.attr( 'aria-owns' ), section.contentContainer.attr( 'id' ) );
 	} );
 	module( 'Customizer Section lacking any params' );
 	test( 'Fixture section has default params supplied', function () {
@@ -251,13 +306,13 @@ jQuery( window ).load( function (){
 			type: 'default',
 			content: null,
 			active: true,
-			instanceNumber: null,
 			customizeAction: ''
 		};
 		jQuery.each( defaultParams, function ( key, value ) {
 			ok( 'undefined' !== typeof section.params[ key ] );
 			equal( value, section.params[ key ] );
 		} );
+		ok( _.isNumber( section.params.instanceNumber ) );
 	} );
 
 
@@ -270,6 +325,10 @@ jQuery( window ).load( function (){
 		var panel = wp.customize.panel( 'fixture-panel' );
 		ok( !! panel.params.content );
 		ok( !! panel.container );
+		ok( !! panel.headContainer );
+		ok( !! panel.contentContainer );
+		ok( panel.container.has( panel.headContainer ) );
+		ok( panel.container.has( panel.contentContainer ) );
 	} );
 	test( 'Fixture panel has section among its sections()', function () {
 		var panel = wp.customize.panel( 'fixture-panel' );
@@ -304,9 +363,14 @@ jQuery( window ).load( function (){
 		panel = wp.customize.panel( id );
 		ok( ! panel.params.content );
 		ok( !! panel.container );
-		ok( panel.container.is( '.control-panel.control-panel-default' ) );
-		ok( 1 === panel.container.find( '> .accordion-section-title' ).length );
-		ok( 1 === panel.container.find( '> .control-panel-content' ).length );
+		ok( !! panel.headContainer );
+		ok( !! panel.contentContainer );
+		ok( panel.container.has( panel.headContainer ) );
+		ok( panel.container.has( panel.contentContainer ) );
+		ok( panel.headContainer.is( '.control-panel.control-panel-default' ) );
+		ok( 1 === panel.headContainer.find( '> .accordion-section-title' ).length );
+		ok( panel.contentContainer.is( '.control-panel-content' ) );
+		equal( panel.headContainer.attr( 'aria-owns' ), panel.contentContainer.attr( 'id' ) );
 	} );
 
 	module( 'Customizer Custom Type Panel (titleless) with Template in Fixture' );
@@ -318,9 +382,14 @@ jQuery( window ).load( function (){
 		panel = wp.customize.panel( id );
 		ok( ! panel.params.content );
 		ok( !! panel.container );
-		ok( panel.container.is( '.control-panel.control-panel-titleless' ) );
-		ok( 0 === panel.container.find( '> .accordion-section-title' ).length );
-		ok( 1 === panel.container.find( '> .control-panel-content' ).length );
+		ok( !! panel.headContainer );
+		ok( !! panel.contentContainer );
+		ok( panel.container.has( panel.headContainer ) );
+		ok( panel.container.has( panel.contentContainer ) );
+		ok( panel.headContainer.is( '.control-panel.control-panel-titleless' ) );
+		ok( 0 === panel.headContainer.find( '> .accordion-section-title' ).length );
+		ok( panel.contentContainer.is( '.control-panel-content' ) );
+		equal( panel.headContainer.attr( 'aria-owns' ), panel.contentContainer.attr( 'id' ) );
 	} );
 
 	module( 'Customizer Custom Type Panel Lacking Specific Template' );
@@ -329,9 +398,14 @@ jQuery( window ).load( function (){
 		panel = wp.customize.panel( id );
 		ok( ! panel.params.content );
 		ok( !! panel.container );
-		ok( panel.container.is( '.control-panel.control-panel-' + panel.params.type ) );
-		ok( 1 === panel.container.find( '> .accordion-section-title' ).length );
-		ok( 1 === panel.container.find( '> .control-panel-content' ).length );
+		ok( !! panel.headContainer );
+		ok( !! panel.contentContainer );
+		ok( panel.container.has( panel.headContainer ) );
+		ok( panel.container.has( panel.contentContainer ) );
+		ok( panel.headContainer.is( '.control-panel.control-panel-' + panel.params.type ) );
+		ok( 1 === panel.headContainer.find( '> .accordion-section-title' ).length );
+		ok( panel.contentContainer.is( '.control-panel-content' ) );
+		equal( panel.headContainer.attr( 'aria-owns' ), panel.contentContainer.attr( 'id' ) );
 	} );
 	module( 'Customizer Panel lacking any params' );
 	test( 'Fixture panel has default params supplied', function () {
@@ -343,13 +417,13 @@ jQuery( window ).load( function (){
 			priority: 100,
 			type: 'default',
 			content: null,
-			active: true,
-			instanceNumber: null
+			active: true
 		};
 		jQuery.each( defaultParams, function ( key, value ) {
 			ok( 'undefined' !== typeof panel.params[ key ] );
 			equal( value, panel.params[ key ] );
 		} );
+		ok( _.isNumber( panel.params.instanceNumber ) );
 	} );
 
 	module( 'Dynamically-created Customizer Setting Model' );
@@ -524,4 +598,340 @@ jQuery( window ).load( function (){
 		equal( 1, controlsForSettings['fixture-setting'].length );
 		equal( wp.customize.control( controlId ), controlsForSettings['fixture-setting'][0] );
 	} );
+
+	module( 'Customize Controls wp.customize.dirtyValues' );
+	test( 'dirtyValues() returns expected values', function() {
+		wp.customize.state( 'changesetStatus' ).set( 'auto-draft' );
+		wp.customize.each( function( setting ) {
+			setting._dirty = false;
+		} );
+		ok( _.isEmpty( wp.customize.dirtyValues() ) );
+		ok( _.isEmpty( wp.customize.dirtyValues( { unsaved: false } ) ) );
+
+		wp.customize( 'fixture-setting' )._dirty = true;
+		ok( ! _.isEmpty( wp.customize.dirtyValues() ) );
+		ok( _.isEmpty( wp.customize.dirtyValues( { unsaved: true } ) ) );
+
+		wp.customize( 'fixture-setting' ).set( 'Modified' );
+		ok( ! _.isEmpty( wp.customize.dirtyValues() ) );
+		ok( ! _.isEmpty( wp.customize.dirtyValues( { unsaved: true } ) ) );
+		equal( 'Modified', wp.customize.dirtyValues()['fixture-setting'] );
+
+		// When the changeset does not exist, all dirty settings are necessarily unsaved.
+		wp.customize.state( 'changesetStatus' ).set( '' );
+		wp.customize( 'fixture-setting' )._dirty = true;
+		ok( ! _.isEmpty( wp.customize.dirtyValues() ) );
+		ok( ! _.isEmpty( wp.customize.dirtyValues( { unsaved: true } ) ) );
+	} );
+
+	module( 'Customize Controls: wp.customize.requestChangesetUpdate()' );
+	test( 'requestChangesetUpdate makes request and returns promise', function( assert ) {
+		var request, originalBeforeSetup = jQuery.ajaxSettings.beforeSend;
+
+		jQuery.ajaxSetup( {
+			beforeSend: function( e, data ) {
+				var queryParams, changesetData;
+				queryParams = wp.customize.utils.parseQueryString( data.data );
+
+				assert.equal( 'customize_save', queryParams.action );
+				assert.ok( ! _.isUndefined( queryParams.customize_changeset_data ) );
+				assert.ok( ! _.isUndefined( queryParams.nonce ) );
+				assert.ok( ! _.isUndefined( queryParams.customize_theme ) );
+				assert.equal( wp.customize.settings.changeset.uuid, queryParams.customize_changeset_uuid );
+				assert.equal( 'on', queryParams.wp_customize );
+
+				changesetData = JSON.parse( queryParams.customize_changeset_data );
+				assert.ok( ! _.isUndefined( changesetData.additionalSetting ) );
+				assert.ok( ! _.isUndefined( changesetData['fixture-setting'] ) );
+
+				assert.equal( 'additionalValue', changesetData.additionalSetting.value );
+				assert.equal( 'requestChangesetUpdate', changesetData['fixture-setting'].value );
+
+				// Prevent Ajax request from completing.
+				return false;
+			}
+		} );
+
+		wp.customize.each( function( setting ) {
+			setting._dirty = false;
+		} );
+
+		request = wp.customize.requestChangesetUpdate();
+		assert.equal( 'resolved', request.state());
+		request.done( function( data ) {
+			assert.ok( _.isEqual( {}, data ) );
+		} );
+
+		wp.customize( 'fixture-setting' ).set( 'requestChangesetUpdate' );
+
+		request = wp.customize.requestChangesetUpdate( {
+			additionalSetting: {
+				value: 'additionalValue'
+			}
+		} );
+
+		request.always( function( data ) {
+			assert.equal( 'canceled', data.statusText );
+			jQuery.ajaxSetup( { beforeSend: originalBeforeSetup } );
+		} );
+	} );
+
+	module( 'Customize Utils: wp.customize.utils.getRemainingTime()' );
+	test( 'utils.getRemainingTime calculates time correctly', function( assert ) {
+		var datetime = '2599-08-06 12:12:13', timeRemaining, timeRemainingWithDateInstance, timeRemaingingWithTimestamp;
+
+		timeRemaining = wp.customize.utils.getRemainingTime( datetime );
+		timeRemainingWithDateInstance = wp.customize.utils.getRemainingTime( new Date( datetime.replace( /-/g, '/' ) ) );
+		timeRemaingingWithTimestamp = wp.customize.utils.getRemainingTime( ( new Date( datetime.replace( /-/g, '/' ) ) ).getTime() );
+
+		assert.equal( typeof timeRemaining, 'number', timeRemaining );
+		assert.equal( typeof timeRemainingWithDateInstance, 'number', timeRemaining );
+		assert.equal( typeof timeRemaingingWithTimestamp, 'number', timeRemaining );
+		assert.deepEqual( timeRemaining, timeRemainingWithDateInstance );
+		assert.deepEqual( timeRemaining, timeRemaingingWithTimestamp );
+	});
+
+	module( 'Customize Utils: wp.customize.utils.getCurrentTimestamp()' );
+	test( 'utils.getCurrentTimestamp returns timestamp', function( assert ) {
+		var currentTimeStamp;
+		currentTimeStamp = wp.customize.utils.getCurrentTimestamp();
+		assert.equal( typeof currentTimeStamp, 'number' );
+	});
+
+	module( 'Customize Controls: wp.customize.DateTimeControl' );
+	test( 'Test DateTimeControl creation and its methods', function( assert ) {
+		var control, controlId = 'date_time', section, sectionId = 'fixture-section',
+			datetime = '2599-08-06 18:12:13', dateTimeArray, dateTimeArrayInampm, timeString,
+			day, year, month, minute, meridian, hour;
+
+		section = wp.customize.section( sectionId );
+
+		control = new wp.customize.DateTimeControl( controlId, {
+			params: {
+				section: section.id,
+				type: 'date_time',
+				setting: new wp.customize.Value( datetime ),
+				includeTime: true,
+				content: '<li id="customize-control-' + controlId + '" class="customize-control"></li>'
+			}
+		} );
+
+		wp.customize.control.add( controlId, control );
+
+		// Test control creations.
+		assert.ok( control.templateSelector, '#customize-control-date_time-content' );
+		assert.ok( control.section(), sectionId );
+		assert.equal( _.size( control.inputElements ), control.elements.length );
+		assert.ok( control.setting(), datetime );
+
+		day = control.inputElements.day;
+		month = control.inputElements.month;
+		year = control.inputElements.year;
+		minute = control.inputElements.minute;
+		hour = control.inputElements.hour;
+		meridian = control.inputElements.meridian;
+
+		year( '23' );
+		assert.ok( control.invalidDate );
+
+		year( '2100' );
+		month( '8' );
+		assert.ok( ! control.invalidDate );
+		day( 'test' );
+		assert.ok( control.invalidDate );
+		day( '3' );
+		assert.ok( ! control.invalidDate );
+
+		// Test control.parseDateTime();
+		control.params.twelveHourFormat = false;
+		dateTimeArray = control.parseDateTime( datetime );
+		assert.deepEqual( dateTimeArray, {
+			year: '2599',
+			month: '08',
+			hour: '18',
+			minute: '12',
+			second: '13',
+			day: '06'
+		} );
+
+		control.params.twelveHourFormat = true;
+		dateTimeArrayInampm = control.parseDateTime( datetime );
+		assert.deepEqual( dateTimeArrayInampm, {
+			year: '2599',
+			month: '08',
+			hour: '6',
+			minute: '12',
+			meridian: 'pm',
+			day: '06'
+		} );
+
+		year( '2010' );
+		month( '12' );
+		day( '18' );
+		hour( '3' );
+		minute( '44' );
+		meridian( 'am' );
+
+		// Test control.convertInputDateToString().
+		timeString = control.convertInputDateToString();
+		assert.equal( timeString, '2010-12-18 03:44:00' );
+
+		meridian( 'pm' );
+		timeString = control.convertInputDateToString();
+		assert.equal( timeString, '2010-12-18 15:44:00' );
+
+		control.params.includeTime = false;
+		timeString = control.convertInputDateToString();
+		assert.equal( timeString, '2010-12-18' );
+		control.params.includeTime = true;
+
+		// Test control.updateDaysForMonth();.
+		year( 2017 );
+		month( 2 );
+		day( 28 );
+		assert.ok( ! control.invalidDate );
+		day( 31 );
+		assert.ok( control.invalidDate );
+
+		day( 20 );
+		assert.equal( day(), 20, 'Should not update if its less the correct number of days' );
+
+		// Test control.convertHourToTwentyFourHourFormat().
+		assert.equal( control.convertHourToTwentyFourHourFormat( 11, 'pm' ), 23 );
+		assert.equal( control.convertHourToTwentyFourHourFormat( 12, 'pm' ), 12 );
+		assert.equal( control.convertHourToTwentyFourHourFormat( 12, 'am' ), 0 );
+		assert.equal( control.convertHourToTwentyFourHourFormat( 11, 'am' ), 11 );
+
+		// Test control.toggleFutureDateNotification().
+		assert.deepEqual( control.toggleFutureDateNotification(), control );
+		control.toggleFutureDateNotification( true );
+		assert.ok( control.notifications.has( 'not_future_date' ) );
+		control.toggleFutureDateNotification( false );
+		assert.notOk( control.notifications.has( 'not_future_date' ) );
+
+		// Test control.populateDateInputs();
+		control.setting._value = '2000-12-30 12:34:56';
+		control.populateDateInputs();
+		assert.equal( '2000', control.inputElements.year.get() );
+		assert.equal( '12', control.inputElements.month.get() );
+		assert.equal( '30', control.inputElements.day.get() );
+		assert.equal( '12', control.inputElements.hour.get() );
+		assert.equal( '34', control.inputElements.minute.get() );
+		assert.equal( 'pm', control.inputElements.meridian.get() );
+
+		// Test control.validateInputs();
+		hour( 33 );
+		assert.ok( control.validateInputs() );
+		hour( 10 );
+		assert.notOk( control.validateInputs() );
+		minute( 123 );
+		assert.ok( control.validateInputs() );
+		minute( 20 );
+		assert.notOk( control.validateInputs() );
+
+		// Test control.populateSetting();
+		day( 2 );
+		month( 11 );
+		year( 2018 );
+		hour( 4 );
+		minute( 20 );
+		meridian( 'pm' );
+		control.populateSetting();
+		assert.equal( control.setting(), '2018-11-02 16:20:00' );
+
+		hour( 123 );
+		control.populateSetting();
+		assert.equal( control.setting(), '2018-11-02 16:20:00' ); // Should not update if invalid hour.
+
+		hour( 5 );
+		control.populateSetting();
+		assert.equal( control.setting(), '2018-11-02 17:20:00' );
+
+		// Test control.isFutureDate();
+		day( 2 );
+		month( 11 );
+		year( 2318 );
+		hour( 4 );
+		minute( 20 );
+		meridian( 'pm' );
+		assert.ok( control.isFutureDate() );
+
+		year( 2016 );
+		assert.notOk( control.isFutureDate() );
+
+		// Tear Down.
+		wp.customize.control.remove( controlId );
+	});
+
+	module( 'Customize Sections: wp.customize.OuterSection' );
+	test( 'Test OuterSection', function( assert ) {
+		var section, sectionId = 'test_outer_section', body = jQuery( 'body' ),
+			defaultSection, defaultSectionId = 'fixture-section';
+
+		defaultSection = wp.customize.section( defaultSectionId );
+
+		section = new wp.customize.OuterSection( sectionId, {
+			params: {
+				content: defaultSection.params.content,
+				type: 'outer'
+			}
+		} );
+
+		wp.customize.section.add( sectionId, section );
+		wp.customize.section.add( defaultSectionId, section );
+
+		assert.equal( section.containerPaneParent, '.customize-outer-pane-parent' );
+		assert.equal( section.containerParent.selector, '#customize-outer-theme-controls' );
+
+		defaultSection.expand();
+		section.expand();
+		assert.ok( body.hasClass( 'outer-section-open' ) );
+		assert.ok( section.container.hasClass( 'open' ) );
+		assert.ok( defaultSection.expanded() ); // Ensure it does not affect other sections state.
+
+		section.collapse();
+		assert.notOk( body.hasClass( 'outer-section-open' ) );
+		assert.notOk( section.container.hasClass( 'open' ) ); // Ensure it does not affect other sections state.
+		assert.ok( defaultSection.expanded() );
+
+		// Tear down
+		wp.customize.section.remove( sectionId );
+	});
+
+	module( 'Customize Controls: PreviewLinkControl' );
+	test( 'Test PreviewLinkControl creation and its methods', function( assert ) {
+		var section, sectionId = 'publish_settings', newLink;
+
+		section = wp.customize.section( sectionId );
+		section.deferred.embedded.resolve();
+
+		assert.expect( 9 );
+		section.deferred.embedded.done( function() {
+			_.each( section.controls(), function( control ) {
+				if ( 'changeset_preview_link' === control.id ) {
+					assert.equal( control.templateSelector, 'customize-preview-link-control' );
+					assert.equal( _.size( control.previewElements ), control.elements.length );
+
+					// Test control.ready().
+					newLink = 'http://example.org?' + wp.customize.settings.changeset.uuid;
+					control.setting.set( newLink );
+
+					assert.equal( control.previewElements.input(), newLink );
+					assert.equal( control.previewElements.url(), newLink );
+					assert.equal( control.previewElements.url.element.parent().attr( 'href' ), newLink );
+					assert.equal( control.previewElements.url.element.parent().attr( 'target' ), wp.customize.settings.changeset.uuid );
+
+					// Test control.toggleSaveNotification().
+					control.toggleSaveNotification( true );
+					assert.ok( control.notifications.has( 'changes_not_saved' ) );
+					control.toggleSaveNotification( false );
+					assert.notOk( control.notifications.has( 'changes_not_saved' ) );
+
+					// Test control.updatePreviewLink().
+					control.updatePreviewLink();
+					assert.equal( control.setting.get(), wp.customize.previewer.getFrontendPreviewUrl() );
+				}
+			} );
+		} );
+	});
 });

@@ -9,35 +9,45 @@
 class Tests_General_DocumentTitle extends WP_UnitTestCase {
 
 	public $blog_name;
+	public static $category_id;
+	public static $author_id;
+	public static $post_id;
+
+	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
+		self::$category_id = $factory->category->create(
+			array(
+				'name' => 'test_category',
+			)
+		);
+
+		self::$author_id = $factory->user->create(
+			array(
+				'role'        => 'author',
+				'user_login'  => 'test_author',
+				'description' => 'test_author',
+			)
+		);
+
+		self::$post_id = $factory->post->create(
+			array(
+				'post_author' => self::$author_id,
+				'post_status' => 'publish',
+				'post_title'  => 'test_title',
+				'post_type'   => 'post',
+				'post_date'   => '2015-09-22 18:52:17',
+				'category'    => self::$category_id,
+			)
+		);
+	}
 
 	function setUp() {
 		parent::setUp();
 
 		add_action( 'after_setup_theme', array( $this, '_add_title_tag_support' ) );
 
-		$this->category_id = $this->factory->category->create( array(
-			'name' => 'test_category',
-		) );
-
-		$this->author_id = $this->factory->user->create( array(
-			'role'        => 'author',
-			'user_login'  => 'test_author',
-			'description' => 'test_author',
-		) );
-
-		$this->post_id = $this->factory->post->create( array(
-			'post_author'  => $this->author_id,
-			'post_status'  => 'publish',
-			'post_content' => rand_str(),
-			'post_title'   => 'test_title',
-			'post_type'    => 'post',
-			'post_date'    => '2015-09-22 18:52:17',
-			'category'     => $this->category_id,
-		) );
-
 		$this->blog_name = get_option( 'blogname' );
 
-		setup_postdata( get_post( $this->post_id ) );
+		setup_postdata( get_post( self::$post_id ) );
 	}
 
 	function tearDown() {
@@ -79,7 +89,14 @@ class Tests_General_DocumentTitle extends WP_UnitTestCase {
 
 	function test_front_page_title() {
 		update_option( 'show_on_front', 'page' );
-		update_option( 'page_on_front', $this->factory->post->create( array( 'post_title' => 'front-page', 'post_type' => 'page' ) ) );
+		update_option(
+			'page_on_front', $this->factory->post->create(
+				array(
+					'post_title' => 'front-page',
+					'post_type'  => 'page',
+				)
+			)
+		);
 		add_filter( 'document_title_parts', array( $this, '_front_page_title_parts' ) );
 
 		$this->go_to( '/' );
@@ -100,7 +117,12 @@ class Tests_General_DocumentTitle extends WP_UnitTestCase {
 	}
 
 	function test_home_title() {
-		$blog_page_id = $this->factory->post->create( array( 'post_title' => 'blog-page', 'post_type' => 'page' ) );
+		$blog_page_id = $this->factory->post->create(
+			array(
+				'post_title' => 'blog-page',
+				'post_type'  => 'page',
+			)
+		);
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_for_posts', $blog_page_id );
 
@@ -127,7 +149,7 @@ class Tests_General_DocumentTitle extends WP_UnitTestCase {
 	}
 
 	function test_singular_title() {
-		$this->go_to( '?p=' . $this->post_id );
+		$this->go_to( '?p=' . self::$post_id );
 
 		add_filter( 'document_title_parts', array( $this, '_singular_title_parts' ) );
 
@@ -143,7 +165,7 @@ class Tests_General_DocumentTitle extends WP_UnitTestCase {
 	}
 
 	function test_category_title() {
-		$this->go_to( '?cat=' . $this->category_id );
+		$this->go_to( '?cat=' . self::$category_id );
 
 		$this->assertEquals( sprintf( 'test_category &#8211; %s', $this->blog_name ), wp_get_document_title() );
 	}
@@ -155,23 +177,27 @@ class Tests_General_DocumentTitle extends WP_UnitTestCase {
 	}
 
 	function test_author_title() {
-		$this->go_to( '?author=' . $this->author_id );
+		$this->go_to( '?author=' . self::$author_id );
 
 		$this->assertEquals( sprintf( 'test_author &#8211; %s', $this->blog_name ), wp_get_document_title() );
 	}
 
 	function test_post_type_archive_title() {
-		register_post_type( 'cpt', array(
-			'public'      => true,
-			'has_archive' => true,
-			'labels'      => array(
-				'name' => 'test_cpt',
-			),
-		) );
+		register_post_type(
+			'cpt', array(
+				'public'      => true,
+				'has_archive' => true,
+				'labels'      => array(
+					'name' => 'test_cpt',
+				),
+			)
+		);
 
-		$this->factory->post->create( array(
-			'post_type' => 'cpt',
-		) );
+		$this->factory->post->create(
+			array(
+				'post_type' => 'cpt',
+			)
+		);
 
 		$this->go_to( '?post_type=cpt' );
 
@@ -203,7 +229,7 @@ class Tests_General_DocumentTitle extends WP_UnitTestCase {
 	}
 
 	function test_paged_post_title() {
-		$this->go_to( '?paged=4&p=' . $this->post_id );
+		$this->go_to( '?paged=4&p=' . self::$post_id );
 
 		add_filter( 'title_tag_parts', array( $this, '_paged_post_title_parts' ) );
 
@@ -220,7 +246,7 @@ class Tests_General_DocumentTitle extends WP_UnitTestCase {
 	}
 
 	function test_rearrange_title_parts() {
-		$this->go_to( '?p=' . $this->post_id );
+		$this->go_to( '?p=' . self::$post_id );
 
 		add_filter( 'document_title_parts', array( $this, '_rearrange_title_parts' ) );
 
@@ -237,7 +263,7 @@ class Tests_General_DocumentTitle extends WP_UnitTestCase {
 	}
 
 	function test_change_title_separator() {
-		$this->go_to( '?p=' . $this->post_id );
+		$this->go_to( '?p=' . self::$post_id );
 
 		add_filter( 'document_title_separator', array( $this, '_change_title_separator' ) );
 

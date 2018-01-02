@@ -12,30 +12,43 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 	static $user_id;
 	static $posts;
 	static $category;
+	static $post_date;
 
 	/**
 	 * Setup a new user and attribute some posts.
 	 */
 	public static function wpSetUpBeforeClass( $factory ) {
 		// Create a user
-		self::$user_id = $factory->user->create( array(
-			'role'         => 'author',
-			'user_login'   => 'test_author',
-			'display_name' => 'Test A. Uthor',
-		) );
+		self::$user_id = $factory->user->create(
+			array(
+				'role'         => 'author',
+				'user_login'   => 'test_author',
+				'display_name' => 'Test A. Uthor',
+			)
+		);
 
 		// Create a taxonomy
-		self::$category = self::factory()->category->create_and_get( array(
-			'name' => 'Test Category',
-			'slug' => 'test-cat',
-		) );
+		self::$category = $factory->category->create_and_get(
+			array(
+				'name' => 'Foo Category',
+				'slug' => 'foo',
+			)
+		);
+
+		// Set a predictable time for testing date archives.
+		self::$post_date = '2003-05-27 10:07:53';
+
+		$count = get_option( 'posts_per_rss' ) + 1;
 
 		// Create a few posts
-		self::$posts = $factory->post->create_many( 42, array(
-			'post_author'  => self::$user_id,
-			'post_content' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec velit massa, ultrices eu est suscipit, mattis posuere est. Donec vitae purus lacus. Cras vitae odio odio.',
-			'post_excerpt' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-		) );
+		self::$posts = $factory->post->create_many(
+			$count, array(
+				'post_author'  => self::$user_id,
+				'post_date'    => self::$post_date,
+				'post_content' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec velit massa, ultrices eu est suscipit, mattis posuere est. Donec vitae purus lacus. Cras vitae odio odio.',
+				'post_excerpt' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+			)
+		);
 
 		// Assign a category to those posts
 		foreach ( self::$posts as $post ) {
@@ -49,10 +62,13 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 	public function setUp() {
 		parent::setUp();
 
-		$this->post_count = (int) get_option( 'posts_per_rss' );
+		$this->post_count   = (int) get_option( 'posts_per_rss' );
 		$this->excerpt_only = get_option( 'rss_use_excerpt' );
 		// this seems to break something
 		update_option( 'use_smilies', false );
+
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+		create_initial_taxonomies();
 	}
 
 	/**
@@ -63,9 +79,9 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 		// Nasty hack! In the future it would better to leverage do_feed( 'rss2' ).
 		global $post;
 		try {
-			@require(ABSPATH . 'wp-includes/feed-rss2.php');
+			@require( ABSPATH . 'wp-includes/feed-rss2.php' );
 			$out = ob_get_clean();
-		} catch (Exception $e) {
+		} catch ( Exception $e ) {
 			$out = ob_get_clean();
 			throw($e);
 		}
@@ -79,7 +95,7 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 	function test_rss_element() {
 		$this->go_to( '/?feed=rss2' );
 		$feed = $this->do_rss2();
-		$xml = xml_to_array( $feed );
+		$xml  = xml_to_array( $feed );
 
 		// Get the <rss> child element of <xml>.
 		$rss = xml_find( $xml, 'rss' );
@@ -98,12 +114,13 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 
 	/**
 	 * [test_channel_element description]
+	 *
 	 * @return [type] [description]
 	 */
 	function test_channel_element() {
 		$this->go_to( '/?feed=rss2' );
 		$feed = $this->do_rss2();
-		$xml = xml_to_array( $feed );
+		$xml  = xml_to_array( $feed );
 
 		// get the rss -> channel element
 		$channel = xml_find( $xml, 'rss', 'channel' );
@@ -126,12 +143,37 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @ticket UT32
+	 * Test that translated feeds have a valid listed date.
+	 *
+	 * @group 39141
 	 */
+	function test_channel_pubdate_element_translated() {
+		$original_locale = $GLOBALS['wp_locale'];
+		/* @var WP_Locale $locale */
+		$locale = clone $GLOBALS['wp_locale'];
+
+		$locale->weekday[2]                           = 'Tuesday_Translated';
+		$locale->weekday_abbrev['Tuesday_Translated'] = 'Tue_Translated';
+
+		$GLOBALS['wp_locale'] = $locale;
+
+		$this->go_to( '/?feed=rss2' );
+		$feed = $this->do_rss2();
+
+		// Restore original locale.
+		$GLOBALS['wp_locale'] = $original_locale;
+
+		$xml = xml_to_array( $feed );
+
+		// Verify the date is untranslated.
+		$pubdate = xml_find( $xml, 'rss', 'channel', 'lastBuildDate' );
+		$this->assertNotContains( 'Tue_Translated', $pubdate[0]['content'] );
+	}
+
 	function test_item_elements() {
 		$this->go_to( '/?feed=rss2' );
 		$feed = $this->do_rss2();
-		$xml = xml_to_array( $feed );
+		$xml  = xml_to_array( $feed );
 
 		// Get all the <item> child elements of the <channel> element
 		$items = xml_find( $xml, 'rss', 'channel', 'item' );
@@ -146,34 +188,34 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 		foreach ( $items as $key => $item ) {
 
 			// Get post for comparison
-			$guid = xml_find( $items[$key]['child'], 'guid' );
+			$guid = xml_find( $items[ $key ]['child'], 'guid' );
 			preg_match( '/\?p=(\d+)/', $guid[0]['content'], $matches );
 			$post = get_post( $matches[1] );
 
 			// Title
-			$title = xml_find( $items[$key]['child'], 'title' );
+			$title = xml_find( $items[ $key ]['child'], 'title' );
 			$this->assertEquals( $post->post_title, $title[0]['content'] );
 
 			// Link
-			$link = xml_find( $items[$key]['child'], 'link' );
+			$link = xml_find( $items[ $key ]['child'], 'link' );
 			$this->assertEquals( get_permalink( $post ), $link[0]['content'] );
 
 			// Comment link
-			$comments_link = xml_find( $items[$key]['child'], 'comments' );
+			$comments_link = xml_find( $items[ $key ]['child'], 'comments' );
 			$this->assertEquals( get_permalink( $post ) . '#respond', $comments_link[0]['content'] );
 
 			// Pub date
-			$pubdate = xml_find( $items[$key]['child'], 'pubDate' );
+			$pubdate = xml_find( $items[ $key ]['child'], 'pubDate' );
 			$this->assertEquals( strtotime( $post->post_date_gmt ), strtotime( $pubdate[0]['content'] ) );
 
 			// Author
-			$creator = xml_find( $items[$key]['child'], 'dc:creator' );
-			$user = new WP_User( $post->post_author );
+			$creator = xml_find( $items[ $key ]['child'], 'dc:creator' );
+			$user    = new WP_User( $post->post_author );
 			$this->assertEquals( $user->display_name, $creator[0]['content'] );
 
 			// Categories (perhaps multiple)
-			$categories = xml_find( $items[$key]['child'], 'category' );
-			$cats = array();
+			$categories = xml_find( $items[ $key ]['child'], 'category' );
+			$cats       = array();
 			foreach ( get_the_category( $post->ID ) as $term ) {
 				$cats[] = $term->name;
 			}
@@ -190,28 +232,28 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 
 			// ..with the same names
 			foreach ( $cats as $id => $cat ) {
-				$this->assertEquals( $cat, $categories[$id]['content'] );
+				$this->assertEquals( $cat, $categories[ $id ]['content'] );
 			}
 
 			// GUID
-			$guid = xml_find( $items[$key]['child'], 'guid' );
+			$guid = xml_find( $items[ $key ]['child'], 'guid' );
 			$this->assertEquals( 'false', $guid[0]['attributes']['isPermaLink'] );
 			$this->assertEquals( $post->guid, $guid[0]['content'] );
 
 			// Description / Excerpt
 			if ( ! empty( $post->post_excerpt ) ) {
-				$description = xml_find( $items[$key]['child'], 'description' );
+				$description = xml_find( $items[ $key ]['child'], 'description' );
 				$this->assertEquals( trim( $post->post_excerpt ), trim( $description[0]['content'] ) );
 			}
 
 			// Post content
 			if ( ! $this->excerpt_only ) {
-				$content = xml_find( $items[$key]['child'], 'content:encoded' );
+				$content = xml_find( $items[ $key ]['child'], 'content:encoded' );
 				$this->assertEquals( trim( apply_filters( 'the_content', $post->post_content ) ), trim( $content[0]['content'] ) );
 			}
 
 			// Comment rss
-			$comment_rss = xml_find( $items[$key]['child'], 'wfw:commentRss' );
+			$comment_rss = xml_find( $items[ $key ]['child'], 'wfw:commentRss' );
 			$this->assertEquals( html_entity_decode( get_post_comments_feed_link( $post->ID ) ), $comment_rss[0]['content'] );
 		}
 	}
@@ -224,7 +266,7 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 
 		$this->go_to( '/?feed=rss2' );
 		$feed = $this->do_rss2();
-		$xml = xml_to_array( $feed );
+		$xml  = xml_to_array( $feed );
 
 		// get all the rss -> channel -> item elements
 		$items = xml_find( $xml, 'rss', 'channel', 'item' );
@@ -232,7 +274,7 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 		// check each of the items against the known post data
 		foreach ( $items as $key => $item ) {
 			// Get post for comparison
-			$guid = xml_find( $items[$key]['child'], 'guid' );
+			$guid = xml_find( $items[ $key ]['child'], 'guid' );
 			preg_match( '/\?p=(\d+)/', $guid[0]['content'], $matches );
 			$post = get_post( $matches[1] );
 
@@ -248,4 +290,176 @@ class Tests_Feeds_RSS2 extends WP_UnitTestCase {
 		remove_filter( 'comments_open', '__return_false' );
 	}
 
+	/*
+	 * Check to make sure we are rendering feed templates for the home feed.
+	 * e.g. https://example.com/feed/
+	 *
+	 * @ticket 30210
+	 */
+	function test_valid_home_feed_endpoint() {
+		// An example of a valid home feed endpoint.
+		$this->go_to( 'feed/' );
+
+		// Verify the query object is a feed.
+		$this->assertQueryTrue( 'is_feed' );
+
+		// Queries performed on valid feed endpoints should contain posts.
+		$this->assertTrue( have_posts() );
+
+		// Check to see if we have the expected XML output from the feed template.
+		$feed = $this->do_rss2();
+
+		$xml = xml_to_array( $feed );
+
+		// Get the <rss> child element of <xml>.
+		$rss = xml_find( $xml, 'rss' );
+
+		// There should only be one <rss> child element.
+		$this->assertEquals( 1, count( $rss ) );
+	}
+
+	/*
+	 * Check to make sure we are rendering feed templates for the taxonomy feeds.
+	 * e.g. https://example.com/category/foo/feed/
+	 *
+	 * @ticket 30210
+	 */
+	function test_valid_taxonomy_feed_endpoint() {
+		// An example of an valid taxonomy feed endpoint.
+		$this->go_to( 'category/foo/feed/' );
+
+		// Verify the query object is a feed.
+		$this->assertQueryTrue( 'is_feed', 'is_archive', 'is_category' );
+
+		// Queries performed on valid feed endpoints should contain posts.
+		$this->assertTrue( have_posts() );
+
+		// Check to see if we have the expected XML output from the feed template.
+		$feed = $this->do_rss2();
+
+		$xml = xml_to_array( $feed );
+
+		// Get the <rss> child element of <xml>.
+		$rss = xml_find( $xml, 'rss' );
+
+		// There should only be one <rss> child element.
+		$this->assertEquals( 1, count( $rss ) );
+	}
+
+	/*
+	 * Check to make sure we are rendering feed templates for the main comment feed.
+	 * e.g. https://example.com/comments/feed/
+	 *
+	 * @ticket 30210
+	 */
+	function test_valid_main_comment_feed_endpoint() {
+		// Generate a bunch of comments
+		foreach ( self::$posts as $post ) {
+			self::factory()->comment->create_post_comments( $post, 3 );
+		}
+
+		// An example of an valid main comment feed endpoint.
+		$this->go_to( 'comments/feed/' );
+
+		// Verify the query object is a feed.
+		$this->assertQueryTrue( 'is_feed', 'is_comment_feed' );
+
+		// Queries performed on valid feed endpoints should contain comments.
+		$this->assertTrue( have_comments() );
+
+		// Check to see if we have the expected XML output from the feed template.
+		$feed = $this->do_rss2();
+
+		$xml = xml_to_array( $feed );
+
+		// Get the <rss> child element of <xml>.
+		$rss = xml_find( $xml, 'rss' );
+
+		// There should only be one <rss> child element.
+		$this->assertEquals( 1, count( $rss ) );
+	}
+
+	/*
+	 * Check to make sure we are rendering feed templates for the date archive feeds.
+	 * e.g. https://example.com/2003/05/27/feed/
+	 *
+	 * @ticket 30210
+	 */
+	function test_valid_archive_feed_endpoint() {
+		// An example of an valid date archive feed endpoint.
+		$this->go_to( '2003/05/27/feed/' );
+
+		// Verify the query object is a feed.
+		$this->assertQueryTrue( 'is_feed', 'is_archive', 'is_day', 'is_date' );
+
+		// Queries performed on valid feed endpoints should contain posts.
+		$this->assertTrue( have_posts() );
+
+		// Check to see if we have the expected XML output from the feed template.
+		$feed = $this->do_rss2();
+
+		$xml = xml_to_array( $feed );
+
+		// Get the <rss> child element of <xml>.
+		$rss = xml_find( $xml, 'rss' );
+
+		// There should only be one <rss> child element.
+		$this->assertEquals( 1, count( $rss ) );
+	}
+
+	/*
+	 * Check to make sure we are rendering feed templates for single post comment feeds.
+	 * e.g. https://example.com/2003/05/27/post-name/feed/
+	 *
+	 * @ticket 30210
+	 */
+	function test_valid_single_post_comment_feed_endpoint() {
+		// An example of an valid date archive feed endpoint.
+		$this->go_to( get_post_comments_feed_link( self::$posts[0] ) );
+
+		// Verify the query object is a feed.
+		$this->assertQueryTrue( 'is_feed', 'is_comment_feed', 'is_single', 'is_singular' );
+
+		// Queries performed on valid feed endpoints should contain posts.
+		$this->assertTrue( have_posts() );
+
+		// Check to see if we have the expected XML output from the feed template.
+		$feed = $this->do_rss2();
+
+		$xml = xml_to_array( $feed );
+
+		// Get the <rss> child element of <xml>.
+		$rss = xml_find( $xml, 'rss' );
+
+		// There should only be one <rss> child element.
+		$this->assertEquals( 1, count( $rss ) );
+	}
+
+	/*
+	 * Check to make sure we are rendering feed templates for the search archive feeds.
+	 * e.g. https://example.com/?s=Lorem&feed=rss
+	 *
+	 * @ticket 30210
+	 */
+	function test_valid_search_feed_endpoint() {
+		// An example of an valid search feed endpoint
+		$this->go_to( '?s=Lorem&feed=rss' );
+
+		// Verify the query object is a feed.
+		$this->assertQueryTrue( 'is_feed', 'is_search' );
+
+		// Queries performed on valid feed endpoints should contain posts.
+		$this->assertTrue( have_posts() );
+
+		// Check to see if we have the expected XML output from the feed template.
+		$feed = $this->do_rss2();
+
+		$xml = xml_to_array( $feed );
+
+		// Get the <rss> child element of <xml>.
+		$rss = xml_find( $xml, 'rss' );
+
+		// There should only be one <rss> child element.
+		$this->assertEquals( 1, count( $rss ) );
+	}
 }

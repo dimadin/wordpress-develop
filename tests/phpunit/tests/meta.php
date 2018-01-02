@@ -8,12 +8,12 @@ class Tests_Meta extends WP_UnitTestCase {
 
 	function setUp() {
 		parent::setUp();
-		$this->author = new WP_User( self::factory()->user->create( array( 'role' => 'author' ) ) );
-		$this->meta_id = add_metadata( 'user', $this->author->ID, 'meta_key', 'meta_value' );
+		$this->author         = new WP_User( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$this->meta_id        = add_metadata( 'user', $this->author->ID, 'meta_key', 'meta_value' );
 		$this->delete_meta_id = add_metadata( 'user', $this->author->ID, 'delete_meta_key', 'delete_meta_value' );
 	}
 
-	function _meta_sanitize_cb ( $meta_value, $meta_key, $meta_type ) {
+	function _meta_sanitize_cb( $meta_value, $meta_key, $meta_type ) {
 		return 'sanitized';
 	}
 
@@ -68,10 +68,10 @@ class Tests_Meta extends WP_UnitTestCase {
 
 		// Let's try some invalid meta data
 		$this->assertFalse( update_metadata_by_mid( 'user', 0, 'meta_value' ) );
-		$this->assertFalse( update_metadata_by_mid( 'user', $this->meta_id, 'meta_value', array('invalid', 'key' ) ) );
+		$this->assertFalse( update_metadata_by_mid( 'user', $this->meta_id, 'meta_value', array( 'invalid', 'key' ) ) );
 
 		// Let's see if caches get cleared after updates.
-		$meta = get_metadata_by_mid( 'user', $this->meta_id );
+		$meta  = get_metadata_by_mid( 'user', $this->meta_id );
 		$first = get_user_meta( $meta->user_id, $meta->meta_key );
 		$this->assertTrue( update_metadata_by_mid( 'user', $this->meta_id, 'other_meta_value' ) );
 		$second = get_user_meta( $meta->user_id, $meta->meta_key );
@@ -96,7 +96,7 @@ class Tests_Meta extends WP_UnitTestCase {
 		remove_action( 'updated_post_meta', array( $this, 'updated_meta' ) );
 		remove_action( 'updated_postmeta', array( $this, 'updated_meta' ) );
 
-		$found = $this->updated_mids;
+		$found              = $this->updated_mids;
 		$this->updated_mids = array();
 
 		foreach ( $found as $action => $mids ) {
@@ -105,10 +105,10 @@ class Tests_Meta extends WP_UnitTestCase {
 	}
 
 	function test_metadata_exists() {
-		$this->assertFalse( metadata_exists( 'user',  $this->author->ID, 'foobarbaz' ) );
-		$this->assertTrue( metadata_exists( 'user',  $this->author->ID, 'meta_key' ) );
-		$this->assertFalse( metadata_exists( 'user',  1234567890, 'foobarbaz' ) );
-		$this->assertFalse( metadata_exists( 'user',  1234567890, 'meta_key' ) );
+		$this->assertFalse( metadata_exists( 'user', $this->author->ID, 'foobarbaz' ) );
+		$this->assertTrue( metadata_exists( 'user', $this->author->ID, 'meta_key' ) );
+		$this->assertFalse( metadata_exists( 'user', 1234567890, 'foobarbaz' ) );
+		$this->assertFalse( metadata_exists( 'user', 1234567890, 'meta_key' ) );
 	}
 
 	/**
@@ -126,11 +126,16 @@ class Tests_Meta extends WP_UnitTestCase {
 	 * @ticket 18158
 	 */
 	function test_user_metadata_not_exists() {
-		$u = get_users( array(
-			'meta_query' => array(
-				array( 'key' => 'meta_key', 'compare' => 'NOT EXISTS' )
+		$u = get_users(
+			array(
+				'meta_query' => array(
+					array(
+						'key'     => 'meta_key',
+						'compare' => 'NOT EXISTS',
+					),
+				),
 			)
-		) );
+		);
 
 		$this->assertEquals( 1, count( $u ) );
 
@@ -138,33 +143,63 @@ class Tests_Meta extends WP_UnitTestCase {
 		$this->assertNotEquals( $this->author->user_login, $u[0]->user_login );
 
 		// Test EXISTS and NOT EXISTS together, no users should be found
-		$this->assertEquals( 0, count( get_users( array(
-			'meta_query' => array(
-				array( 'key' => 'meta_key', 'compare' => 'NOT EXISTS' ),
-				array( 'key' => 'delete_meta_key', 'compare' => 'EXISTS' )
+		$this->assertEquals(
+			0, count(
+				get_users(
+					array(
+						'meta_query' => array(
+							array(
+								'key'     => 'meta_key',
+								'compare' => 'NOT EXISTS',
+							),
+							array(
+								'key'     => 'delete_meta_key',
+								'compare' => 'EXISTS',
+							),
+						),
+					)
+				)
 			)
-		) ) ) );
+		);
 
-		$this->assertEquals( 2, count( get_users( array(
-			'meta_query' => array(
-				array( 'key' => 'non_existing_meta', 'compare' => 'NOT EXISTS' )
+		$this->assertEquals(
+			2, count(
+				get_users(
+					array(
+						'meta_query' => array(
+							array(
+								'key'     => 'non_existing_meta',
+								'compare' => 'NOT EXISTS',
+							),
+						),
+					)
+				)
 			)
-		) ) ) );
+		);
 
 		delete_metadata( 'user', $this->author->ID, 'meta_key' );
 
-		$this->assertEquals( 2, count( get_users( array(
-			'meta_query' => array(
-				array( 'key' => 'meta_key', 'compare' => 'NOT EXISTS' )
+		$this->assertEquals(
+			2, count(
+				get_users(
+					array(
+						'meta_query' => array(
+							array(
+								'key'     => 'meta_key',
+								'compare' => 'NOT EXISTS',
+							),
+						),
+					)
+				)
 			)
-		) ) ) );
+		);
 	}
 
 	function test_metadata_slashes() {
-		$key = rand_str();
-		$value = 'Test\\singleslash';
-		$expected = 'Testsingleslash';
-		$value2 = 'Test\\\\doubleslash';
+		$key       = __FUNCTION__;
+		$value     = 'Test\\singleslash';
+		$expected  = 'Testsingleslash';
+		$value2    = 'Test\\\\doubleslash';
 		$expected2 = 'Test\\doubleslash';
 		$this->assertFalse( metadata_exists( 'user', $this->author->ID, $key ) );
 		$this->assertFalse( delete_metadata( 'user', $this->author->ID, $key ) );
@@ -201,57 +236,63 @@ class Tests_Meta extends WP_UnitTestCase {
 		add_post_meta( $post_id2, 'num_as_longtext', 99 );
 		add_post_meta( $post_id2, 'num_as_longtext_desc', 100 );
 
-		$posts = new WP_Query( array(
-			'fields' => 'ids',
-			'post_type' => 'any',
-			'meta_key' => 'num_as_longtext',
-			'meta_value' => '0',
-			'meta_compare' => '>',
-			'meta_type' => 'UNSIGNED',
-			'orderby' => 'meta_value',
-			'order' => 'ASC'
-		) );
+		$posts = new WP_Query(
+			array(
+				'fields'       => 'ids',
+				'post_type'    => 'any',
+				'meta_key'     => 'num_as_longtext',
+				'meta_value'   => '0',
+				'meta_compare' => '>',
+				'meta_type'    => 'UNSIGNED',
+				'orderby'      => 'meta_value',
+				'order'        => 'ASC',
+			)
+		);
 
 		$this->assertEquals( array( $post_id2, $post_id1 ), $posts->posts );
 		$this->assertEquals( 2, substr_count( $posts->request, 'CAST(' ) );
 
 		// Make sure the newer meta_query syntax behaves in a consistent way
-		$posts = new WP_Query( array(
-			'fields' => 'ids',
-			'post_type' => 'any',
-			'meta_query' => array(
-				array(
-					'key' => 'num_as_longtext',
-					'value' => '0',
-					'compare' => '>',
-					'type' => 'UNSIGNED',
+		$posts = new WP_Query(
+			array(
+				'fields'     => 'ids',
+				'post_type'  => 'any',
+				'meta_query' => array(
+					array(
+						'key'     => 'num_as_longtext',
+						'value'   => '0',
+						'compare' => '>',
+						'type'    => 'UNSIGNED',
+					),
 				),
-			),
-			'orderby' => 'meta_value',
-			'order' => 'ASC'
-		) );
+				'orderby'    => 'meta_value',
+				'order'      => 'ASC',
+			)
+		);
 
 		$this->assertEquals( array( $post_id2, $post_id1 ), $posts->posts );
 		$this->assertEquals( 2, substr_count( $posts->request, 'CAST(' ) );
 
 		// The legacy `meta_key` value should take precedence.
-		$posts = new WP_Query( array(
-			'fields' => 'ids',
-			'post_type' => 'any',
-			'meta_key' => 'num_as_longtext',
-			'meta_compare' => '>',
-			'meta_type' => 'UNSIGNED',
-			'meta_query' => array(
-				array(
-					'key' => 'num_as_longtext_desc',
-					'value' => '0',
-					'compare' => '>',
-					'type' => 'UNSIGNED',
+		$posts = new WP_Query(
+			array(
+				'fields'       => 'ids',
+				'post_type'    => 'any',
+				'meta_key'     => 'num_as_longtext',
+				'meta_compare' => '>',
+				'meta_type'    => 'UNSIGNED',
+				'meta_query'   => array(
+					array(
+						'key'     => 'num_as_longtext_desc',
+						'value'   => '0',
+						'compare' => '>',
+						'type'    => 'UNSIGNED',
+					),
 				),
-			),
-			'orderby' => 'meta_value',
-			'order' => 'ASC'
-		) );
+				'orderby'      => 'meta_value',
+				'order'        => 'ASC',
+			)
+		);
 
 		$this->assertEquals( array( $post_id2, $post_id1 ), $posts->posts );
 		$this->assertEquals( 2, substr_count( $posts->request, 'CAST(' ) );
@@ -259,16 +300,18 @@ class Tests_Meta extends WP_UnitTestCase {
 
 	function test_meta_cache_order_asc() {
 		$post_id = self::factory()->post->create();
-		$colors = array( 'red', 'blue', 'yellow', 'green' );
-		foreach ( $colors as $color )
+		$colors  = array( 'red', 'blue', 'yellow', 'green' );
+		foreach ( $colors as $color ) {
 			add_post_meta( $post_id, 'color', $color );
+		}
 
 		foreach ( range( 1, 10 ) as $i ) {
 			$meta = get_post_meta( $post_id, 'color' );
 			$this->assertEquals( $meta, $colors );
 
-			if ( 0 === $i % 2 )
+			if ( 0 === $i % 2 ) {
 				wp_cache_delete( $post_id, 'post_meta' );
+			}
 		}
 	}
 
@@ -293,10 +336,48 @@ class Tests_Meta extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 37746
+	 */
+	function test_negative_meta_id() {
+		$negative_mid = $this->meta_id * -1;
+
+		$this->assertTrue( $negative_mid < 0 );
+		$this->assertFalse( get_metadata_by_mid( 'user', $negative_mid ) );
+		$this->assertFalse( update_metadata_by_mid( 'user', $negative_mid, 'meta_new_value' ) );
+		$this->assertFalse( delete_metadata_by_mid( 'user', $negative_mid ) );
+	}
+
+	/**
+	 * @ticket 37746
+	 */
+	function test_floating_meta_id() {
+		$floating_mid = $this->meta_id + 0.1337;
+
+		$this->assertTrue( floor( $floating_mid ) !== $floating_mid );
+		$this->assertFalse( get_metadata_by_mid( 'user', $floating_mid ) );
+		$this->assertFalse( update_metadata_by_mid( 'user', $floating_mid, 'meta_new_value' ) );
+		$this->assertFalse( delete_metadata_by_mid( 'user', $floating_mid ) );
+	}
+
+	/**
+	 * @ticket 37746
+	 */
+	function test_string_point_zero_meta_id() {
+		$meta_id = add_metadata( 'user', $this->author->ID, 'meta_key', 'meta_value_2' );
+
+		$string_mid = "{$meta_id}.0";
+
+		$this->assertTrue( floor( $string_mid ) == $string_mid );
+		$this->assertNotEquals( false, get_metadata_by_mid( 'user', $string_mid ) );
+		$this->assertNotEquals( false, update_metadata_by_mid( 'user', $string_mid, 'meta_new_value_2' ) );
+		$this->assertNotEquals( false, delete_metadata_by_mid( 'user', $string_mid ) );
+	}
+
+	/**
 	 * @ticket 15030
 	 */
 	public function test_get_metadata_with_empty_key_array_value() {
-		$data = array( 1, 2 );
+		$data  = array( 1, 2 );
 		$value = serialize( $data );
 		add_metadata( 'user', $this->author->ID, 'foo', $data );
 		$found = get_metadata( 'user', $this->author->ID );
@@ -308,9 +389,9 @@ class Tests_Meta extends WP_UnitTestCase {
 	 * @ticket 15030
 	 */
 	public function test_get_metadata_with_empty_key_object_value() {
-		$data = new stdClass;
+		$data      = new stdClass;
 		$data->foo = 'bar';
-		$value = serialize( $data );
+		$value     = serialize( $data );
 		add_metadata( 'user', $this->author->ID, 'foo', $data );
 		$found = get_metadata( 'user', $this->author->ID );
 
@@ -321,7 +402,7 @@ class Tests_Meta extends WP_UnitTestCase {
 	 * @ticket 15030
 	 */
 	public function test_get_metadata_with_empty_key_nested_array_value() {
-		$data = array(
+		$data  = array(
 			array( 1, 2 ),
 			array( 3, 4 ),
 		);
@@ -332,7 +413,7 @@ class Tests_Meta extends WP_UnitTestCase {
 		$this->assertSame( array( $value ), $found['foo'] );
 	}
 
-	/** Helpers **********************************************************/
+	/** Helpers */
 
 	public function updated_meta( $meta_id ) {
 		$this->updated_mids[ current_action() ][] = $meta_id;

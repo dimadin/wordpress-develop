@@ -1,17 +1,19 @@
+var $ = jQuery,
+	Modal;
+
 /**
  * wp.media.view.Modal
  *
  * A modal view, which the media modal uses as its default container.
+ *
+ * @memberOf wp.media.view
  *
  * @class
  * @augments wp.media.View
  * @augments wp.Backbone.View
  * @augments Backbone.View
  */
-var $ = jQuery,
-	Modal;
-
-Modal = wp.media.View.extend({
+Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 	tagName:  'div',
 	template: wp.template('media-modal'),
 
@@ -23,6 +25,8 @@ Modal = wp.media.View.extend({
 		'click .media-modal-backdrop, .media-modal-close': 'escapeHandler',
 		'keydown': 'keydown'
 	},
+
+	clickedOpenerEl: null,
 
 	initialize: function() {
 		_.defaults( this.options, {
@@ -91,6 +95,8 @@ Modal = wp.media.View.extend({
 			return this;
 		}
 
+		this.clickedOpenerEl = document.activeElement;
+
 		if ( ! this.views.attached ) {
 			this.attach();
 		}
@@ -141,8 +147,12 @@ Modal = wp.media.View.extend({
 		// Hide modal and remove restricted media modal tab focus once it's closed
 		this.$el.hide().undelegate( 'keydown' );
 
-		// Put focus back in useful location once modal is closed
-		$('#wpbody-content').focus();
+		// Put focus back in useful location once modal is closed.
+		if ( null !== this.clickedOpenerEl ) {
+			this.clickedOpenerEl.focus();
+		} else {
+			$( '#wpbody-content' ).focus();
+		}
 
 		this.propagate('close');
 
