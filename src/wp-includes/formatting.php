@@ -3947,6 +3947,34 @@ function esc_attr( $text ) {
 }
 
 /**
+ * Escaping for HTML attributes.
+ *
+ * @since 2.8.0
+ *
+ * @param string $text
+ * @return string
+ */
+function esc_attr_name( $text ) {
+	$safe_text = wp_check_invalid_utf8( $text );
+	$safe_text = preg_replace( '/[\t\n\f \/>"\'=]+/', '_', $safe_text );
+	/**
+	 * Filters a string cleaned and escaped for output as an HTML attribute name.
+	 *
+	 * Text passed to esc_attr_name() is stripped of invalid or special characters
+	 * before output.
+	 *
+	 * @since joe_bopper patch
+	 *
+	 * @param string $safe_text The text after it has been escaped.
+	 * @param string $text      The text prior to being escaped.
+	 */
+	$safe_text = apply_filters( 'attribute_name_escape', $safe_text, $text );
+
+	//Notably, an attribute name cannot be an empty string.
+	return $safe_text ? $safe_text : 'empty_string_supplied_as_attribute_name';
+}
+
+/**
  * Escaping for textarea values.
  *
  * @since 3.1.0
