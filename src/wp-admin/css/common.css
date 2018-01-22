@@ -860,7 +860,7 @@ hr {
 #media-items a.delete,
 #media-items a.delete-permanently,
 #nav-menu-footer .menu-delete,
-#delete-link a.delete  {
+#delete-link a.delete {
 	color: #a00;
 }
 
@@ -962,6 +962,11 @@ span.required,
 td.action-links,
 th.action-links {
 	text-align: right;
+}
+
+#misc-publishing-actions .notice {
+	margin-left: 10px;
+	margin-right: 10px;
 }
 
 /* Filter bar */
@@ -1183,9 +1188,17 @@ th.action-links {
 
 .filter-drawer .filter-group-feature input,
 .filter-drawer .filter-group-feature label {
-	display: inline-block;
-	margin: 7px 4px 7px 0;
 	line-height: 16px;
+}
+
+.filter-drawer .filter-group-feature input {
+	position: absolute;
+	margin: 0;
+}
+
+.filter-group .filter-group-feature label {
+	display: block;
+	margin: 14px 0px 14px 23px;
 }
 
 .filter-drawer .buttons {
@@ -2215,7 +2228,7 @@ h1.nav-tab-wrapper, /* Back-compat for pre-4.4 */
 }
 
 #template > div {
-	margin-right: 190px;
+	margin-right: 16em;
 }
 #template .notice {
 	margin-top: 1em;
@@ -3033,27 +3046,34 @@ img {
 
 #template textarea,
 #template .CodeMirror {
-	width: 97%;
-	height: calc( 100vh - 280px );
+	width: 100%;
+	min-height: 60vh;
+	height: calc( 100vh - 295px );
+	border: 1px solid #ddd;
+	box-sizing: border-box;
 }
 
 #templateside > h2 {
 	padding-top: 6px;
-	padding-bottom: 6px;
+	padding-bottom: 7px;
 	margin: 0;
-	border-bottom: solid 1px #ccc;
 }
 
 #templateside ol,
 #templateside ul {
-	margin: .5em 0;
+	margin: 0;
 	padding: 0;
 }
 #templateside > ul {
+	box-sizing: border-box;
 	margin-top: 0;
 	overflow: auto;
-	padding: 2px;
-	height: calc(100vh - 280px);
+	padding: 0;
+	min-height: 60vh;
+	height: calc(100vh - 295px);
+	background-color: #f7f7f7;
+	border: 1px solid #ddd;
+	border-left: none;
 }
 #templateside ul ul {
 	padding-left: 12px;
@@ -3101,7 +3121,7 @@ img {
 }
 [role="treeitem"].hover,
 [role="treeitem"] .folder-label.hover {
-	background-color: #DDDDDD;
+	background-color: #eaeaea;
 }
 
 .tree-folder {
@@ -3150,7 +3170,7 @@ img {
 .tree-folder > .current-file::before {
 	left: 4px;
 	height: 15px;
-	width: 6px;
+	width: 0px;
 	border-left: none;
 	top: 3px;
 }
@@ -3213,7 +3233,7 @@ img {
 }
 #templateside {
 	float: right;
-	width: 190px;
+	width: 16em;
 	word-wrap: break-word;
 }
 
@@ -3229,11 +3249,19 @@ img {
 	margin: 4px 0;
 }
 
-#templateside li a,
+#templateside li:not(.howto) a,
 .theme-editor-php .highlight {
 	display: block;
-	padding: 3px 3px 3px 12px;
+	padding: 3px 0 3px 12px;
 	text-decoration: none;
+}
+
+#templateside li:not(.howto) > a:first-of-type {
+	padding-top: 0;
+}
+
+#templateside li.howto {
+	padding: 6px 12px 12px 12px;
 }
 
 .theme-editor-php .highlight {
@@ -3710,7 +3738,7 @@ img {
 	}
 
 	.wp-responsive-open #wpbody {
-		right: -190px;
+		right: -16em;
 	}
 
 	code {
@@ -3741,18 +3769,31 @@ img {
 	}
 
 	/* Theme/Plugin File Editor */
+
+	#template textarea,
+	#template .CodeMirror {
+		box-sizing: border-box;
+	}
+
 	#templateside {
 		float: none;
 		width: auto;
+	}
+
+	#templateside > ul {
+		border-left: 1px solid #ddd;
 	}
 
 	#templateside li {
 		margin: 0;
 	}
 
-	#templateside li a {
+	#templateside li:not(.howto) a {
 		display: block;
 		padding: 5px;
+	}
+	#templateside li.howto {
+		padding: 12px;
 	}
 
 	#templateside .highlight {
@@ -3799,11 +3840,44 @@ img {
 		left: -8px;
 	}
 	.wrap #templateside span.notice {
-		margin-left: -14px;
+		margin-left: -5px;
+		width: 100%;
 	}
 
 	.fileedit-sub .alignright {
+		float: left;
 		margin-top: 15px;
+		width: 100%;
+		text-align: left;
+	}
+
+	.fileedit-sub .alignright label {
+		display: block;
+	}
+
+	.fileedit-sub #theme,
+	.fileedit-sub #plugin {
+		margin-left: 0;
+		max-width: 70%;
+	}
+
+	.fileedit-sub input[type="submit"] {
+		margin-bottom: 0px;
+		padding: 8px 18px;
+	}
+
+	#documentation label[for="docs-list"] {
+		display: block;
+	}
+
+	#documentation select[name="docs-list"] {
+		margin-left: 0;
+		max-width: 60%;
+	}
+
+	#documentation input[type="button"] {
+		margin-bottom: 0;
+		padding: 8px 18px;
 	}
 
 	#wpfooter {
@@ -3821,6 +3895,10 @@ img {
 	.filter-drawer .filter-group-feature input,
 	.filter-drawer .filter-group-feature label {
 		line-height: 25px;
+	}
+
+	.filter-drawer .filter-group-feature label {
+		margin-left: 32px;
 	}
 
 	.wp-filter .button.drawer-toggle {

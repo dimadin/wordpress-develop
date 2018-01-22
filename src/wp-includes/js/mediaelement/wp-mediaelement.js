@@ -12,6 +12,8 @@
 		 * Ensures media elements that have already been initialized won't be
 		 * processed again.
 		 *
+		 * @memberOf wp.mediaelement
+		 *
 		 * @since 4.4.0
 		 *
 		 * @returns {void}
@@ -21,7 +23,7 @@
 				settings = $.extend( true, {}, _wpmejsSettings );
 			}
 			settings.classPrefix = 'mejs-';
-			settings.success = settings.success || function (mejs) {
+			settings.success = settings.success || function ( mejs ) {
 				var autoplay, loop;
 
 				if ( mejs.rendererName && -1 !== mejs.rendererName.indexOf( 'flash' ) ) {
@@ -56,6 +58,10 @@
 		};
 	}
 
+	/**
+	 * @namespace wp.mediaelement
+	 * @memberOf wp
+	 */
 	window.wp.mediaelement = new wpMediaElement();
 
 	$( window.wp.mediaelement.initialize );
