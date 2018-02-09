@@ -294,10 +294,10 @@ function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 
 			// paging and feeds
 		if ( get_query_var( 'paged' ) || is_feed() || get_query_var( 'cpage' ) ) {
-			while ( preg_match( "#/$wp_rewrite->pagination_base/?[0-9]+?(/+)?$#", $redirect['path'] ) || preg_match( '#/(comments/?)?(feed|rss|rdf|atom|rss2)(/+)?$#', $redirect['path'] ) || preg_match( "#/{$wp_rewrite->comments_pagination_base}-[0-9]+(/+)?$#", $redirect['path'] ) ) {
+			while ( preg_match( "#/$wp_rewrite->pagination_base/?[0-9]+?(/+)?$#", $redirect['path'] ) || preg_match( "#/($wp_rewrite->comments_base/?)?(feed|rss|rdf|atom|rss2)(/+)?$#", $redirect['path'] ) || preg_match( "#/{$wp_rewrite->comments_pagination_base}-[0-9]+(/+)?$#", $redirect['path'] ) ) {
 				// Strip off paging and feed
 				$redirect['path'] = preg_replace( "#/$wp_rewrite->pagination_base/?[0-9]+?(/+)?$#", '/', $redirect['path'] ); // strip off any existing paging
-				$redirect['path'] = preg_replace( '#/(comments/?)?(feed|rss2?|rdf|atom)(/+|$)#', '/', $redirect['path'] ); // strip off feed endings
+				$redirect['path'] = preg_replace( "#/($wp_rewrite->comments_base/?)?(feed|rss2?|rdf|atom)(/+|$)#", '/', $redirect['path'] ); // strip off feed endings
 				$redirect['path'] = preg_replace( "#/{$wp_rewrite->comments_pagination_base}-[0-9]+?(/+)?$#", '/', $redirect['path'] ); // strip off any existing comment paging
 			}
 
@@ -305,12 +305,12 @@ function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 			if ( is_feed() && in_array( get_query_var( 'feed' ), $wp_rewrite->feeds ) ) {
 				$addl_path = ! empty( $addl_path ) ? trailingslashit( $addl_path ) : '';
 				if ( ! is_singular() && get_query_var( 'withcomments' ) ) {
-					$addl_path .= 'comments/';
+					$addl_path .= "$wp_rewrite->comments_base/";
 				}
 				if ( ( 'rss' == get_default_feed() && 'feed' == get_query_var( 'feed' ) ) || 'rss' == get_query_var( 'feed' ) ) {
-					$addl_path .= user_trailingslashit( 'feed/' . ( ( get_default_feed() == 'rss2' ) ? '' : 'rss2' ), 'feed' );
+					$addl_path .= user_trailingslashit( "$wp_rewrite->feed_base/" . ( ( get_default_feed() == 'rss2' ) ? '' : 'rss2' ), 'feed' );
 				} else {
-					$addl_path .= user_trailingslashit( 'feed/' . ( ( get_default_feed() == get_query_var( 'feed' ) || 'feed' == get_query_var( 'feed' ) ) ? '' : get_query_var( 'feed' ) ), 'feed' );
+					$addl_path .= user_trailingslashit( "$wp_rewrite->feed_base/" . ( ( get_default_feed() == get_query_var( 'feed' ) || 'feed' == get_query_var( 'feed' ) ) ? '' : get_query_var( 'feed' ) ), 'feed' );
 				}
 				$redirect['query'] = remove_query_arg( 'feed', $redirect['query'] );
 			} elseif ( is_feed() && 'old' == get_query_var( 'feed' ) ) {
