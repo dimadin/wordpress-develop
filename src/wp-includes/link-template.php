@@ -2222,7 +2222,7 @@ function get_pagenum_link( $pagenum = 1, $escape = true ) {
 			$query_string = '';
 		}
 
-		$request = preg_replace( "|$wp_rewrite->pagination_base/\d+/?$|", '', $request );
+		$request = preg_replace( "|" . rawurlencode( $wp_rewrite->pagination_base ) . "/\d+/?$|", '', $request );
 		$request = preg_replace( '|^' . preg_quote( $wp_rewrite->index, '|' ) . '|i', '', $request );
 		$request = ltrim( $request, '/' );
 

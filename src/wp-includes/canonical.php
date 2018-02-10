@@ -294,11 +294,11 @@ function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 
 			// paging and feeds
 		if ( get_query_var( 'paged' ) || is_feed() || get_query_var( 'cpage' ) ) {
-			while ( preg_match( "#/$wp_rewrite->pagination_base/?[0-9]+?(/+)?$#", $redirect['path'] ) || preg_match( '#/(comments/?)?(feed|rss|rdf|atom|rss2)(/+)?$#', $redirect['path'] ) || preg_match( "#/{$wp_rewrite->comments_pagination_base}-[0-9]+(/+)?$#", $redirect['path'] ) ) {
+			while ( preg_match( "#/" . rawurlencode( $wp_rewrite->pagination_base ) . "/?[0-9]+?(/+)?$#", $redirect['path'] ) || preg_match( '#/(comments/?)?(feed|rss|rdf|atom|rss2)(/+)?$#', $redirect['path'] ) || preg_match( "#/" . rawurlencode( $wp_rewrite->comments_pagination_base ) . "-[0-9]+(/+)?$#", $redirect['path'] ) ) {
 				// Strip off paging and feed
-				$redirect['path'] = preg_replace( "#/$wp_rewrite->pagination_base/?[0-9]+?(/+)?$#", '/', $redirect['path'] ); // strip off any existing paging
+				$redirect['path'] = preg_replace( "#/". rawurlencode( $wp_rewrite->pagination_base ) . "/?[0-9]+?(/+)?$#", '/', $redirect['path'] ); // strip off any existing paging
 				$redirect['path'] = preg_replace( '#/(comments/?)?(feed|rss2?|rdf|atom)(/+|$)#', '/', $redirect['path'] ); // strip off feed endings
-				$redirect['path'] = preg_replace( "#/{$wp_rewrite->comments_pagination_base}-[0-9]+?(/+)?$#", '/', $redirect['path'] ); // strip off any existing comment paging
+				$redirect['path'] = preg_replace( "#/" . rawurlencode( $wp_rewrite->comments_pagination_base ) . "-[0-9]+?(/+)?$#", '/', $redirect['path'] ); // strip off any existing comment paging
 			}
 
 			$addl_path = '';
